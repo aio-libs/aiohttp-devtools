@@ -5,6 +5,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
+import aiohttp_debugtoolbar
 from aiohttp import MsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
@@ -33,6 +34,9 @@ def modify_main_app(app, **config):
         if livereload_enabled and 'text/html' in response.content_type:
             response.body += live_reload_snippet
     app.on_response_prepare.append(on_prepare)
+
+    if config['debug_toolbar']:
+        aiohttp_debugtoolbar.setup(app)
 
 
 def serve_main_app(**config):
