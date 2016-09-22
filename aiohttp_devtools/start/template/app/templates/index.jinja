@@ -1,0 +1,9 @@
+{% if template_engine.is_jinja %}
+{% raw %}
+{% extends 'base.jinja' %}
+
+{% block content %}
+  hello
+{% endblock %}
+{% endraw %}
+{% endif %}

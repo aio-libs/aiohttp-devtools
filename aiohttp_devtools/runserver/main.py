@@ -9,7 +9,7 @@ from .serve import create_auxiliary_app, import_string
 from .watch import AllCodeEventEventHandler, CodeFileEventHandler, StaticFileEventEventHandler
 
 
-def run_apps(**config):
+def runserver(**config):
     _, code_path = import_string(config['app_path'], config['app_factory'])
     static_path = config.pop('static_path')
     config.update(

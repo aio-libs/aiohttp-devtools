@@ -3,7 +3,7 @@ import re
 
 import click
 
-dft_logger = logging.getLogger('aiohttp_runserver.default')
+dft_logger = logging.getLogger('adev.runserver.default')
 main_access_logger = logging.getLogger('aiohttp.access')
 aux_logger = logging.getLogger('dev_server')
 

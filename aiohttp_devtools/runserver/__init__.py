@@ -1,3 +1,2 @@
-from distutils.version import StrictVersion
-
-VERSION = StrictVersion('0.0.2')
+# flake8: noqa
+from .main import runserver

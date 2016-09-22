@@ -1,12 +1,15 @@
 import click
 
+from .exceptions import AiohttpDevException
 from .runserver.logs import setup_logging
-from .runserver.main import run_apps
+from .runserver import runserver as _runserver
+from .start import StartProject, Options
 from .version import VERSION
 
 
 @click.group()
-def cli(**config):
+@click.version_option(VERSION, '-V', '--version', prog_name='aiohttp-devtools')
+def cli():
     pass
 
 
@@ -18,14 +21,14 @@ port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
 verbose_help = 'Enable verbose output.'
 
-static_path_type = click.Path(exists=True, dir_okay=True, file_okay=False)
+_static_path_type = click.Path(exists=True, dir_okay=True, file_okay=False)
+_app_path_type = click.Path(exists=True, dir_okay=False, file_okay=True)
 
 
 @cli.command()
-@click.version_option(VERSION, '-V', '--version', prog_name='aiohttp-runserver')
-@click.argument('app-path', type=click.Path(exists=True, dir_okay=False, file_okay=True), required=True)
+@click.argument('app-path', type=_app_path_type, required=True)
 @click.argument('app-factory', required=False)
-@click.option('-s', '--static', 'static_path', type=static_path_type, help=static_help)
+@click.option('-s', '--static', 'static_path', type=_static_path_type, help=static_help)
 @click.option('--static-url', default='/static/', help=static_url_help)
 @click.option('--livereload/--no-livereload', default=True, help=livereload_help)
 @click.option('--debug-toolbar/--debug-toolbar', default=True, help=debugtoolbar_help)
@@ -34,7 +37,26 @@ static_path_type = click.Path(exists=True, dir_okay=True, file_okay=False)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 def runserver(**config):
     """
-    Development server for aiohttp apps.
+    Run a development server for a aiohttp app.
     """
     setup_logging(config['verbose'])
-    run_apps(**config)
+    _runserver(**config)
+
+_path_type = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_path=True)
+
+
+@cli.command()
+@click.argument('path', type=_path_type, required=True)
+@click.argument('name', required=False)
+@click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA)
+@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
+@click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.DB_PG_SA)
+def start(**config):
+    """
+    Create a new aiohttp app.
+    """
+    config['name'] = config['name'] or click.prompt('Enter a name to give your app')
+    try:
+        StartProject(**config)
+    except AiohttpDevException as e:
+        raise click.BadParameter(e)

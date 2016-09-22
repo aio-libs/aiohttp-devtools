@@ -24,7 +24,7 @@ class _BaseEventHandler(PatternMatchingEventHandler):
         # next two in case a virtualenv directory is included in watched path
         '*/include/python*',
         '*/lib/python*',
-        '*/aiohttp_runserver/*',
+        '*/aiohttp_devserver/*',
         JB_BACKUP_FILE,
     ]
 

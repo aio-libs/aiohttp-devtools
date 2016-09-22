@@ -70,8 +70,9 @@ setup(
     """,
     install_requires=[
         'aiohttp>=1.0.2',
-        'click>=6.6',
-        'watchdog>=0.8.3',
         'aiohttp-debugtoolbar==0.1.1',
+        'click>=6.6',
+        'Jinja2==2.8',
+        'watchdog>=0.8.3',
     ],
 )

@@ -1,0 +1,14 @@
+{# This file is special: lines are made unique and sorted before the new requirements.tzt file is created #}
+{% if template_engine.is_jinja %}
+aiohttp-jinja2==0.8.0
+{% endif %}
+
+{% if session.is_vanilla %}
+aiohttp-session==0.5.0
+{% elif session.is_secure %}
+aiohttp-session[secure]==0.5.0
+{% elif session.is_redis %}
+aiohttp-session[aioredis]==0.5.0
+{% endif %}
+
+{# TODO: others #}
