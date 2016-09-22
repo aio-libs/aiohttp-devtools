@@ -1,6 +1,8 @@
 aiohttp-devtools
 ================
 
+|Build Status| |Coverage| |pypi| |license|
+
 Dev tools for `aiohttp`_.
 
 **Work in progress - not ready for use in the wild.**
@@ -20,4 +22,14 @@ Requirements
 * this package shouldn't be required to run your app in production or to test it.
 * extremely easy to get started with, should work wherever python works. I guess this requires testing on windows :-(.
 
+
+.. |Build Status| image:: https://travis-ci.org/samuelcolvin/aiohttp-devtools.svg?branch=master
+   :target: https://travis-ci.org/samuelcolvin/aiohttp-devtools
+.. |Coverage| image:: https://codecov.io/gh/samuelcolvin/aiohttp-devtools/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/samuelcolvin/aiohttp-devtools
+.. |pypi| image:: https://img.shields.io/pypi/v/aiohttp-devtools.svg
+   :target: https://pypi.python.org/pypi/aiohttp-devtools
+.. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
+   :target: https://github.com/samuelcolvin/aiohttp-devtools
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
+
