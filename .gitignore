@@ -1,0 +1,15 @@
+diff-match-patch
+env
+.idea
+__pycache__/
+*.py[cod]
+*.cache
+.coverage.*
+.coverage
+htmlcov/
+/build
+/dist
+*.egg-info
+docs/_build/
+/aiohttp_devtools/runserver/livereload.js
+testapp/

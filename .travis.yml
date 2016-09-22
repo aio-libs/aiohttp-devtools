@@ -1,0 +1,20 @@
+language: python
+cache: pip
+python:
+- '3.5'
+install:
+- make install
+script:
+- make lint
+- make test
+- make docs
+after_success:
+- codecov
+deploy:
+  provider: pypi
+  user: samuelcolvin
+  password:
+    secure: TODO
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
