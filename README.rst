@@ -10,10 +10,12 @@ Dev tools for `aiohttp`_.
 Core Features
 -------------
 
-* a runserver command, roughly equivalent to https://github.com/samuelcolvin/aiohttp_runserver
-* debug toolbar, roughly https://github.com/aio-libs/aiohttp_debugtoolbar
-* a cookie cutter command to create a new bare bones aiohttp app similar to django's "startproject".
-* an easy way to call management processes like creating or resetting a db.
+* ``runserver`` command including debug toolbar using `aiohttp debugtoolbar`_.
+* ``start`` command to create a new bare bones aiohttp app similar to django's "startproject". Options:
+
+  * **template engine**: none or either `aiohttp_jinja2`_.
+  * **sessions**: none or secure or redis session from `aiohttp_session`_.
+  * **database**: none or postgres using `aiopg`_ (eg. raw or using sqlalchemy), potentially other databases to follow.
 
 Requirements
 ------------
@@ -32,4 +34,7 @@ Requirements
 .. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
    :target: https://github.com/samuelcolvin/aiohttp-devtools
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
-
+.. _aiohttp debugtoolbar: https://github.com/aio-libs/aiohttp_debugtoolbar
+.. _aiohttp_jinja2: https://github.com/aio-libs/aiohttp_jinja2
+.. _aiohttp_session: https://aiohttp-session.readthedocs.io/en/latest/
+.. _aiopg: https://aiopg.readthedocs.io/en/latest/

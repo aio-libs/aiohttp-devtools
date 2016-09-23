@@ -20,8 +20,9 @@ async def index(request):
     This is the view handler for the "/" url.
 
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
-    :return: context for the template. Not: we return a dict not a response because of the @template decorator
+    :return: context for the template.
     """
+    # Note: we return a dict not a response because of the @template decorator
     return {
         'title': request.app['name'],
         'message': "Success! you've setup a basic aiohttp app.",
@@ -29,6 +30,8 @@ async def index(request):
 
 # {% else %}
 
+# in the name of brevity we return stripped down html, this works fine on chrome but shouldn't be used in production
+# the <body> tag is required to activate aiohttp-debugtoolbar.
 BASE_PAGE = """\
 <title>{title}</title>
 <link href="{styles_css_url}" rel="stylesheet">
@@ -43,14 +46,14 @@ async def index(request):
     """
     This is the view handler for the "/" url.
 
-    **Note: returning html without a template engine like jinja2 is ugly, no way round that.**
+    **Note: returning html without a template engine like jinja2 is ugly, no way around that.**
 
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
     """
-    # Note: in the name of brevity we return stripped down html,
-    # this works fine on chrome but shouldn't be used in production,
-    # the <body> tag is required to activate aiohttp-debugtoolbar
+    # app.router allows us to generate urls based on their names,
+    # see http://aiohttp.readthedocs.io/en/stable/web.html#reverse-url-constructing-using-named-resources
+    message_url = request.app.router['messages'].url()
     ctx = dict(
         title=request.app['name'],
         styles_css_url=request.app['static_url'] + '/styles.css',
@@ -59,8 +62,9 @@ async def index(request):
   <p>To demonstrate a little of the functionality of aiohttp this app implements a very simple message board.</p>
   <b>
     <a href="{message_url}">View and add messages</a>
-  </b>""".format(message_url=request.app.router['messages'].url())
+  </b>""".format(message_url=message_url)
     )
+    # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
     return web.Response(text=BASE_PAGE.format(**ctx), content_type='text/html')
 # {% endif %}
 
@@ -99,11 +103,10 @@ async def messages(request):
     return {
         'title': 'Message board',
         'form_errors': form_errors,
-        'messages': messages,
     }
     # {% else %}
     ctx = dict(
-        title=request.app['name'],
+        title='Message board',
         styles_css_url=request.app['static_url'] + '/styles.css',
         content="""\
   <h2>Add a new message:</h2>
@@ -133,16 +136,20 @@ async def messages(request):
 
 async def message_data(request):
     """
-    As an example of aiohttp providing a non-html response, we load the actual messages for the "message" above
+    As an example of aiohttp providing a non-html response, we load the actual messages for the "messages" view above
     via ajax using this endpoint to get data. see static/message_display.js for details of rendering.
     """
     messages = []
     if MESSAGE_FILE.exists():
+        # read the message file and split it into lines
         lines = MESSAGE_FILE.read_text().split('\n')
         for line in reversed(lines):
             if not line:
+                # ignore blank lines eg. end of file
                 continue
+            # split the line into it constituent parts, see process_form above
             username, ts, message = line.split('|', 2)
+            # parse the datetime string and render it in a more readable format.
             ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
             messages.append({'username': username, 'timestamp':  ts, 'message': message})
     return json_response(messages)
