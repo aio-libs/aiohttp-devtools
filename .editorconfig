@@ -5,10 +5,14 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 
+[*.txt,*.js,*.css,*.jinja]
+indent_style = space
+indent_size = 2
+
 [*.py]
 indent_style = space
 indent_size = 4
-line_length=120
+line_length = 120
 
 [Makefile]
 indent_style = tab

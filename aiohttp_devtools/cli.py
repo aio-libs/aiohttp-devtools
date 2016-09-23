@@ -51,8 +51,8 @@ _path_type = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_p
 @click.argument('path', type=_path_type, required=True)
 @click.argument('name', required=False)
 @click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
-@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
-@click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.DB_PG_SA)
+@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.NONE)
+@click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.NONE)
 def start(*, path, name, template_engine, session, database):
     """
     Create a new aiohttp app.

@@ -47,9 +47,12 @@ class StartProject:
         self.files_created = 0
         self.ctx = {
             'name': name,
-            'template_engine': {'is_' + o: template_engine == o for o in Options.TEMPLATE_ENG_CHOICES},
-            'session': {'is_' + o: session == o for o in Options.SESSION_CHOICES},
-            'database': {'is_' + o: database == o for o in Options.DB_CHOICES},
+            'template_engine': {'is_' + o.replace('-', '_'): template_engine == o
+                                for o in Options.TEMPLATE_ENG_CHOICES},
+            'session': {'is_' + o.replace('-', '_'): session == o
+                        for o in Options.SESSION_CHOICES},
+            'database': {'is_' + o.replace('-', '_'): database == o
+                         for o in Options.DB_CHOICES},
         }
         self.generate_directory(TEMPLATE_DIR)
         display_path = self.project_root.relative_to(Path('.').resolve())
@@ -74,8 +77,8 @@ class StartProject:
             return
 
         if p.name == 'requirements.txt':
-            lines = set(filter(bool, text.split('\n')))
-            text = '\n'.join(sorted(lines))
+            packages = {p.strip() for p in text.split('\n') if p.strip()}
+            text = '\n'.join(sorted(packages))
         elif p.suffix == '.py':
             # helpful when debugging: print(text.replace(' ', '·').replace('\n', '⏎\n'))
             for regex, repl in PY_REGEXES:

@@ -20,13 +20,8 @@
   </form>
 
   <h2>Messages:</h2>
-  <ul>
-    {% for message in messages %}
-      <li><b>{{ message.username }}:</b> {{ message.message }}, ({{ message.timestamp }})</li>
-    {% else %}
-      <li>No messages found.</li>
-    {% endfor %}
-  </ul>
+  <div id="messages" data-url="{{ 'message-data'|url }}"></div>
+  <script src="{{ 'message_display.js'|static }}"></script>
 {% endblock %}
 {% endraw %}
 {% endif %}

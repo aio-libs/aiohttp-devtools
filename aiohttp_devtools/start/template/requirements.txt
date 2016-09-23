@@ -1,14 +1,22 @@
-{# This file is special: lines are made unique and sorted before the new requirements.tzt file is created #}
+{# This file is special: lines are made unique, stripped and sorted before the new requirements.txt file is created #}
+
+aiohttp==1.0.2
+
 {% if template_engine.is_jinja2 %}
-aiohttp-jinja2==0.8.0
+  aiohttp-jinja2==0.8.0
 {% endif %}
 
 {% if session.is_vanilla %}
-aiohttp-session==0.5.0
+  aiohttp-session==0.5.0
 {% elif session.is_secure %}
-aiohttp-session[secure]==0.5.0
+  aiohttp-session[secure]==0.5.0
 {% elif session.is_redis %}
-aiohttp-session[aioredis]==0.5.0
+  aiohttp-session[aioredis]==0.5.0
 {% endif %}
 
-{# TODO: others #}
+{% if database.is_postgres_sqlalchemy or database.is_postgres_raw %}
+  aiopg==0.11.0
+  {% if database.is_postgres_sqlalchemy %}
+    SQLAlchemy==1.0.15
+  {% endif %}
+{% endif %}
