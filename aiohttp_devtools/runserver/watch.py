@@ -1,7 +1,7 @@
 import os
 import signal
 from datetime import datetime
-from multiprocessing import Process, set_start_method
+from multiprocessing import Process
 
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
@@ -10,9 +10,6 @@ from .serve import serve_main_app
 
 # specific to jetbrains I think, very annoying if not ignored
 JB_BACKUP_FILE = '*___jb_???___'
-
-# force a full reload to interpret an updated version of code:
-set_start_method('spawn')
 
 
 class _BaseEventHandler(PatternMatchingEventHandler):

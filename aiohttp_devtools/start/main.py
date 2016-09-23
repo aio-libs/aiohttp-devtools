@@ -7,10 +7,10 @@ from jinja2 import Template, TemplateError
 THIS_DIR = Path(__file__).parent
 TEMPLATE_DIR = THIS_DIR / 'template'  # type: Path
 
-PY_REGEXES = [(re.compile(p), r) for p, r in [
-    ('\n# *\n', '\n\n'),  # blank comment
-    ('\n# *$', '\n'),     # blank comment on last line
-    ('\n{4,}', '\n\n\n')  # more than 2 empty lines
+PY_REGEXES = [(re.compile(p, f), r) for p, r, f in [
+    ('^ *# *\n', '', re.M),    # blank comments
+    ('\n *# *$', '', 0),       # blank comment at end of fie
+    ('\n{4,}', '\n\n\n', 0)  # more than 2 empty lines
 ]]
 
 
@@ -18,8 +18,8 @@ class Options:
     # could use Enums here but they wouldn't play well with click
     NONE = 'none'
 
-    TEMPLATE_ENG_JINJA = 'jinja'
-    TEMPLATE_ENG_CHOICES = (NONE, TEMPLATE_ENG_JINJA)
+    TEMPLATE_ENG_JINJA2 = 'jinja2'
+    TEMPLATE_ENG_CHOICES = (NONE, TEMPLATE_ENG_JINJA2)
 
     SESSION_SECURE = 'secure'
     SESSION_VANILLA = 'vanilla'
@@ -52,6 +52,8 @@ class StartProject:
             'database': {'is_' + o: database == o for o in Options.DB_CHOICES},
         }
         self.generate_directory(TEMPLATE_DIR)
+        display_path = self.project_root.relative_to(Path('.').resolve())
+        print('New aiohttp project "{name}" started at ./{path}'.format(name=name, path=display_path))
 
     def generate_directory(self, p: Path):
         for pp in p.iterdir():
@@ -72,7 +74,7 @@ class StartProject:
             return
 
         if p.name == 'requirements.txt':
-            lines = set(text.split('\n'))
+            lines = set(filter(bool, text.split('\n')))
             text = '\n'.join(sorted(lines))
         elif p.suffix == '.py':
             # helpful when debugging: print(text.replace(' ', '·').replace('\n', '⏎\n'))

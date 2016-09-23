@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from pprint import pformat
 
+from multiprocessing import set_start_method
 from watchdog.observers import Observer
 
 from .logs import AuxiliaryLogHandler, dft_logger
@@ -10,6 +11,9 @@ from .watch import AllCodeEventEventHandler, CodeFileEventHandler, StaticFileEve
 
 
 def runserver(**config):
+    # force a full reload to interpret an updated version of code, this must be called only once
+    set_start_method('spawn')
+
     _, code_path = import_string(config['app_path'], config['app_factory'])
     static_path = config.pop('static_path')
     config.update(

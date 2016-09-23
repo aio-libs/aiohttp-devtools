@@ -1,0 +1,32 @@
+{% if template_engine.is_jinja2 %}
+{% raw %}
+{% extends 'base.jinja' %}
+
+{% block content %}
+  <h2>Add a new message:</h2>
+  <form method="post" action="{{ 'messages'|url }}">
+    {% if form_errors %}
+    <div class="form-errors">
+      {{ form_errors }}
+    </div>
+    {% endif %}
+    <p>
+      <label for="username">Your name:</label>
+      <input type="text" name="username" id="username" placeholder="fred blogs">
+      <label for="message">Message:</label>
+      <input type="text" name="message" id="message" placeholder="hello there">
+    </p>
+  <button type="submit">Post Message</button>
+  </form>
+
+  <h2>Messages:</h2>
+  <ul>
+    {% for message in messages %}
+      <li><b>{{ message.username }}:</b> {{ message.message }}, ({{ message.timestamp }})</li>
+    {% else %}
+      <li>No messages found.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
+{% endraw %}
+{% endif %}

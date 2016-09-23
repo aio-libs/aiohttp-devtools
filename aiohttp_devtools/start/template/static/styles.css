@@ -1,0 +1,19 @@
+html, body {
+  font-family: Garamond, Georgia, serif;
+  margin: 0;
+}
+
+main {
+  margin: 0 auto;
+  max-width: 940px;
+  background-color: white;
+  padding: 20px 20px;
+}
+
+.form-errors {
+  background-color: #f2dede;
+  padding: 5px 10px;
+  border: 1px solid red;
+  border-radius: 3px;
+  color: #79312f;
+}

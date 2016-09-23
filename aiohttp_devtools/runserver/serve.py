@@ -23,15 +23,12 @@ def modify_main_app(app, **config):
     livereload_enabled = config['livereload']
     aux_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
 
-    if JINJA_ENV in app:
-        static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
-        # if a jinja environment is setup add a global variable `static_url`
-        # which can be used as in `src="{{ static_url }}/foobar.css"`
-        app[JINJA_ENV].globals['static_url'] = static_url
-        aux_logger.debug('global environment variable static_url="%s" added to jinja environment', static_url)
+    static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
+    app['static_url'] = static_url
+    aux_logger.debug('global environment variable static_url="%s" added to app as "static_url"', static_url)
 
     async def on_prepare(request, response):
-        if livereload_enabled and 'text/html' in response.content_type:
+        if request.path.startswith('/_debugtoolbar') and livereload_enabled and 'text/html' in response.content_type:
             response.body += live_reload_snippet
     app.on_response_prepare.append(on_prepare)
 

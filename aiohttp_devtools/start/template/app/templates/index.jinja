@@ -1,9 +1,15 @@
-{% if template_engine.is_jinja %}
+{% if template_engine.is_jinja2 %}
 {% raw %}
 {% extends 'base.jinja' %}
 
 {% block content %}
-  hello
+  <p>{{ message }}</p>
+  <p>
+    To demonstrate a little of the functionality of aiohttp this app implements a very simple message board.
+  </p>
+  <b>
+    <a href="{{ 'messages'|url }}">View and add messages</a>
+  </b>
 {% endblock %}
 {% endraw %}
 {% endif %}

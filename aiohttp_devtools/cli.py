@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from .exceptions import AiohttpDevException
@@ -48,15 +50,16 @@ _path_type = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_p
 @cli.command()
 @click.argument('path', type=_path_type, required=True)
 @click.argument('name', required=False)
-@click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA)
+@click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
 @click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
 @click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.DB_PG_SA)
-def start(**config):
+def start(*, path, name, template_engine, session, database):
     """
     Create a new aiohttp app.
     """
-    config['name'] = config['name'] or click.prompt('Enter a name to give your app')
+    if name is None:
+        name = Path(path).name
     try:
-        StartProject(**config)
+        StartProject(path=path, name=name, template_engine=template_engine, session=session, database=database)
     except AiohttpDevException as e:
         raise click.BadParameter(e)

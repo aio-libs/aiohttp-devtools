@@ -1,5 +1,5 @@
 {# This file is special: lines are made unique and sorted before the new requirements.tzt file is created #}
-{% if template_engine.is_jinja %}
+{% if template_engine.is_jinja2 %}
 aiohttp-jinja2==0.8.0
 {% endif %}
 
