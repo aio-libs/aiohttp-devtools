@@ -51,15 +51,17 @@ _path_type = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_p
 @click.argument('path', type=_path_type, required=True)
 @click.argument('name', required=False)
 @click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
-@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.NONE)
+@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
 @click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.NONE)
-def start(*, path, name, template_engine, session, database):
+@click.option('--example', type=click.Choice(Options.EXAMPLE_CHOICES), default=Options.EXAMPLE_MESSAGE_BOARD)
+def start(*, path, name, template_engine, session, database, example):
     """
     Create a new aiohttp app.
     """
     if name is None:
         name = Path(path).name
     try:
-        StartProject(path=path, name=name, template_engine=template_engine, session=session, database=database)
+        StartProject(path=path, name=name,
+                     template_engine=template_engine, session=session, database=database, example=example)
     except AiohttpDevException as e:
         raise click.BadParameter(e)

@@ -9,11 +9,13 @@ from aiohttp.web_reqrep import json_response
 from aiohttp_jinja2 import template
 # {% endif %}
 
+# {% if database.is_none and example.message_board %}
 # if no database is available we use a plain old file to store messages. Don't do this kind of thing in production!
 MESSAGE_FILE = Path('messages.txt')
+# {% endif %}
+
 
 # {% if template_engine.is_jinja2 %}
-
 @template('index.jinja')
 async def index(request):
     """
@@ -51,6 +53,7 @@ async def index(request):
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
     """
+    # {% if database.is_none and example.message_board %}
     # app.router allows us to generate urls based on their names,
     # see http://aiohttp.readthedocs.io/en/stable/web.html#reverse-url-constructing-using-named-resources
     message_url = request.app.router['messages'].url()
@@ -64,11 +67,19 @@ async def index(request):
     <a href="{message_url}">View and add messages</a>
   </b>""".format(message_url=message_url)
     )
+    # {% else %}
+    ctx = dict(
+        title=request.app['name'],
+        styles_css_url=request.app['static_url'] + '/styles.css',
+        content="<p>Success! you've setup a basic aiohttp app.</p>",
+    )
+    # {% endif %}
     # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
     return web.Response(text=BASE_PAGE.format(**ctx), content_type='text/html')
 # {% endif %}
 
 
+# {% if database.is_none and example.message_board %}
 async def process_form(request):
     new_message, missing_fields = {}, []
     fields = ['username', 'message']
@@ -153,3 +164,4 @@ async def message_data(request):
             ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
             messages.append({'username': username, 'timestamp':  ts, 'message': message})
     return json_response(messages)
+# {% endif %}

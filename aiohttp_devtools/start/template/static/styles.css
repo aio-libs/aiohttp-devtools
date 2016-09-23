@@ -10,6 +10,7 @@ main {
   padding: 20px 20px;
 }
 
+{% if example.message_board %}
 .form-errors {
   background-color: #f2dede;
   padding: 5px 10px;
@@ -17,3 +18,4 @@ main {
   border-radius: 3px;
   color: #79312f;
 }
+{% endif %}

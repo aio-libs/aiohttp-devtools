@@ -30,9 +30,18 @@ class Options:
     DB_PG_RAW = 'postgres-raw'
     DB_CHOICES = (NONE, DB_PG_SA, DB_PG_RAW)
 
+    EXAMPLE_MESSAGE_BOARD = 'message-board'
+    EXAMPLE_CHOICES = (NONE, EXAMPLE_MESSAGE_BOARD)
+
 
 class StartProject:
-    def __init__(self, *, path: str, name: str, template_engine: str, session: str, database: str,
+    def __init__(self, *,
+                 path: str,
+                 name: str,
+                 template_engine: str=Options.TEMPLATE_ENG_JINJA2,
+                 session: str=Options.SESSION_SECURE,
+                 database: str=Options.NONE,
+                 example: str=Options.EXAMPLE_MESSAGE_BOARD,
                  template_dir: Path=TEMPLATE_DIR) -> None:
         self.project_root = Path(path)
         self.template_dir = template_dir
@@ -47,16 +56,17 @@ class StartProject:
         self.files_created = 0
         self.ctx = {
             'name': name,
-            'template_engine': {'is_' + o.replace('-', '_'): template_engine == o
-                                for o in Options.TEMPLATE_ENG_CHOICES},
-            'session': {'is_' + o.replace('-', '_'): session == o
-                        for o in Options.SESSION_CHOICES},
-            'database': {'is_' + o.replace('-', '_'): database == o
-                         for o in Options.DB_CHOICES},
+            'template_engine': self._choice_context(template_engine, Options.TEMPLATE_ENG_CHOICES),
+            'session': self._choice_context(session, Options.SESSION_CHOICES),
+            'database': self._choice_context(database, Options.DB_CHOICES),
+            'example': self._choice_context(example, Options.EXAMPLE_CHOICES),
         }
         self.generate_directory(TEMPLATE_DIR)
         display_path = self.project_root.relative_to(Path('.').resolve())
         print('New aiohttp project "{name}" started at ./{path}'.format(name=name, path=display_path))
+
+    def _choice_context(self, value, choices):
+        return {'is_' + o.replace('-', '_'): value == o for o in choices}
 
     def generate_directory(self, p: Path):
         for pp in p.iterdir():

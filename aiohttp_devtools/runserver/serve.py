@@ -24,8 +24,8 @@ def modify_main_app(app, **config):
     aux_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
 
     static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
-    app['static_url'] = static_url
-    aux_logger.debug('global environment variable static_url="%s" added to app as "static_url"', static_url)
+    app['static_root_url'] = static_url
+    aux_logger.debug('global environment variable static_url="%s" added to app as "static_root_url"', static_url)
 
     async def on_prepare(request, response):
         if request.path.startswith('/_debugtoolbar') and livereload_enabled and 'text/html' in response.content_type:
