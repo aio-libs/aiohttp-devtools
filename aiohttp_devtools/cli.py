@@ -8,6 +8,10 @@ from .runserver import runserver as _runserver
 from .start import StartProject, Options
 from .version import VERSION
 
+_dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
+_file_existing = click.Path(exists=True, dir_okay=False, file_okay=True)
+_dir_may_exist = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_path=True)
+
 
 @click.group()
 @click.version_option(VERSION, '-V', '--version', prog_name='aiohttp-devtools')
@@ -23,14 +27,11 @@ port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
 verbose_help = 'Enable verbose output.'
 
-_static_path_type = click.Path(exists=True, dir_okay=True, file_okay=False)
-_app_path_type = click.Path(exists=True, dir_okay=False, file_okay=True)
-
 
 @cli.command()
-@click.argument('app-path', type=_app_path_type, required=True)
+@click.argument('app-path', type=_file_existing, required=True)
 @click.argument('app-factory', required=False)
-@click.option('-s', '--static', 'static_path', type=_static_path_type, help=static_help)
+@click.option('-s', '--static', 'static_path', type=_dir_existing, help=static_help)
 @click.option('--static-url', default='/static/', help=static_url_help)
 @click.option('--livereload/--no-livereload', default=True, help=livereload_help)
 @click.option('--debug-toolbar/--debug-toolbar', default=True, help=debugtoolbar_help)
@@ -39,16 +40,14 @@ _app_path_type = click.Path(exists=True, dir_okay=False, file_okay=True)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 def runserver(**config):
     """
-    Run a development server for a aiohttp app.
+    Run a development server for aiohttp apps.
     """
     setup_logging(config['verbose'])
     _runserver(**config)
 
-_path_type = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_path=True)
-
 
 @cli.command()
-@click.argument('path', type=_path_type, required=True)
+@click.argument('path', type=_dir_may_exist, required=True)
 @click.argument('name', required=False)
 @click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
 @click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
