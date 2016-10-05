@@ -25,7 +25,6 @@ def modify_main_app(app, **config):
     aux_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
     if livereload_enabled:
         livereload_snippet = LIVE_RELOAD_SNIPPET % aux_server.encode()
-
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
                 if hasattr(response, 'body'):
@@ -102,8 +101,8 @@ class AuxiliaryApplication(web.Application):
 
     async def close_websockets(self):
         aux_logger.debug('closing %d websockets...', len(self[WS]))
-        for ws, _ in self[WS]:
-            await ws.close()
+        coros = [ws.close() for ws, _ in self[WS]]
+        await asyncio.gather(*coros, loop=self._loop)
 
 
 def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, loop=None):
@@ -133,7 +132,7 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
 
 async def livereload_js(request):
     if request.if_modified_since:
-        aux_logger.debug('> %s %s %s 0', request.method, request.path, 304)
+        aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
     script_key = 'livereload_script'
@@ -203,18 +202,19 @@ class CustomFileSender(FileSender):
         """
         Send filepath to client using request.
 
-        As with super except adds lr_snippet_length to content_length and writes lr_snippet to the
-        tail of the response.
+        As with super except:
+        * adds lr_snippet_length to content_length and writes lr_snippet to the tail of the response.
         """
-        st = filepath.stat()
-
-        modsince = request.if_modified_since
-        if modsince is not None and st.st_mtime <= modsince.timestamp():
-            raise HTTPNotModified()
 
         ct, encoding = mimetypes.guess_type(str(filepath))
         if not ct:
             ct = 'application/octet-stream'
+        is_html = ct == 'text/html'
+
+        st = filepath.stat()
+        modsince = request.if_modified_since
+        if not is_html and modsince is not None and st.st_mtime <= modsince.timestamp():
+            raise HTTPNotModified()
 
         resp = self._response_factory()
         resp.content_type = ct
@@ -223,14 +223,12 @@ class CustomFileSender(FileSender):
         resp.last_modified = st.st_mtime
 
         file_size = st.st_size
-        # === unchanged until this point
-        add_live_reload = ct == 'text/html'
-        resp.content_length = file_size + self.lr_snippet_len if add_live_reload else file_size
+        resp.content_length = file_size + self.lr_snippet_len if is_html else file_size
         resp.set_tcp_cork(True)
         try:
             with filepath.open('rb') as f:
                 await self._sendfile_fallback(request, resp, f, file_size)
-            if add_live_reload:
+            if is_html:
                 resp.write(self.lr_snippet)
                 await resp.drain()
         finally:
@@ -254,7 +252,8 @@ class CustomStaticRoute(StaticRoute):
         filename = request.match_info['filename']
         raw_path = self._directory.joinpath(filename)
         try:
-            filepath = raw_path.resolve().relative_to(self._directory)
+            filepath = raw_path.resolve()
+            filepath.relative_to(self._directory)
         except FileNotFoundError:
             try:
                 html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
@@ -268,7 +267,7 @@ class CustomStaticRoute(StaticRoute):
             if filepath.is_dir():
                 index_file = filepath / 'index.html'
                 if index_file.exists():
-                    request.match_info['filename'] = str(index_file)
+                    request.match_info['filename'] = str(index_file.relative_to(self._directory))
 
         status, length = 'unknown', ''
         try:

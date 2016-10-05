@@ -22,6 +22,9 @@ class _BaseEventHandler(PatternMatchingEventHandler):
         '*/include/python*',
         '*/lib/python*',
         '*/aiohttp_devserver/*',
+        '*~',
+        '*.swp',
+        '*.swx',
         JB_BACKUP_FILE,
     ]
 

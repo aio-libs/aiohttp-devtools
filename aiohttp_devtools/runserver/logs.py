@@ -36,8 +36,11 @@ class AuxiliaryLogHandler(logging.Handler):
         m = re.match('^(\[.*?\] )', log_entry)
         time = click.style(m.groups()[0], fg='magenta')
         msg = log_entry[m.end():]
-        if record.levelno == logging.INFO and msg.startswith('>'):
-            msg = '{prefix} {msg}'.format(prefix=self.prefix, msg=msg[2:])
+        if record.levelno in {logging.INFO, logging.DEBUG} and msg.startswith('>'):
+            if msg.endswith(' 304 0B'):
+                msg = '{} {}'.format(self.prefix, click.style(msg[2:], dim=True))
+            else:
+                msg = '{} {}'.format(self.prefix, msg[2:])
         else:
             msg = click.style(msg, fg=colour)
         click.echo(time + msg)
