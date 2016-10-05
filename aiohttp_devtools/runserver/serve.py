@@ -248,12 +248,14 @@ class CustomStaticRoute(StaticRoute):
                                                  chunk_size=self._file_sender._chunk_size,
                                                  livereload_snippet=livereload_snippet)
 
-    async def handle(self, request):
+    def modify_request(self, request):
+        """
+        Apply common path conventsion eg. / > /index.html, /foobar > /foobar.html
+        """
         filename = request.match_info['filename']
         raw_path = self._directory.joinpath(filename)
         try:
             filepath = raw_path.resolve()
-            filepath.relative_to(self._directory)
         except FileNotFoundError:
             try:
                 html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
@@ -261,14 +263,19 @@ class CustomStaticRoute(StaticRoute):
                 pass
             else:
                 request.match_info['filename'] = str(html_file)
-        except ValueError:
-            pass
         else:
+            print(filepath)
             if filepath.is_dir():
                 index_file = filepath / 'index.html'
                 if index_file.exists():
-                    request.match_info['filename'] = str(index_file.relative_to(self._directory))
+                    try:
+                        request.match_info['filename'] = str(index_file.relative_to(self._directory))
+                    except ValueError:
+                        # path is not not relative to self._directory
+                        pass
 
+    async def handle(self, request):
+        self.modify_request(request)
         status, length = 'unknown', ''
         try:
             response = await super().handle(request)
