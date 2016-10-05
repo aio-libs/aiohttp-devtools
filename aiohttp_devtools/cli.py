@@ -4,6 +4,7 @@ import click
 
 from .exceptions import AiohttpDevException
 from .runserver.logs import setup_logging
+from .runserver import serve_static
 from .runserver import runserver as _runserver
 from .start import StartProject, Options
 from .version import VERSION
@@ -19,13 +20,28 @@ def cli():
     pass
 
 
+verbose_help = 'Enable verbose output.'
+livereload_help = 'Whether to inject livereload.js into html page footers to autoreload on changes.'
+
+
+@cli.command()
+@click.argument('path', type=_dir_existing, required=True)
+@click.option('--livereload/--no-livereload', default=True, help=livereload_help)
+@click.option('-p', '--port', default=8000, type=int)
+@click.option('-v', '--verbose', is_flag=True, help=verbose_help)
+def serve(path, livereload, port, verbose):
+    """
+    Serve static files from a directory.
+    """
+    setup_logging(verbose)
+    serve_static(static_path=path, livereload=livereload, port=port)
+
+
 static_help = "Path of static files to serve, if excluded static files aren't served."
 static_url_help = 'URL path to serve static files from, default "/static/".'
-livereload_help = 'Whether to inject livereload.js into html page footers to autoreload on changes.'
 debugtoolbar_help = 'Whether to enable debug toolbar.'
 port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
-verbose_help = 'Enable verbose output.'
 
 
 @cli.command()

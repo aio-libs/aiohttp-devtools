@@ -1,13 +1,15 @@
 import asyncio
 import json
+import mimetypes
 import os
 import sys
 from importlib import import_module
 from pathlib import Path
 
 import aiohttp_debugtoolbar
+from aiohttp import FileSender
 from aiohttp import MsgType, web
-from aiohttp.hdrs import LAST_MODIFIED
+from aiohttp.hdrs import LAST_MODIFIED, CONTENT_ENCODING
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticRoute
 
@@ -19,18 +21,20 @@ JINJA_ENV = 'aiohttp_jinja2_environment'
 
 def modify_main_app(app, **config):
     aux_server = 'http://localhost:{aux_port}'.format(**config)
-    live_reload_snippet = LIVE_RELOAD_SNIPPET % aux_server.encode()
     livereload_enabled = config['livereload']
     aux_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
+    if livereload_enabled:
+        livereload_snippet = LIVE_RELOAD_SNIPPET % aux_server.encode()
+
+        async def on_prepare(request, response):
+            if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
+                if hasattr(response, 'body'):
+                    response.body += livereload_snippet
+        app.on_response_prepare.append(on_prepare)
 
     static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
     app['static_root_url'] = static_url
     aux_logger.debug('global environment variable static_url="%s" added to app as "static_root_url"', static_url)
-
-    async def on_prepare(request, response):
-        if request.path.startswith('/_debugtoolbar') and livereload_enabled and 'text/html' in response.content_type:
-            response.body += live_reload_snippet
-    app.on_response_prepare.append(on_prepare)
 
     if config['debug_toolbar']:
         aiohttp_debugtoolbar.setup(app)
@@ -68,11 +72,10 @@ WS = 'websockets'
 
 class AuxiliaryApplication(web.Application):
     def static_reload(self, change_path):
-        config = self['config']
-        static_root = config['static_path']
+        static_root = self['static_path']
         change_path = Path(change_path).relative_to(static_root)
 
-        path = Path(config['static_url']) / change_path
+        path = Path(self['static_url']) / change_path
         self._broadcast_change(path=str(path))
 
     def src_reload(self):
@@ -103,19 +106,28 @@ class AuxiliaryApplication(web.Application):
             await ws.close()
 
 
-def create_auxiliary_app(*, loop=None, **config):
+def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, loop=None):
     loop = loop or asyncio.new_event_loop()
     app = AuxiliaryApplication(loop=loop)
     app[WS] = []
-    app['config'] = config
+    app.update(
+        static_path=static_path,
+        static_url=static_url,
+    )
 
-    app.router.add_route('GET', '/livereload.js', livereload_js)
-    app.router.add_route('GET', '/livereload', websocket_handler)
+    if livereload:
+        app.router.add_route('GET', '/livereload.js', livereload_js)
+        app.router.add_route('GET', '/livereload', websocket_handler)
+        server_address = 'http://localhost:{}'.format(port)
+        livereload_snippet = LIVE_RELOAD_SNIPPET % server_address.encode()
+        aux_logger.debug('enabling livereload on static app')
+    else:
+        livereload_snippet = None
 
-    static_path = config['static_path']
     if static_path:
-        static_root = static_path + '/'
-        app.router.register_route(CustomStaticRoute('static-router', config['static_url'], static_root))
+        route = CustomStaticRoute('static-router', static_url, static_path + '/', livereload_snippet=livereload_snippet)
+        app.router.register_route(route)
+
     return app
 
 
@@ -181,20 +193,83 @@ async def websocket_handler(request):
     return ws
 
 
+class CustomFileSender(FileSender):
+    def __init__(self, *args, **kwargs):
+        self.lr_snippet = kwargs.pop('livereload_snippet')
+        self.lr_snippet_len = len(self.lr_snippet)
+        super().__init__(*args, **kwargs)
+
+    async def send(self, request, filepath):
+        """
+        Send filepath to client using request.
+
+        As with super except adds lr_snippet_length to content_length and writes lr_snippet to the
+        tail of the response.
+        """
+        st = filepath.stat()
+
+        modsince = request.if_modified_since
+        if modsince is not None and st.st_mtime <= modsince.timestamp():
+            raise HTTPNotModified()
+
+        ct, encoding = mimetypes.guess_type(str(filepath))
+        if not ct:
+            ct = 'application/octet-stream'
+
+        resp = self._response_factory()
+        resp.content_type = ct
+        if encoding:
+            resp.headers[CONTENT_ENCODING] = encoding
+        resp.last_modified = st.st_mtime
+
+        file_size = st.st_size
+        # === unchanged until this point
+        add_live_reload = ct == 'text/html'
+        resp.content_length = file_size + self.lr_snippet_len if add_live_reload else file_size
+        resp.set_tcp_cork(True)
+        try:
+            with filepath.open('rb') as f:
+                await self._sendfile_fallback(request, resp, f, file_size)
+            if add_live_reload:
+                resp.write(self.lr_snippet)
+                await resp.drain()
+        finally:
+            resp.set_tcp_nodelay(True)
+
+        return resp
+
+
 class CustomStaticRoute(StaticRoute):
     def __init__(self, *args, **kwargs):
         self._asset_path = None  # TODO
+        livereload_snippet = kwargs.pop('livereload_snippet')
         super().__init__(*args, **kwargs)
+        self._show_index = True
+        if livereload_snippet:
+            self._file_sender = CustomFileSender(resp_factory=self._file_sender._response_factory,
+                                                 chunk_size=self._file_sender._chunk_size,
+                                                 livereload_snippet=livereload_snippet)
 
     async def handle(self, request):
         filename = request.match_info['filename']
+        raw_path = self._directory.joinpath(filename)
         try:
-            filepath = self._directory.joinpath(filename).resolve()
-        except (ValueError, FileNotFoundError, OSError):
+            filepath = raw_path.resolve().relative_to(self._directory)
+        except FileNotFoundError:
+            try:
+                html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
+            except (FileNotFoundError, ValueError):
+                pass
+            else:
+                request.match_info['filename'] = str(html_file)
+        except ValueError:
             pass
         else:
             if filepath.is_dir():
-                request.match_info['filename'] = str(filepath.joinpath('index.html').relative_to(self._directory))
+                index_file = filepath / 'index.html'
+                if index_file.exists():
+                    request.match_info['filename'] = str(index_file)
+
         status, length = 'unknown', ''
         try:
             response = await super().handle(request)
@@ -203,7 +278,7 @@ class CustomStaticRoute(StaticRoute):
             raise
         except HTTPNotFound:
             _404_msg = '404: Not Found\n\n' + _get_asset_content(self._asset_path)
-            response = web.Response(body=_404_msg.encode(), status=404)
+            response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
             status, length = response.status, response.content_length
         else:
             status, length = response.status, response.content_length

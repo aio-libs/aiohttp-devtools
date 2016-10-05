@@ -25,14 +25,13 @@ class _BaseEventHandler(PatternMatchingEventHandler):
         JB_BACKUP_FILE,
     ]
 
-    def __init__(self, aux_app, config, *args, **kwargs):
-        self._app = aux_app
-        self._config = config
+    def __init__(self, app):
+        self._app = app
 
         self._change_dt = datetime.now()
         self._since_change = None
         self._change_count = 0
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
     def dispatch(self, event):
 
@@ -68,8 +67,9 @@ class _BaseEventHandler(PatternMatchingEventHandler):
 class CodeFileEventHandler(_BaseEventHandler):
     patterns = ['*.py']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, app, config):
+        self._config = config
+        super().__init__(app)
         self._start_process()
 
     def on_event(self, event):
@@ -99,7 +99,6 @@ class CodeFileEventHandler(_BaseEventHandler):
 
 class AllCodeEventEventHandler(_BaseEventHandler):
     patterns = [
-        '*.py',
         '*.html',
         '*.jinja',
         '*.jinja2',
