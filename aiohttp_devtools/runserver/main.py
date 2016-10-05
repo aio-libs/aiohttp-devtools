@@ -7,7 +7,7 @@ from watchdog.observers import Observer
 
 from .logs import AuxiliaryLogHandler, dft_logger
 from .serve import create_auxiliary_app, import_string
-from .watch import AllCodeEventEventHandler, CodeFileEventHandler, StaticFileEventEventHandler
+from .watch import AllCodeEventHandler, PyCodeEventHandler, LiveReloadEventHandler
 
 
 def _run_app(app, observer, port):
@@ -52,18 +52,18 @@ def runserver(**config):
     )
 
     observer = Observer()
-    code_file_eh = CodeFileEventHandler(aux_app, config)
-    dft_logger.debug('starting CodeFileEventHandler to watch %s', config['code_path'])
-    observer.schedule(code_file_eh, config['code_path'], recursive=True)
+    code_event_handler = PyCodeEventHandler(aux_app, config)
+    dft_logger.debug('starting PyCodeEventHandler to watch %s', config['code_path'])
+    observer.schedule(code_event_handler, config['code_path'], recursive=True)
 
-    all_code_file_eh = AllCodeEventEventHandler(aux_app)
-    observer.schedule(all_code_file_eh, config['code_path'], recursive=True)
+    all_code_event_handler = AllCodeEventHandler(aux_app)
+    observer.schedule(all_code_event_handler, config['code_path'], recursive=True)
 
     static_path = config['static_path']
     if static_path:
-        static_file_eh = StaticFileEventEventHandler(aux_app)
-        dft_logger.debug('starting StaticFileEventEventHandler to watch %s', static_path)
-        observer.schedule(static_file_eh, static_path, recursive=True)
+        static_event_handler = LiveReloadEventHandler(aux_app)
+        dft_logger.debug('starting LiveReloadEventHandler to watch %s', static_path)
+        observer.schedule(static_event_handler, static_path, recursive=True)
     observer.start()
 
     url = 'http://localhost:{aux_port}'.format(**config)
@@ -82,9 +82,10 @@ def serve_static(*, static_path: str, livereload: bool, port: int):
     app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload)
 
     observer = Observer()
-    static_file_eh = StaticFileEventEventHandler(app)
-    dft_logger.debug('starting StaticFileEventEventHandler to watch %s', static_path)
-    observer.schedule(static_file_eh, static_path, recursive=True)
+    static_event_handler = LiveReloadEventHandler(app)
+    dft_logger.debug('starting LiveReloadEventHandler to watch %s', static_path)
+    observer.schedule(static_event_handler, static_path, recursive=True)
+
     observer.start()
 
     url = 'http://localhost:{}'.format(port)

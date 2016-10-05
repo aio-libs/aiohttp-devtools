@@ -264,7 +264,6 @@ class CustomStaticRoute(StaticRoute):
             else:
                 request.match_info['filename'] = str(html_file)
         else:
-            print(filepath)
             if filepath.is_dir():
                 index_file = filepath / 'index.html'
                 if index_file.exists():

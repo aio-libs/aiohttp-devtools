@@ -5,36 +5,35 @@ from multiprocessing import Process
 
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
+from aiohttp_devtools.tools.sass_generator import SassGenerator
 from .logs import MainAccessLogHandler, dft_logger
 from .serve import serve_main_app
 
-# specific to jetbrains I think, very annoying if not ignored
+# specific to jetbrains I think, very annoying if not completely ignored
 JB_BACKUP_FILE = '*___jb_???___'
 
 
-class _BaseEventHandler(PatternMatchingEventHandler):
+class BaseEventHandler(PatternMatchingEventHandler):
     patterns = ['*.*']
     ignore_directories = True
+    # ignore a few common directories some shouldn't be in watched directories anyway,
+    # but excluding them makes any mis-configured watch less painful
     ignore_patterns = [
-        '*/.git/*',
-        '*/.idea/*',
-        # next two in case a virtualenv directory is included in watched path
-        '*/include/python*',
-        '*/lib/python*',
-        '*/aiohttp_devserver/*',
-        '*~',
-        '*.swp',
-        '*.swx',
-        JB_BACKUP_FILE,
+        '*/.git/*',              # git
+        '*/.idea/*',             # pycharm / jetbrains
+        JB_BACKUP_FILE,          # pycharm / jetbrains
+        '*/include/python*',     # in virtualenv
+        '*/lib/python*',         # in virtualenv
+        '*/aiohttp_devtools/*',  # itself
+        '*~',                    # linux temporary file
+        '*.sw?',                 # vim temporary file
     ]
 
-    def __init__(self, app):
-        self._app = app
-
+    def __init__(self, *args, **kwargs):
         self._change_dt = datetime.now()
         self._since_change = None
         self._change_count = 0
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     def dispatch(self, event):
 
@@ -67,12 +66,13 @@ class _BaseEventHandler(PatternMatchingEventHandler):
         pass
 
 
-class CodeFileEventHandler(_BaseEventHandler):
+class PyCodeEventHandler(BaseEventHandler):
     patterns = ['*.py']
 
     def __init__(self, app, config):
+        self._app = app
         self._config = config
-        super().__init__(app)
+        super().__init__()
         self._start_process()
 
     def on_event(self, event):
@@ -100,17 +100,42 @@ class CodeFileEventHandler(_BaseEventHandler):
             dft_logger.warning('server process already dead, exit code: %d', self._process.exitcode)
 
 
-class AllCodeEventEventHandler(_BaseEventHandler):
+class AllCodeEventHandler(BaseEventHandler):
     patterns = [
         '*.html',
         '*.jinja',
         '*.jinja2',
     ]
 
+    def __init__(self, app):
+        self._app = app
+        super().__init__()
+
     def on_event(self, event):
         self._app.src_reload()
 
 
-class StaticFileEventEventHandler(_BaseEventHandler):
+class LiveReloadEventHandler(BaseEventHandler):
+    ignore_directories = False
+
+    def __init__(self, app):
+        self._app = app
+        super().__init__()
+
     def on_event(self, event):
         self._app.static_reload(event.src_path)
+
+
+class SassEventHandler(BaseEventHandler):
+    patterns = [
+        '*.s?ss',
+        '*.css',
+    ]
+
+    def __init__(self, input_dir: str, output_dir: str):
+        self.sass_gen = SassGenerator(input_dir, output_dir, True)
+        super().__init__()
+        self.sass_gen.build()
+
+    def on_event(self, event):
+        self.sass_gen.build()
