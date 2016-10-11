@@ -5,7 +5,7 @@ from multiprocessing import Process
 
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
-from ..logs import rs_dft_logger
+from ..logs import rs_dft_logger as logger
 from ..tools.sass_generator import SassGenerator
 from .serve import serve_main_app
 
@@ -55,7 +55,7 @@ class BaseEventHandler(PatternMatchingEventHandler):
 
         self._since_change = (datetime.now() - self._change_dt).total_seconds()
         if self._since_change <= 1:
-            rs_dft_logger.debug('%s | %0.3f seconds since last build, skipping', event, self._since_change)
+            logger.debug('%s | %0.3f seconds since last build, skipping', event, self._since_change)
             return
 
         self._change_dt = datetime.now()
@@ -76,27 +76,27 @@ class PyCodeEventHandler(BaseEventHandler):
         self._start_process()
 
     def on_event(self, event):
-        rs_dft_logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
+        logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
         self.stop_process()
         self._start_process()
 
     def _start_process(self):
         if self._change_count == 0:
-            rs_dft_logger.info('Starting dev server at http://localhost:%s ●', self._config['main_port'])
+            logger.info('Starting dev server at http://localhost:%s ●', self._config['main_port'])
         else:
-            rs_dft_logger.info('Restarting dev server at http://localhost:%s ●', self._config['main_port'])
+            logger.info('Restarting dev server at http://localhost:%s ●', self._config['main_port'])
 
         self._process = Process(target=serve_main_app, kwargs=self._config)
         self._process.start()
 
     def stop_process(self):
         if self._process.is_alive():
-            rs_dft_logger.debug('stopping server process...')
+            logger.debug('stopping server process...')
             os.kill(self._process.pid, signal.SIGINT)
             self._process.join(5)
-            rs_dft_logger.debug('process stopped')
+            logger.debug('process stopped')
         else:
-            rs_dft_logger.warning('server process already dead, exit code: %d', self._process.exitcode)
+            logger.warning('server process already dead, exit code: %d', self._process.exitcode)
 
 
 class AllCodeEventHandler(BaseEventHandler):

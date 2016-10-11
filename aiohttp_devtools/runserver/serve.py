@@ -13,7 +13,9 @@ from aiohttp.hdrs import LAST_MODIFIED, CONTENT_ENCODING
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticRoute
 
-from ..logs import setup_logging, rs_aux_logger
+from ..logs import setup_logging
+from ..logs import rs_aux_logger as logger
+from ..logs import rs_dft_logger as dft_logger
 from .log_handlers import fmt_size
 
 LIVE_RELOAD_SNIPPET = b'\n<script src="%s/livereload.js"></script>\n'
@@ -23,7 +25,7 @@ JINJA_ENV = 'aiohttp_jinja2_environment'
 def modify_main_app(app, **config):
     aux_server = 'http://localhost:{aux_port}'.format(**config)
     livereload_enabled = config['livereload']
-    rs_aux_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
+    dft_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
     if livereload_enabled:
         livereload_snippet = LIVE_RELOAD_SNIPPET % aux_server.encode()
         async def on_prepare(request, response):
@@ -34,7 +36,7 @@ def modify_main_app(app, **config):
 
     static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
     app['static_root_url'] = static_url
-    rs_aux_logger.debug('global environment variable static_url="%s" added to app as "static_root_url"', static_url)
+    dft_logger.debug('global environment variable static_url="%s" added to app as "static_root_url"', static_url)
 
     if config['debug_toolbar']:
         aiohttp_debugtoolbar.setup(app)
@@ -86,7 +88,7 @@ class AuxiliaryApplication(web.Application):
         if cli_count == 0:
             return
         s = '' if cli_count == 1 else 's'
-        rs_aux_logger.info('prompting reload of %s on %d client%s', path or 'page', cli_count, s)
+        logger.info('prompting reload of %s on %d client%s', path or 'page', cli_count, s)
         for ws, url in self[WS]:
             data = {
                 'command': 'reload',
@@ -98,10 +100,10 @@ class AuxiliaryApplication(web.Application):
                 ws.send_str(json.dumps(data))
             except RuntimeError as e:
                 # "RuntimeError: websocket connection is closing" occurs if content type changes due to code change
-                rs_aux_logger.error(str(e))
+                logger.error(str(e))
 
     async def close_websockets(self):
-        rs_aux_logger.debug('closing %d websockets...', len(self[WS]))
+        logger.debug('closing %d websockets...', len(self[WS]))
         coros = [ws.close() for ws, _ in self[WS]]
         await asyncio.gather(*coros, loop=self._loop)
 
@@ -120,7 +122,7 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
         app.router.add_route('GET', '/livereload', websocket_handler)
         server_address = 'http://localhost:{}'.format(port)
         livereload_snippet = LIVE_RELOAD_SNIPPET % server_address.encode()
-        rs_aux_logger.debug('enabling livereload on static app')
+        logger.debug('enabling livereload on auxiliary app')
     else:
         livereload_snippet = None
 
@@ -133,7 +135,7 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
 
 async def livereload_js(request):
     if request.if_modified_since:
-        rs_aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
+        logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
     script_key = 'livereload_script'
@@ -144,7 +146,7 @@ async def livereload_js(request):
             lr_script = f.read()
             request.app[script_key] = lr_script
 
-    rs_aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
+    logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
@@ -160,12 +162,12 @@ async def websocket_handler(request):
             try:
                 data = json.loads(msg.data)
             except json.JSONDecodeError as e:
-                rs_aux_logger.error('JSON decode error: %s', str(e))
+                logger.error('JSON decode error: %s', str(e))
             else:
                 command = data['command']
                 if command == 'hello':
                     if 'http://livereload.com/protocols/official-7' not in data['protocols']:
-                        rs_aux_logger.error('live reload protocol 7 not supported by client %s', msg.data)
+                        logger.error('live reload protocol 7 not supported by client %s', msg.data)
                         ws.close()
                     else:
                         handshake = {
@@ -177,17 +179,17 @@ async def websocket_handler(request):
                         }
                         ws.send_str(json.dumps(handshake))
                 elif command == 'info':
-                    rs_aux_logger.debug('browser connected: %s', data)
+                    logger.debug('browser connected: %s', data)
                     url = data['url'].split('/', 3)[-1]
                     request.app[WS].append((ws, url))
                 else:
-                    rs_aux_logger.error('Unknown ws message %s', msg.data)
+                    logger.error('Unknown ws message %s', msg.data)
         elif msg.tp == MsgType.error:
-            rs_aux_logger.error('ws connection closed with exception %s', ws.exception())
+            logger.error('ws connection closed with exception %s', ws.exception())
         else:
-            rs_aux_logger.error('unknown websocket message type %s, data: %s', ws_type_lookup[msg.tp], msg.data)
+            logger.error('unknown websocket message type %s, data: %s', ws_type_lookup[msg.tp], msg.data)
 
-    rs_aux_logger.debug('browser disconnected')
+    logger.debug('browser disconnected')
     if url:
         request.app[WS].remove((ws, url))
     return ws
@@ -289,7 +291,7 @@ class CustomStaticRoute(StaticRoute):
         else:
             status, length = response.status, response.content_length
         finally:
-            l = rs_aux_logger.info if status in {200, 304} else rs_aux_logger.warning
+            l = logger.info if status in {200, 304} else logger.warning
             l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
         return response
 
@@ -329,7 +331,7 @@ def import_string(file_path, attr_name=None, _trying_again=False):
             raise
         # add current working directory to pythonpath and try again
         p = os.getcwd()
-        rs_aux_logger.debug('adding current working director %s to pythonpath and reattempting import', p)
+        dft_logger.debug('adding current working director %s to pythonpath and reattempting import', p)
         sys.path.append(p)
         return import_string(file_path, attr_name, True)
 
@@ -339,7 +341,7 @@ def import_string(file_path, attr_name=None, _trying_again=False):
         except StopIteration as e:
             raise ImportError('No name supplied and no default app factory found in "%s"' % module_path) from e
         else:
-            rs_aux_logger.debug('found default attribute "%s" in module "%s"' % (attr_name, module))
+            dft_logger.debug('found default attribute "%s" in module "%s"' % (attr_name, module))
 
     try:
         attr = getattr(module, attr_name)
