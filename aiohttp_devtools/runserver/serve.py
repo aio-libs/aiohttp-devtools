@@ -250,7 +250,7 @@ class CustomStaticRoute(StaticRoute):
 
     def modify_request(self, request):
         """
-        Apply common path conventsion eg. / > /index.html, /foobar > /foobar.html
+        Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
         filename = request.match_info['filename']
         raw_path = self._directory.joinpath(filename)

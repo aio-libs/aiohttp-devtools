@@ -1,11 +1,11 @@
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 
 
 class SassGenerator:
-    _errors, _files_generated = 0, 0
-    _outdir_src = None
+    _errors = _files_generated = None
 
     def __init__(self, input_dir: str, output_dir: str, debug: bool=False):
         try:
@@ -31,8 +31,8 @@ class SassGenerator:
 
         if self._debug:
             self._out_dir.mkdir(parents=True)
-            # shutil.copytree(str(self._in_dir.resolve()), str(self._out_dir_src))
-            self._out_dir_src.symlink_to(self._in_dir.resolve(), target_is_directory=True)
+            shutil.copytree(str(self._in_dir.resolve()), str(self._out_dir_src))
+            # self._out_dir_src.symlink_to(self._in_dir.resolve(), target_is_directory=True)  # KeepSafe/aiohttp#1299
 
         self.process_directory(self._src_dir)
         time_taken = (datetime.now() - start).total_seconds() * 1000
@@ -50,12 +50,16 @@ class SassGenerator:
         if f.suffix not in {'.css', '.scss', '.sass'}:
             return
 
+        if '/libs/' in str(f):
+            return
+
         rel_path = f.relative_to(self._src_dir)
         css_path = (self._out_dir / rel_path).with_suffix('.css')
 
         map_path, output_style = None, 'compressed'
         if self._debug:
             map_path = css_path.with_suffix('.map')
+            output_style = 'nested'
 
         if f.name.startswith('_'):
             # mixin, not copied
@@ -65,7 +69,7 @@ class SassGenerator:
         try:
             css = self._sass.compile(
                 filename=str(f),
-                source_map_filename=str(map_path),
+                source_map_filename=map_path and str(map_path),
                 output_style=output_style,
                 precision=10,
             )
@@ -77,6 +81,8 @@ class SassGenerator:
         css_path.parent.mkdir(parents=True, exist_ok=True)
         if self._debug:
             css, css_map = css
+            # correct the link to map file in css
+            css = re.sub(r'/\*# sourceMappingURL=\S+ \*/', '/*# sourceMappingURL={} */'.format(map_path.name), css)
             map_path.write_text(css_map)
         css_path.write_text(css)
         self._files_generated += 1

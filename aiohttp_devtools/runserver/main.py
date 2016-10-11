@@ -21,12 +21,13 @@ def _run_app(app, observer, port):
         pass
     finally:
         dft_logger.info('shutting down server...')
-        loop.create_task(app.close_websockets())
+        close_websockets = loop.create_task(app.close_websockets())
         observer.stop()
         observer.join()
         srv.close()
         loop.run_until_complete(srv.wait_closed())
         loop.run_until_complete(app.shutdown())
+        loop.run_until_complete(close_websockets)
         loop.run_until_complete(handler.finish_connections(0.001))
         loop.run_until_complete(app.cleanup())
     loop.close()
