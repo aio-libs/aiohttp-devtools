@@ -3,6 +3,8 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+from ..logs import tools_logger as logger
+
 
 class SassGenerator:
     _errors = _files_generated = None
@@ -36,7 +38,7 @@ class SassGenerator:
 
         self.process_directory(self._src_dir)
         time_taken = (datetime.now() - start).total_seconds() * 1000
-        print('%d css files generated in %0.0fms, %d errors' % (self._files_generated, time_taken, self._errors))
+        logger.info('%d css files generated in %0.0fms, %d errors', self._files_generated, time_taken, self._errors)
 
     def process_directory(self, d: Path):
         assert d.is_dir()
@@ -65,7 +67,7 @@ class SassGenerator:
             # mixin, not copied
             return
 
-        print('    %s ▶ %s' % (rel_path, css_path.relative_to(self._out_dir)))
+        logger.debug('%s ▶ %s', rel_path, css_path.relative_to(self._out_dir))
         try:
             css = self._sass.compile(
                 filename=str(f),
@@ -75,7 +77,7 @@ class SassGenerator:
             )
         except self._sass.CompileError as e:
             self._errors += 1
-            print('"{}", compile error: {}'.format(f, e))
+            logger.error('"%s", compile error: %s', f, e)
             return
 
         css_path.parent.mkdir(parents=True, exist_ok=True)

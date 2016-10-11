@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 
 from .exceptions import AiohttpDevException
-from .runserver.logs import setup_logging
+from .logs import setup_logging
 from .runserver import serve_static
 from .runserver import runserver as _runserver
 from .start import StartProject, Options
