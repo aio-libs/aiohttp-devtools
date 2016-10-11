@@ -74,22 +74,28 @@ WS = 'websockets'
 
 class AuxiliaryApplication(web.Application):
     def static_reload(self, change_path):
-        static_root = self['static_path']
-        change_path = Path(change_path).relative_to(static_root)
+        if change_path is None:
+            self.src_reload()
+        else:
+            static_root = self['static_path']
+            change_path = Path(change_path).relative_to(static_root)
 
-        path = Path(self['static_url']) / change_path
-        self._broadcast_change(path=str(path))
+            path = Path(self['static_url']) / change_path
+            self.src_reload(path=str(path))
 
-    def src_reload(self):
-        self._broadcast_change()
-
-    def _broadcast_change(self, path=None):
+    def src_reload(self, path: str=None):
         cli_count = len(self[WS])
         if cli_count == 0:
             return
+        is_html = path and mimetypes.guess_type(path)[0] == 'text/html'
+
         s = '' if cli_count == 1 else 's'
         logger.info('prompting reload of %s on %d client%s', path or 'page', cli_count, s)
         for ws, url in self[WS]:
+            if path and is_html and path not in {url, url + '.html', url + '/index.html'}:
+                logger.debug('skipping reload for client at %s', url)
+                continue
+            logger.debug('reload client at %s', url)
             data = {
                 'command': 'reload',
                 'path': path or url,
@@ -99,8 +105,8 @@ class AuxiliaryApplication(web.Application):
             try:
                 ws.send_str(json.dumps(data))
             except RuntimeError as e:
-                # "RuntimeError: websocket connection is closing" occurs if content type changes due to code change
-                logger.error(str(e))
+                # eg. "RuntimeError: websocket connection is closing"
+                logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
 
     async def close_websockets(self):
         logger.debug('closing %d websockets...', len(self[WS]))
@@ -150,12 +156,13 @@ async def livereload_js(request):
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
+WS_TYPE_LOOKUP = {k.value: v for v, k in MsgType.__members__.items()}
+
 
 async def websocket_handler(request):
     ws = web.WebSocketResponse()
     url = None
     await ws.prepare(request)
-    ws_type_lookup = {k.value: v for v, k in MsgType.__members__.items()}
 
     async for msg in ws:
         if msg.tp == MsgType.text:
@@ -180,17 +187,19 @@ async def websocket_handler(request):
                         ws.send_str(json.dumps(handshake))
                 elif command == 'info':
                     logger.debug('browser connected: %s', data)
-                    url = data['url'].split('/', 3)[-1]
+                    url = '/' + data['url'].split('/', 3)[-1]
                     request.app[WS].append((ws, url))
                 else:
                     logger.error('Unknown ws message %s', msg.data)
         elif msg.tp == MsgType.error:
             logger.error('ws connection closed with exception %s', ws.exception())
         else:
-            logger.error('unknown websocket message type %s, data: %s', ws_type_lookup[msg.tp], msg.data)
+            logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.tp], msg.data)
 
-    logger.debug('browser disconnected')
-    if url:
+    if url is None:
+        logger.warning('browser disconnected, appears no websocket connection was made')
+    else:
+        logger.debug('browser disconnected')
         request.app[WS].remove((ws, url))
     return ws
 

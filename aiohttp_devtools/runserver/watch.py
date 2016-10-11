@@ -28,6 +28,7 @@ class BaseEventHandler(PatternMatchingEventHandler):
         '*~',                    # linux temporary file
         '*.sw?',                 # vim temporary file
     ]
+    skipped_event = False
 
     def __init__(self, *args, **kwargs):
         self._change_dt = datetime.now()
@@ -56,11 +57,13 @@ class BaseEventHandler(PatternMatchingEventHandler):
         self._since_change = (datetime.now() - self._change_dt).total_seconds()
         if self._since_change <= 1:
             logger.debug('%s | %0.3f seconds since last build, skipping', event, self._since_change)
+            self.skipped_event = True
             return
 
         self._change_dt = datetime.now()
         self._change_count += 1
         self.on_event(event)
+        self.skipped_event = False
 
     def on_event(self, event):
         pass
@@ -122,7 +125,7 @@ class LiveReloadEventHandler(BaseEventHandler):
         super().__init__()
 
     def on_event(self, event):
-        self._app.static_reload(event.src_path)
+        self._app.static_reload(None if self.skipped_event else event.src_path)
 
 
 class SassEventHandler(BaseEventHandler):
