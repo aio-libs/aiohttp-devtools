@@ -125,7 +125,7 @@ class LiveReloadEventHandler(BaseEventHandler):
         super().__init__()
 
     def on_event(self, event):
-        self._app.static_reload(None if self.skipped_event else event.src_path)
+        self._app.src_reload(None if self.skipped_event else event.src_path)
 
 
 class SassEventHandler(BaseEventHandler):

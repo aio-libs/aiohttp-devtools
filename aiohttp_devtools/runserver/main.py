@@ -13,7 +13,7 @@ from .watch import AllCodeEventHandler, PyCodeEventHandler, LiveReloadEventHandl
 def _run_app(app, observer, port):
     loop = app.loop
     handler = app.make_handler(access_log=None)
-    srv = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', port))
+    server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', port))
 
     try:
         loop.run_forever()
@@ -21,15 +21,13 @@ def _run_app(app, observer, port):
         pass
     finally:
         logger.info('shutting down server...')
-        close_websockets = loop.create_task(app.close_websockets())
         observer.stop()
         observer.join()
-        srv.close()
-        loop.run_until_complete(srv.wait_closed())
+        server.close()
+        loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
-        loop.run_until_complete(close_websockets)
-        loop.run_until_complete(handler.finish_connections(0.001))
         loop.run_until_complete(app.cleanup())
+        loop.run_until_complete(handler.finish_connections(0.001))
     loop.close()
 
 

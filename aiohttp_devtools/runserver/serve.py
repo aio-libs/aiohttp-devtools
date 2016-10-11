@@ -36,7 +36,7 @@ def modify_main_app(app, **config):
 
     static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
     app['static_root_url'] = static_url
-    dft_logger.debug('global environment variable static_url="%s" added to app as "static_root_url"', static_url)
+    dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
     if config['debug_toolbar']:
         aiohttp_debugtoolbar.setup(app)
@@ -73,28 +73,22 @@ WS = 'websockets'
 
 
 class AuxiliaryApplication(web.Application):
-    def static_reload(self, change_path):
-        if change_path is None:
-            self.src_reload()
-        else:
-            static_root = self['static_path']
-            change_path = Path(change_path).relative_to(static_root)
-
-            path = Path(self['static_url']) / change_path
-            self.src_reload(path=str(path))
-
     def src_reload(self, path: str=None):
         cli_count = len(self[WS])
         if cli_count == 0:
             return
-        is_html = path and mimetypes.guess_type(path)[0] == 'text/html'
 
-        s = '' if cli_count == 1 else 's'
-        logger.info('prompting reload of %s on %d client%s', path or 'page', cli_count, s)
+        is_html = None
+        if path:
+            path = str(Path(self['static_url']) / Path(path).relative_to(self['static_path']))
+            is_html = mimetypes.guess_type(path)[0] == 'text/html'
+
+        reloads = 0
         for ws, url in self[WS]:
             if path and is_html and path not in {url, url + '.html', url + '/index.html'}:
                 logger.debug('skipping reload for client at %s', url)
                 continue
+            reloads += 1
             logger.debug('reload client at %s', url)
             data = {
                 'command': 'reload',
@@ -108,10 +102,14 @@ class AuxiliaryApplication(web.Application):
                 # eg. "RuntimeError: websocket connection is closing"
                 logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
 
-    async def close_websockets(self):
+        if reloads:
+            logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, '' if reloads == 1 else 's')
+
+    async def cleanup(self):
         logger.debug('closing %d websockets...', len(self[WS]))
         coros = [ws.close() for ws, _ in self[WS]]
         await asyncio.gather(*coros, loop=self._loop)
+        return await super().cleanup()
 
 
 def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, loop=None):
@@ -160,7 +158,7 @@ WS_TYPE_LOOKUP = {k.value: v for v, k in MsgType.__members__.items()}
 
 
 async def websocket_handler(request):
-    ws = web.WebSocketResponse()
+    ws = web.WebSocketResponse(timeout=0.01)
     url = None
     await ws.prepare(request)
 
