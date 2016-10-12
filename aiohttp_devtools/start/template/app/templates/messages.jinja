@@ -1,4 +1,4 @@
-{% if template_engine.is_jinja2 and example.message_board %}
+{% if template_engine.is_jinja2 and example.is_message_board %}
 {% raw %}
 {% extends 'base.jinja' %}
 
@@ -6,7 +6,7 @@
   <h2>Add a new message:</h2>
   <form method="post" action="{{ 'messages'|url }}">
     {% if form_errors %}
-    <div class="form-errors">
+    <div class="error">
       {{ form_errors }}
     </div>
     {% endif %}
@@ -15,12 +15,14 @@
       <input type="text" name="username" id="username" placeholder="fred blogs">
       <label for="message">Message:</label>
       <input type="text" name="message" id="message" placeholder="hello there">
+      <button type="submit">Post Message</button>
     </p>
-  <button type="submit">Post Message</button>
   </form>
 
   <h2>Messages:</h2>
-  <div id="messages" data-url="{{ 'message-data'|url }}"></div>
+  <div id="messages" data-url="{{ 'message-data'|url }}">
+    <span class="error">messages not loading, it's possible <code>message_display.js</code> is not being served.</span>
+  </div>
   <script src="{{ 'message_display.js'|static }}"></script>
 {% endblock %}
 {% endraw %}

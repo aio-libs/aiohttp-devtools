@@ -54,18 +54,18 @@ def serve_main_app(**config):
 
     modify_main_app(app, **config)
     handler = app.make_handler(access_log_format='%r %s %b')
-    srv = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', config['main_port']))
+    server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', config['main_port']))
 
     try:
         loop.run_forever()
     except KeyboardInterrupt:  # pragma: no branch
         pass
     finally:
-        srv.close()
-        loop.run_until_complete(srv.wait_closed())
+        server.close()
+        loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
-        loop.run_until_complete(handler.finish_connections(4))
         loop.run_until_complete(app.cleanup())
+        loop.run_until_complete(handler.finish_connections(0.01))
     loop.close()
 
 

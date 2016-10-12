@@ -35,8 +35,10 @@ class AiohttpAccessHandler(logging.Handler):
         msg = log_entry[m.end():]
         method, path, _, code, size = msg.split(' ')
         size = fmt_size(int(size))
-        msg = '{prefix} {method} {path} {code} {size}'.format(prefix=self.prefix, method=method, path=path,
-                                                              code=code, size=size)
+        msg = '{method} {path} {code} {size}'.format(method=method, path=path, code=code, size=size)
+        if (code == '304' and size == '0B') or path.startswith('/_debugtoolbar/'):
+            msg = click.style(msg, dim=True)
+        msg = '{} {}'.format(self.prefix, msg)
         click.echo(time + msg)
 
 

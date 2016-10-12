@@ -51,6 +51,8 @@ def runserver(**config):
     )
 
     observer = Observer()
+
+    # PyCodeEventHandler takes care of running and restarting the main app
     code_event_handler = PyCodeEventHandler(aux_app, config)
     logger.debug('starting PyCodeEventHandler to watch %s', config['code_path'])
     observer.schedule(code_event_handler, config['code_path'], recursive=True)

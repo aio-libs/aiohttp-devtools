@@ -1,5 +1,5 @@
 // some very basic javascript to populate the message board
-// for simplicity this has not external requirements
+// for simplicity this has no external requirements
 
 var messages = document.getElementById('messages');
 

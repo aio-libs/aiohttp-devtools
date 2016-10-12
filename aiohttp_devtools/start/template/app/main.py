@@ -1,15 +1,39 @@
 from pathlib import Path
+
+from aiohttp import web
 # {% if template_engine.is_jinja2 %}
 import aiohttp_jinja2
 from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 import jinja2
 # {% endif %}
-from aiohttp import web
+import trafaret
+from trafaret_config import ConfigError, read_and_validate
 
 from .routes import setup_routes
 
 THIS_DIR = Path(__file__).parent
+BASE_DIR = THIS_DIR.parent
+SETTINGS_FILE = BASE_DIR / 'settings.yml'
+
+SETTINGS_STRUCTURE = trafaret.Dict(
+    {
+        # {% if database.is_none and example.is_message_board %}
+        'message_file':  trafaret.String() >> (lambda f: BASE_DIR / f),
+        # {% endif %}
+    })
+
+
+def load_settings():
+    settings_file = SETTINGS_FILE.resolve()
+    try:
+        settings = read_and_validate(str(settings_file), SETTINGS_STRUCTURE)
+    except ConfigError as e:
+        # ?
+        raise
+    return settings
+
 # {% if template_engine.is_jinja2 %}
+
 
 @jinja2.contextfilter
 def reverse_url(context, name, **parts):
@@ -74,6 +98,7 @@ def static_url(context, static_file_path):
 def create_app(loop):
     app = web.Application(loop=loop)
     app['name'] = '{{ name }}'
+    app.update(load_settings())
     # {% if template_engine.is_jinja2 %}
 
     jinja2_loader = jinja2.FileSystemLoader(str(THIS_DIR / 'templates'))

@@ -1,14 +1,14 @@
 {#
 Life gets slightly tricky here as wer're generating jinja2 with jinja2 and have to have logic
-inside the page for `if example.message_board`, easiest not to use `raw` at all and render eventual
+inside the page for `if example.is_message_board`, easiest not to use `raw` at all and render eventual
 jinja2 tags as strings.
 #}
 {% if template_engine.is_jinja2 %}
 {{ "{% extends 'base.jinja' %}" }}
 
 {{ '{% block content %}' }}
-  <p>{{ '{{ message }}' }}</p>
-{% if example.message_board %}
+  <p>{{ '{{ intro }}' }}</p>
+{% if example.is_message_board %}
   <p>
     To demonstrate a little of the functionality of aiohttp this app implements a very simple message board.
   </p>

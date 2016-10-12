@@ -1,5 +1,4 @@
 from datetime import datetime
-from pathlib import Path
 
 from aiohttp import web
 from aiohttp.hdrs import METH_POST
@@ -7,11 +6,6 @@ from aiohttp.web_exceptions import HTTPFound
 from aiohttp.web_reqrep import json_response
 # {% if template_engine.is_jinja2 %}
 from aiohttp_jinja2 import template
-# {% endif %}
-
-# {% if database.is_none and example.message_board %}
-# if no database is available we use a plain old file to store messages. Don't do this kind of thing in production!
-MESSAGE_FILE = Path('messages.txt')
 # {% endif %}
 
 
@@ -27,7 +21,7 @@ async def index(request):
     # Note: we return a dict not a response because of the @template decorator
     return {
         'title': request.app['name'],
-        'message': "Success! you've setup a basic aiohttp app.",
+        'intro': "Success! you've setup a basic aiohttp app.",
     }
 
 # {% else %}
@@ -53,7 +47,7 @@ async def index(request):
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
     """
-    # {% if database.is_none and example.message_board %}
+    # {% if database.is_none and example.is_message_board %}
     # app.router allows us to generate urls based on their names,
     # see http://aiohttp.readthedocs.io/en/stable/web.html#reverse-url-constructing-using-named-resources
     message_url = request.app.router['messages'].url()
@@ -79,7 +73,7 @@ async def index(request):
 # {% endif %}
 
 
-# {% if database.is_none and example.message_board %}
+# {% if database.is_none and example.is_message_board %}
 async def process_form(request):
     new_message, missing_fields = {}, []
     fields = ['username', 'message']
@@ -92,9 +86,11 @@ async def process_form(request):
     if missing_fields:
         return 'Invalid form submission, missing fields: {}'.format(', '.join(missing_fields))
 
-    # hack: this very simple storage uses "|" to split fields so we need to replace it in username
+    # hack: if no database is available we use a plain old file to store messages.
+    # Don't do this kind of thing in production!
+    # This very simple storage uses "|" to split fields so we need to replace "|" in the username
     new_message['username'] = new_message['username'].replace('|', '')
-    with MESSAGE_FILE.open('a') as f:
+    with request.app['message_file'].open('a') as f:
         now = datetime.now().isoformat()
         f.write('{username}|{timestamp}|{message}'.format(timestamp=now, **new_message))
     raise HTTPFound(request.app.router['messages'].url())
@@ -133,7 +129,9 @@ async def messages(request):
   </form>
 
   <h2>Messages:</h2>
-  <div id="messages" data-url="{message_data_url}"></div>
+  <div id="messages" data-url="{message_data_url}">
+    <span class="error">messages not loading, it's possible <code>message_display.js</code> is not being served.</span>
+  </div>
   <script src="{message_display_js_url}"></script>""".format(
             message_url=request.app.router['messages'].url(),
             message_data_url=request.app.router['message-data'].url(),
@@ -151,17 +149,18 @@ async def message_data(request):
     via ajax using this endpoint to get data. see static/message_display.js for details of rendering.
     """
     messages = []
-    if MESSAGE_FILE.exists():
-        # read the message file and split it into lines
-        lines = MESSAGE_FILE.read_text().split('\n')
-        for line in reversed(lines):
-            if not line:
-                # ignore blank lines eg. end of file
-                continue
-            # split the line into it constituent parts, see process_form above
-            username, ts, message = line.split('|', 2)
-            # parse the datetime string and render it in a more readable format.
-            ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
-            messages.append({'username': username, 'timestamp':  ts, 'message': message})
+    if request.app['message_file'].exists():
+        # read the message file, process it and populate the "messages" list
+        with request.app['message_file'].open() as msg_file:
+            for line in msg_file:
+                if not line:
+                    # ignore blank lines eg. end of file
+                    continue
+                # split the line into it constituent parts, see process_form above
+                username, ts, message = line.split('|', 2)
+                # parse the datetime string and render it in a more readable format.
+                ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
+                messages.append({'username': username, 'timestamp':  ts, 'message': message})
+        messages.reverse()
     return json_response(messages)
 # {% endif %}

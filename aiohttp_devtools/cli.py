@@ -69,14 +69,16 @@ def runserver(**config):
 @click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
 @click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.NONE)
 @click.option('--example', type=click.Choice(Options.EXAMPLE_CHOICES), default=Options.EXAMPLE_MESSAGE_BOARD)
-def start(*, path, name, template_engine, session, database, example):
+@click.option('-v', '--verbose', is_flag=True, help=verbose_help)
+def start(*, path, name, template_engine, session, database, example, verbose):
     """
     Create a new aiohttp app.
     """
+    setup_logging(verbose)
     if name is None:
         name = Path(path).name
     try:
         StartProject(path=path, name=name,
                      template_engine=template_engine, session=session, database=database, example=example)
     except AiohttpDevException as e:
-        raise click.BadParameter(e)
+        raise click.BadParameter(e) from e

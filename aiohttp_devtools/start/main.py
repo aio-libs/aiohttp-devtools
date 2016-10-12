@@ -3,6 +3,9 @@ from pathlib import Path
 
 from aiohttp_devtools.exceptions import ConfigError
 from jinja2 import Template, TemplateError
+import yaml
+
+from ..logs import start_logger as logger
 
 THIS_DIR = Path(__file__).parent
 TEMPLATE_DIR = THIS_DIR / 'template'  # type: Path
@@ -53,7 +56,15 @@ class StartProject:
                 raise ConfigError("The path you supplied already has files/directories which would conflict "
                                   "with the new project: {}".format(', '.join(sorted(conflicts))))
 
-        self.files_created = 0
+        display_path = self.project_root.relative_to(Path('.').resolve())
+        logger.info('Starting new aiohttp project "%s" at /%s', name, display_path)
+        display_config = [
+            ('template_engine', template_engine),
+            ('session', session),
+            ('database', database),
+            ('example', example),
+        ]
+        logger.info('config:\n%s', '\n'.join('    {}: {}'.format(*c) for c in display_config))
         self.ctx = {
             'name': name,
             'template_engine': self._choice_context(template_engine, Options.TEMPLATE_ENG_CHOICES),
@@ -61,9 +72,10 @@ class StartProject:
             'database': self._choice_context(database, Options.DB_CHOICES),
             'example': self._choice_context(example, Options.EXAMPLE_CHOICES),
         }
+        self.files_created = 0
         self.generate_directory(TEMPLATE_DIR)
-        display_path = self.project_root.relative_to(Path('.').resolve())
-        print('New aiohttp project "{name}" started at ./{path}'.format(name=name, path=display_path))
+        self.generate_settings(database, example)
+        logger.info('projected created, %d files generated', self.files_created)
 
     def _choice_context(self, value, choices):
         return {'is_' + o.replace('-', '_'): value == o for o in choices}
@@ -82,9 +94,12 @@ class StartProject:
         except TemplateError as e:
             raise TemplateError('error in {}'.format(p)) from e
         text = text.strip('\n\t ')
+        new_path = self.project_root / p.relative_to(self.template_dir)
         if not text:
             # empty files don't get created
+            logger.debug('not creating %s, as it would be empty', new_path)
             return
+        logger.debug('creating %s...', new_path)
 
         if p.name == 'requirements.txt':
             packages = {p.strip() for p in text.split('\n') if p.strip()}
@@ -96,6 +111,20 @@ class StartProject:
 
         # re-add a trailing newline accounting for newlines added by PY_REGEXES
         text = re.sub('\n*$', '\n', text)
-        new_path = self.project_root / p.relative_to(self.template_dir)
         new_path.parent.mkdir(parents=True, exist_ok=True)
         new_path.write_text(text)
+        self.files_created += 1
+
+    def generate_settings(self, database, example):
+        logger.debug('creating settings.yml...')
+        settings = {}
+        if database == Options.NONE:
+            if example == Options.EXAMPLE_MESSAGE_BOARD:
+                settings['message_file'] = 'messages.txt'
+        else:
+            pass  # TODO
+        settings_path = self.project_root / 'settings.yml'
+        with settings_path.open('w') as f:
+            f.write("# App settings go here, they're validated in app.main.load_settings\n")
+            yaml.dump(settings, f, default_flow_style=False)
+        self.files_created += 1
