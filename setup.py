@@ -40,7 +40,7 @@ check_livereload_js()
 setup(
     name='aiohttp-devtools',
     version=str(version.VERSION),
-    description='Dev tools for aiohttp.',
+    description='Dev tools for aiohttp',
     long_description=long_description,
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -69,10 +69,10 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=1.0.2',
-        'aiohttp-debugtoolbar==0.1.1',
+        'aiohttp>=1.0.5',
+        'aiohttp-debugtoolbar>=0.1.2',
         'click>=6.6',
-        'Jinja2==2.8',
+        'Jinja2>=2.8',
         'watchdog>=0.8.3',
     ],
 )
