@@ -7,6 +7,9 @@ from aiohttp.web_reqrep import json_response
 # {% if template_engine.is_jinja2 %}
 from aiohttp_jinja2 import template
 # {% endif %}
+# {% if database.is_postgres_sqlalchemy %}
+from .models import sa_messages
+# {% endif %}
 
 
 # {% if template_engine.is_jinja2 %}
@@ -73,7 +76,7 @@ async def index(request):
 # {% endif %}
 
 
-# {% if database.is_none and example.is_message_board %}
+# {% if example.is_message_board %}
 async def process_form(request):
     new_message, missing_fields = {}, []
     fields = ['username', 'message']
@@ -86,6 +89,7 @@ async def process_form(request):
     if missing_fields:
         return 'Invalid form submission, missing fields: {}'.format(', '.join(missing_fields))
 
+    # {% if database.is_none %}
     # hack: if no database is available we use a plain old file to store messages.
     # Don't do this kind of thing in production!
     # This very simple storage uses "|" to split fields so we need to replace "|" in the username
@@ -93,6 +97,16 @@ async def process_form(request):
     with request.app['message_file'].open('a') as f:
         now = datetime.now().isoformat()
         f.write('{username}|{timestamp}|{message}'.format(timestamp=now, **new_message))
+
+    # {% elif database.is_postgres_sqlalchemy %}
+    async with request.app['pg_engine'].acquire() as conn:
+        await conn.execute(sa_messages.insert().values(
+            username=new_message['username'],
+            message=new_message['message'],
+        ))
+    # {% else %}
+    # TODO
+    # {% endif %}
     raise HTTPFound(request.app.router['messages'].url())
 
 
@@ -149,6 +163,7 @@ async def message_data(request):
     via ajax using this endpoint to get data. see static/message_display.js for details of rendering.
     """
     messages = []
+    # {% if database.is_none %}
     if request.app['message_file'].exists():
         # read the message file, process it and populate the "messages" list
         with request.app['message_file'].open() as msg_file:
@@ -162,5 +177,14 @@ async def message_data(request):
                 ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
                 messages.append({'username': username, 'timestamp':  ts, 'message': message})
         messages.reverse()
+    # {% elif database.is_postgres_sqlalchemy %}
+
+    async with request.app['pg_engine'].acquire() as conn:
+        async for row in conn.execute(sa_messages.select().order_by(sa_messages.c.timestamp.desc())):
+            ts = '{:%Y-%m-%d %H:%M:%S}'.format(row.timestamp)
+            messages.append({'username': row.username, 'timestamp':  ts, 'message': row.message})
+    # {% else %}
+    # TODO
+    # {% endif %}
     return json_response(messages)
 # {% endif %}

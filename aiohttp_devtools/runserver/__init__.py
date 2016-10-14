@@ -1,2 +1,2 @@
 # flake8: noqa
-from .main import runserver, serve_static
+from .main import BadSetup, runserver, serve_static

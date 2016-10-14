@@ -3,18 +3,25 @@ from pathlib import Path
 
 from aiohttp_devtools.exceptions import ConfigError
 from jinja2 import Template, TemplateError
-import yaml
 
 from ..logs import start_logger as logger
 
 THIS_DIR = Path(__file__).parent
 TEMPLATE_DIR = THIS_DIR / 'template'  # type: Path
 
-PY_REGEXES = [(re.compile(p, f), r) for p, r, f in [
-    ('^ *# *\n', '', re.M),    # blank comments
-    ('\n *# *$', '', 0),       # blank comment at end of fie
-    ('\n{4,}', '\n\n\n', 0)  # more than 2 empty lines
-]]
+FILES_REGEXES = {
+    '.py': [
+        ('^ *# *\n', '', re.M),    # blank comments
+        ('\n *# *$', '', 0),       # blank comment at end of fie
+        ('\n{4,}', '\n\n\n', 0)  # more than 2 empty lines
+    ],
+    '.yml': [
+        ('^ *# *\n', '', re.M),    # blank comments
+        ('\n *# *$', '', 0),       # blank comment at end of fie
+    ],
+}
+
+FILES_REGEXES = {k: [(re.compile(p, f), r) for p, r, f in v] for k, v in FILES_REGEXES.items()}
 
 
 class Options:
@@ -22,19 +29,19 @@ class Options:
     NONE = 'none'
 
     TEMPLATE_ENG_JINJA2 = 'jinja2'
-    TEMPLATE_ENG_CHOICES = (NONE, TEMPLATE_ENG_JINJA2)
+    TEMPLATE_ENG_CHOICES = (TEMPLATE_ENG_JINJA2, NONE)
 
     SESSION_SECURE = 'secure'
     SESSION_VANILLA = 'vanilla'
     SESSION_REDIS = 'redis'
-    SESSION_CHOICES = (NONE, SESSION_SECURE, SESSION_VANILLA, SESSION_REDIS)
+    SESSION_CHOICES = (SESSION_SECURE, SESSION_VANILLA, SESSION_REDIS, NONE)
 
     DB_PG_SA = 'postgres-sqlalchemy'
     DB_PG_RAW = 'postgres-raw'
-    DB_CHOICES = (NONE, DB_PG_SA, DB_PG_RAW)
+    DB_CHOICES = (DB_PG_SA, DB_PG_RAW, NONE)
 
     EXAMPLE_MESSAGE_BOARD = 'message-board'
-    EXAMPLE_CHOICES = (NONE, EXAMPLE_MESSAGE_BOARD)
+    EXAMPLE_CHOICES = (EXAMPLE_MESSAGE_BOARD, NONE)
 
 
 class StartProject:
@@ -43,7 +50,7 @@ class StartProject:
                  name: str,
                  template_engine: str=Options.TEMPLATE_ENG_JINJA2,
                  session: str=Options.SESSION_SECURE,
-                 database: str=Options.NONE,
+                 database: str=Options.DB_PG_SA,
                  example: str=Options.EXAMPLE_MESSAGE_BOARD,
                  template_dir: Path=TEMPLATE_DIR) -> None:
         self.project_root = Path(path)
@@ -57,7 +64,7 @@ class StartProject:
                                   "with the new project: {}".format(', '.join(sorted(conflicts))))
 
         display_path = self.project_root.relative_to(Path('.').resolve())
-        logger.info('Starting new aiohttp project "%s" at /%s', name, display_path)
+        logger.info('Starting new aiohttp project "%s" at "%s"', name, display_path)
         display_config = [
             ('template_engine', template_engine),
             ('session', session),
@@ -67,6 +74,7 @@ class StartProject:
         logger.info('config:\n%s', '\n'.join('    {}: {}'.format(*c) for c in display_config))
         self.ctx = {
             'name': name,
+            'clean_name': re.sub('[^\w_]', '', re.sub('[.-]', '_', name)),
             'template_engine': self._choice_context(template_engine, Options.TEMPLATE_ENG_CHOICES),
             'session': self._choice_context(session, Options.SESSION_CHOICES),
             'database': self._choice_context(database, Options.DB_CHOICES),
@@ -74,7 +82,6 @@ class StartProject:
         }
         self.files_created = 0
         self.generate_directory(TEMPLATE_DIR)
-        self.generate_settings(database, example)
         logger.info('projected created, %d files generated', self.files_created)
 
     def _choice_context(self, value, choices):
@@ -84,7 +91,7 @@ class StartProject:
         for pp in p.iterdir():
             if pp.is_dir():
                 self.generate_directory(pp)
-            elif pp.is_file() and pp.suffix:
+            elif pp.is_file():
                 self.generate_file(pp)
 
     def generate_file(self, p: Path):
@@ -95,36 +102,23 @@ class StartProject:
             raise TemplateError('error in {}'.format(p)) from e
         text = text.strip('\n\t ')
         new_path = self.project_root / p.relative_to(self.template_dir)
-        if not text:
+        if not text and p.name != '__init__.py':
             # empty files don't get created
-            logger.debug('not creating %s, as it would be empty', new_path)
+            logger.debug('not creating "%s", as it would be empty', new_path)
             return
-        logger.debug('creating %s...', new_path)
+        logger.debug('creating "%s"', new_path)
 
         if p.name == 'requirements.txt':
             packages = {p.strip() for p in text.split('\n') if p.strip()}
             text = '\n'.join(sorted(packages))
-        elif p.suffix == '.py':
+        else:
             # helpful when debugging: print(text.replace(' ', '·').replace('\n', '⏎\n'))
-            for regex, repl in PY_REGEXES:
+            regexes = FILES_REGEXES.get(p.suffix, [])
+            for regex, repl in regexes:
                 text = regex.sub(repl, text)
 
         # re-add a trailing newline accounting for newlines added by PY_REGEXES
         text = re.sub('\n*$', '\n', text)
         new_path.parent.mkdir(parents=True, exist_ok=True)
         new_path.write_text(text)
-        self.files_created += 1
-
-    def generate_settings(self, database, example):
-        logger.debug('creating settings.yml...')
-        settings = {}
-        if database == Options.NONE:
-            if example == Options.EXAMPLE_MESSAGE_BOARD:
-                settings['message_file'] = 'messages.txt'
-        else:
-            pass  # TODO
-        settings_path = self.project_root / 'settings.yml'
-        with settings_path.open('w') as f:
-            f.write("# App settings go here, they're validated in app.main.load_settings\n")
-            yaml.dump(settings, f, default_flow_style=False)
         self.files_created += 1

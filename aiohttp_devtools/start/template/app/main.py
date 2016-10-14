@@ -1,12 +1,16 @@
 from pathlib import Path
 
 from aiohttp import web
+# {% if database.is_postgres_sqlalchemy %}
+from aiopg.sa.engine import _create_engine
+from sqlalchemy.engine.url import URL
+# {% endif %}
 # {% if template_engine.is_jinja2 %}
 import aiohttp_jinja2
 from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 import jinja2
 # {% endif %}
-import trafaret
+import trafaret as t
 from trafaret_config import ConfigError, read_and_validate
 
 from .routes import setup_routes
@@ -15,22 +19,28 @@ THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
 SETTINGS_FILE = BASE_DIR / 'settings.yml'
 
-SETTINGS_STRUCTURE = trafaret.Dict(
-    {
-        # {% if database.is_none and example.is_message_board %}
-        'message_file':  trafaret.String() >> (lambda f: BASE_DIR / f),
-        # {% endif %}
-    })
+SETTINGS_STRUCTURE = t.Dict({
+    # {% if database.is_none and example.is_message_board %}
+    'message_file':  t.String() >> (lambda f: BASE_DIR / f),
+    # {% elif database.is_postgres_sqlalchemy or database.is_postgres_raw %}
+    'database': t.Dict({
+        'name': t.String,
+        'password': t.String,
+        t.Key(name='user', default='postgres'): t.String,
+        t.Key(name='host', default='localhost'): t.String,
+        t.Key(name='port', default=5432): t.Int(gte=0) >> str,
+    }),
+    # {% endif %}
+})
 
 
-def load_settings():
+def load_settings() -> dict:
+    """
+    Read settings.yml and, validation its content.
+    :return: settings dict
+    """
     settings_file = SETTINGS_FILE.resolve()
-    try:
-        settings = read_and_validate(str(settings_file), SETTINGS_STRUCTURE)
-    except ConfigError as e:
-        # ?
-        raise
-    return settings
+    return read_and_validate(str(settings_file), SETTINGS_STRUCTURE)
 
 # {% if template_engine.is_jinja2 %}
 
@@ -95,6 +105,32 @@ def static_url(context, static_file_path):
 # {% endif %}
 
 
+# {% if database.is_postgres_sqlalchemy %}
+def pg_dsn(db_settings: dict) -> str:
+    """
+    :param db_settings: dict of connection settings, see SETTINGS_STRUCTURE for definition
+    :return: DSN url suitable for sqlalchemy and aiopg.
+    """
+    return str(URL(
+        database=db_settings['name'],
+        password=db_settings['password'],
+        host=db_settings['host'],
+        port=db_settings['port'],
+        username=db_settings['user'],
+        drivername='postgres',
+    ))
+
+
+async def startup(app: web.Application):
+    app['pg_engine'] = await _create_engine(pg_dsn(app['database']), loop=app.loop)
+
+
+async def cleanup(app: web.Application):
+    app['pg_engine'].close()
+    await app['pg_engine'].wait_closed()
+# {% endif %}
+
+
 def create_app(loop):
     app = web.Application(loop=loop)
     app['name'] = '{{ name }}'
@@ -107,6 +143,11 @@ def create_app(loop):
         url=reverse_url,
         static=static_url,
     )
+    # {% endif %}
+
+    # {% if database.is_postgres_sqlalchemy %}
+    app.on_startup.append(startup)
+    app.on_cleanup.append(cleanup)
     # {% endif %}
 
     setup_routes(app)

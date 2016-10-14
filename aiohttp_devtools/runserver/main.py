@@ -1,16 +1,24 @@
+import asyncio
 import os
 from pathlib import Path
 from pprint import pformat
 
 from multiprocessing import set_start_method
+
+from aiohttp.web import Application
 from watchdog.observers import Observer
+from trafaret_config import ConfigError
 
 from ..logs import rs_dft_logger as logger
 from .serve import create_auxiliary_app, import_string
 from .watch import AllCodeEventHandler, PyCodeEventHandler, LiveReloadEventHandler
 
 
-def _run_app(app, observer, port):
+class BadSetup(Exception):
+    pass
+
+
+def _run_aux_app(app, observer, port):
     loop = app.loop
     handler = app.make_handler(access_log=None)
     server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', port))
@@ -31,11 +39,30 @@ def _run_app(app, observer, port):
     loop.close()
 
 
+def check_app_factory(app_factory):
+    """
+    run the app factory as a very basic check it's working and returns the right thing, this should cat config errors.
+    :param app_factory: app_factory coroutine
+    :return:
+    """
+    logger.debug('checking app factory "{}"'.format(app_factory))
+    loop = asyncio.get_event_loop()
+    try:
+        app = app_factory(loop)
+    except ConfigError as e:
+        raise BadSetup('Configuration Error: {}'.format(e)) from e
+    if not isinstance(app, Application):
+        raise BadSetup('app factory returns "{}" not an aiohttp Application'.format(type(app)))
+    loop.run_until_complete(app.startup())
+
+
 def runserver(**config):
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
 
-    _, code_path = import_string(config['app_path'], config['app_factory'])
+    app_factory, code_path = import_string(config['app_path'], config['app_factory'])
+    check_app_factory(app_factory)
+
     static_path = config.pop('static_path')
     config.update(
         code_path=str(code_path),
@@ -74,7 +101,7 @@ def runserver(**config):
         rel_path = Path(static_path).absolute().relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config['static_url'])
 
-    return _run_app(aux_app, observer, config['aux_port'])
+    return _run_aux_app(aux_app, observer, config['aux_port'])
 
 
 def serve_static(*, static_path: str, livereload: bool, port: int):
@@ -93,4 +120,4 @@ def serve_static(*, static_path: str, livereload: bool, port: int):
     url = 'http://localhost:{}'.format(port)
     extra = ', livereload ON' if livereload else ''
     logger.info('Serving "%s" at %s%s', static_path, url, extra)
-    return _run_app(app, observer, port),
+    return _run_aux_app(app, observer, port),

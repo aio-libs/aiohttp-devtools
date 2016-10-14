@@ -39,7 +39,7 @@ def modify_main_app(app, **config):
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
     if config['debug_toolbar']:
-        aiohttp_debugtoolbar.setup(app)
+        aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
 def serve_main_app(**config):
@@ -54,7 +54,8 @@ def serve_main_app(**config):
 
     modify_main_app(app, **config)
     handler = app.make_handler(access_log_format='%r %s %b')
-    server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', config['main_port']))
+    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', config['main_port']), app.startup(), loop=loop)
+    server, startup_res = loop.run_until_complete(co)
 
     try:
         loop.run_forever()

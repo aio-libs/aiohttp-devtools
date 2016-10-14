@@ -4,7 +4,7 @@ import click
 
 from .exceptions import AiohttpDevException
 from .logs import setup_logging
-from .runserver import serve_static
+from .runserver import serve_static, BadSetup
 from .runserver import runserver as _runserver
 from .start import StartProject, Options
 from .version import VERSION
@@ -59,16 +59,24 @@ def runserver(**config):
     Run a development server for aiohttp apps.
     """
     setup_logging(config['verbose'])
-    _runserver(**config)
+    try:
+        _runserver(**config)
+    except BadSetup as e:
+        raise click.BadParameter(e) from e
+
+
+class Choice2(click.Choice):
+    def get_metavar(self, param):
+        return '[{}*|{}]'.format(click.style(self.choices[0], bold=True), '|'.join(self.choices[1:]))
 
 
 @cli.command()
 @click.argument('path', type=_dir_may_exist, required=True)
 @click.argument('name', required=False)
-@click.option('--template-engine', type=click.Choice(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
-@click.option('--session', type=click.Choice(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
-@click.option('--database', type=click.Choice(Options.DB_CHOICES), default=Options.NONE)
-@click.option('--example', type=click.Choice(Options.EXAMPLE_CHOICES), default=Options.EXAMPLE_MESSAGE_BOARD)
+@click.option('--template-engine', type=Choice2(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
+@click.option('--session', type=Choice2(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
+@click.option('--database', type=Choice2(Options.DB_CHOICES), default=Options.DB_PG_SA)
+@click.option('--example', type=Choice2(Options.EXAMPLE_CHOICES), default=Options.EXAMPLE_MESSAGE_BOARD)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 def start(*, path, name, template_engine, session, database, example, verbose):
     """
