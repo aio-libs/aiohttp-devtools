@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 from aiohttp_devtools.exceptions import ConfigError
+from isort import SortImports
 from jinja2 import Template, TemplateError
 
 from ..logs import start_logger as logger
@@ -13,7 +14,8 @@ FILES_REGEXES = {
     '.py': [
         ('^ *# *\n', '', re.M),    # blank comments
         ('\n *# *$', '', 0),       # blank comment at end of fie
-        ('\n{4,}', '\n\n\n', 0)  # more than 2 empty lines
+        ('\n{4,}', '\n\n\n', 0),   # more than 2 empty lines
+        ('^\s+', '', 0),           # leading new lines
     ],
     '.yml': [
         ('^ *# *\n', '', re.M),    # blank comments
@@ -113,6 +115,9 @@ class StartProject:
             text = '\n'.join(sorted(packages))
         else:
             # helpful when debugging: print(text.replace(' ', '·').replace('\n', '⏎\n'))
+            if p.suffix == '.py':
+                text = SortImports(file_contents=text).output
+
             regexes = FILES_REGEXES.get(p.suffix, [])
             for regex, repl in regexes:
                 text = regex.sub(repl, text)

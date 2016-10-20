@@ -1,13 +1,14 @@
 # {% if database.is_postgres_sqlalchemy or database.is_postgres_raw %}
 import psycopg2
 # {% if database.is_postgres_sqlalchemy %}
+
 from sqlalchemy import create_engine
-from sqlalchemy.engine.url import URL
 
 from .models import Base
 # {% else %}
 # TODO
 # {% endif %}
+
 from .main import load_settings, pg_dsn
 
 

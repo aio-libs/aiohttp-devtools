@@ -72,7 +72,9 @@ setup(
         'aiohttp>=1.0.5',
         'aiohttp-debugtoolbar>=0.1.2',
         'click>=6.6',
+        'isort==4.2.5',
         'Jinja2>=2.8',
+        'trafaret_config==0.1.1',
         'watchdog>=0.8.3',
     ],
 )

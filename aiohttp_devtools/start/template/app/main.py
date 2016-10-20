@@ -5,13 +5,15 @@ from aiohttp import web
 from aiopg.sa.engine import _create_engine
 from sqlalchemy.engine.url import URL
 # {% endif %}
+
 # {% if template_engine.is_jinja2 %}
 import aiohttp_jinja2
 from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 import jinja2
 # {% endif %}
+
 import trafaret as t
-from trafaret_config import ConfigError, read_and_validate
+from trafaret_config import read_and_validate
 
 from .routes import setup_routes
 
