@@ -7,7 +7,7 @@ install:
 
 .PHONY: isort
 isort:
-	isort -rc -w 120 aiohttp_devtools
+	isort -rc -w 120 -sg */template/* aiohttp_devtools
 	isort -rc -w 120 tests
 
 .PHONY: lint
