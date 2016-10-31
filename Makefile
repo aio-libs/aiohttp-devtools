@@ -18,7 +18,7 @@ lint:
 
 .PHONY: test
 test:
-	py.test --cov=aiohttp_devtools --isort
+	py.test --cov=aiohttp_devtools --isort && coverage combine
 
 .PHONY: .test-build-cov
 .test-build-cov:
