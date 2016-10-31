@@ -6,7 +6,7 @@ def test_start_simple(tmpworkdir):
     assert {p.basename for p in tmpworkdir.listdir()} == {
         'app',
         'Makefile',
-        'requirements.txt'
+        'requirements.txt',
         'README.md',
         'settings.yml',
         'setup.cfg',

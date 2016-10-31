@@ -4,8 +4,7 @@ from pathlib import Path
 from isort import SortImports
 from jinja2 import Template, TemplateError
 
-from aiohttp_devtools.exceptions import ConfigError
-
+from ..exceptions import ConfigError
 from ..logs import start_logger as logger
 
 THIS_DIR = Path(__file__).parent

@@ -2,6 +2,7 @@
 install:
 	pip install -U pip
 	pip install .
+	python setup.py check  # bodge to make sure livereload is downloaded
 	pip install -Ur tests/requirements.txt
 
 .PHONY: isort

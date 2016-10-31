@@ -61,6 +61,7 @@ setup(
     author_email='s@muelcolvin.com',
     url='https://github.com/samuelcolvin/aiohttp-devtools',
     license='MIT',
+    package_data={'aiohttp_devtools.runserver': ['livereload.js']},
     packages=[
         'aiohttp_devtools',
         'aiohttp_devtools.runserver',

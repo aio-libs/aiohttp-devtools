@@ -44,3 +44,8 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
     assert r.status == 200
     text = await r.text()
     assert text == '<h1>hi</h1>\n<script src="http://localhost:8000/livereload.js"></script>\n'
+    r = await cli.get('/livereload.js')
+    assert r.headers['content-type'] == 'application/javascript'
+    assert r.status == 200
+    text = await r.text()
+    assert text.startswith('(function e(t,n,r){')
