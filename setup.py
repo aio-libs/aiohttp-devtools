@@ -61,7 +61,12 @@ setup(
     author_email='s@muelcolvin.com',
     url='https://github.com/samuelcolvin/aiohttp-devtools',
     license='MIT',
-    packages=['aiohttp_devtools'],
+    packages=[
+        'aiohttp_devtools',
+        'aiohttp_devtools.runserver',
+        'aiohttp_devtools.start',
+        'aiohttp_devtools.tools'
+    ],
     zip_safe=True,
     entry_points="""
         [console_scripts]
@@ -72,9 +77,9 @@ setup(
         'aiohttp>=1.0.5',
         'aiohttp-debugtoolbar>=0.1.2',
         'click>=6.6',
-        'isort==4.2.5',
+        'isort>=4.2.5',
         'Jinja2>=2.8',
-        'trafaret_config==0.1.1',
+        'trafaret_config>=0.1.1',
         'watchdog>=0.8.3',
     ],
 )
