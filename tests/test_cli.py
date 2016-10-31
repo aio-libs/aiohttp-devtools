@@ -31,4 +31,3 @@ def test_start_no_args():
     result = runner.invoke(cli, ['start'])
     assert result.exit_code == 2
     assert 'Error: Missing argument "path"' in result.output
-

@@ -1,8 +1,8 @@
 import os
 from copy import copy
-from py._path.local import LocalPath
 
 import pytest
+from py._path.local import LocalPath
 
 
 @pytest.yield_fixture
