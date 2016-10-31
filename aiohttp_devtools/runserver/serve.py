@@ -7,15 +7,14 @@ from importlib import import_module
 from pathlib import Path
 
 import aiohttp_debugtoolbar
-from aiohttp import FileSender
-from aiohttp import MsgType, web
-from aiohttp.hdrs import LAST_MODIFIED, CONTENT_ENCODING
+from aiohttp import FileSender, MsgType, web
+from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticRoute
 
-from ..logs import setup_logging
 from ..logs import rs_aux_logger as logger
 from ..logs import rs_dft_logger as dft_logger
+from ..logs import setup_logging
 from .log_handlers import fmt_size
 
 LIVE_RELOAD_SNIPPET = b'\n<script src="%s/livereload.js"></script>\n'
@@ -114,7 +113,6 @@ class AuxiliaryApplication(web.Application):
 
 
 def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, loop=None):
-    loop = loop or asyncio.new_event_loop()
     app = AuxiliaryApplication(loop=loop)
     app[WS] = []
     app.update(

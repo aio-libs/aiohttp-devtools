@@ -1,9 +1,10 @@
 import re
 from pathlib import Path
 
-from aiohttp_devtools.exceptions import ConfigError
 from isort import SortImports
 from jinja2 import Template, TemplateError
+
+from aiohttp_devtools.exceptions import ConfigError
 
 from ..logs import start_logger as logger
 

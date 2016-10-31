@@ -1,9 +1,9 @@
 coverage
 docutils
 flake8
-isort
 ghp-import
 pytest
+pytest-aiohttp
 pytest-cov
 pytest-isort
 pytest-sugar

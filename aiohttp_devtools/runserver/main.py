@@ -1,24 +1,24 @@
 import asyncio
 import os
+from asyncio import AbstractEventLoop
+from multiprocessing import set_start_method
 from pathlib import Path
 from pprint import pformat
 
-from multiprocessing import set_start_method
-
 from aiohttp.web import Application
-from watchdog.observers import Observer
 from trafaret_config import ConfigError
+from watchdog.observers import Observer
 
 from ..logs import rs_dft_logger as logger
 from .serve import create_auxiliary_app, import_string
-from .watch import AllCodeEventHandler, PyCodeEventHandler, LiveReloadEventHandler
+from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
 class BadSetup(Exception):
     pass
 
 
-def _run_aux_app(app, observer, port):
+def run_app(app, observer, port):
     loop = app.loop
     handler = app.make_handler(access_log=None)
     server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', port))
@@ -101,13 +101,13 @@ def runserver(**config):
         rel_path = Path(static_path).absolute().relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config['static_url'])
 
-    return _run_aux_app(aux_app, observer, config['aux_port'])
+    return aux_app, observer, config['aux_port']
 
 
-def serve_static(*, static_path: str, livereload: bool, port: int):
+def serve_static(*, static_path: str, livereload: bool, port: int, loop: AbstractEventLoop=None):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload)
+    app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload, loop=loop)
 
     observer = Observer()
     if livereload:
@@ -117,7 +117,5 @@ def serve_static(*, static_path: str, livereload: bool, port: int):
 
     observer.start()
 
-    url = 'http://localhost:{}'.format(port)
-    extra = ', livereload ON' if livereload else ''
-    logger.info('Serving "%s" at %s%s', static_path, url, extra)
-    return _run_aux_app(app, observer, port),
+    logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, 'ON' if livereload else 'OFF')
+    return app, observer, port

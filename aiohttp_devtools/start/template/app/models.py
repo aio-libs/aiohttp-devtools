@@ -1,5 +1,5 @@
 # {% if database.is_postgres_sqlalchemy %}
-from sqlalchemy import Column, String, Text, func, DateTime, Integer, Sequence
+from sqlalchemy import Column, DateTime, Integer, Sequence, String, Text, func
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()

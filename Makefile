@@ -1,18 +1,15 @@
 .PHONY: install
 install:
 	pip install -U pip
-	pip install -e .
+	pip install .
 	pip install -Ur tests/requirements.txt
-
-.PHONY: isort
-isort:
-	isort -rc -w 120 aiohttp_devtools
-	isort -rc -w 120 tests
 
 .PHONY: lint
 lint:
 	python setup.py check -rms
 	flake8 aiohttp_devtools/ tests/
+	isort -rc -w 120 aiohttp_devtools
+	isort -rc -w 120 tests
 
 .PHONY: test
 test:

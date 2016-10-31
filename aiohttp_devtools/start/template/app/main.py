@@ -1,21 +1,23 @@
 from pathlib import Path
 
+# {% if template_engine.is_jinja2 %}
+import aiohttp_jinja2
+import jinja2
+import trafaret as t
 from aiohttp import web
+from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 # {% if database.is_postgres_sqlalchemy %}
 from aiopg.sa.engine import _create_engine
 from sqlalchemy.engine.url import URL
-# {% endif %}
-
-# {% if template_engine.is_jinja2 %}
-import aiohttp_jinja2
-from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
-import jinja2
-# {% endif %}
-
-import trafaret as t
 from trafaret_config import read_and_validate
 
 from .routes import setup_routes
+
+# {% endif %}
+
+# {% endif %}
+
+
 
 THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent

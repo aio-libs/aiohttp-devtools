@@ -4,9 +4,9 @@ import click
 
 from .exceptions import AiohttpDevException
 from .logs import setup_logging
-from .runserver import serve_static, BadSetup
 from .runserver import runserver as _runserver
-from .start import StartProject, Options
+from .runserver import BadSetup, run_app, serve_static
+from .start import Options, StartProject
 from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
@@ -34,7 +34,7 @@ def serve(path, livereload, port, verbose):
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    serve_static(static_path=path, livereload=livereload, port=port)
+    run_app(*serve_static(static_path=path, livereload=livereload, port=port))
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served."
@@ -60,7 +60,7 @@ def runserver(**config):
     """
     setup_logging(config['verbose'])
     try:
-        _runserver(**config)
+        run_app(*_runserver(**config))
     except BadSetup as e:
         raise click.BadParameter(e) from e
 
