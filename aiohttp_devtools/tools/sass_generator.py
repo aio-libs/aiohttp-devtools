@@ -9,7 +9,7 @@ from ..logs import tools_logger as logger
 class SassGenerator:
     _errors = _files_generated = None
 
-    def __init__(self, input_dir: str, output_dir: str, debug: bool=False):
+    def __init__(self, input_dir: str, output_dir: str=None, debug: bool=False):
         try:
             import sass
         except ImportError as e:
@@ -17,9 +17,9 @@ class SassGenerator:
         self._sass = sass
         self._in_dir = Path(input_dir).resolve()
         assert self._in_dir.is_dir()
-        self._out_dir = Path(output_dir)
+        self._out_dir = output_dir and Path(output_dir)
         self._debug = debug
-        if self._debug:
+        if self._debug and self._out_dir:
             self._out_dir_src = self._out_dir / '.src'
             self._src_dir = self._out_dir_src
         else:
@@ -52,32 +52,23 @@ class SassGenerator:
         if f.suffix not in {'.css', '.scss', '.sass'}:
             return
 
+        if f.name.startswith('_'):
+            # mixin, not copied
+            return
+
         if '/libs/' in str(f):
             return
 
         rel_path = f.relative_to(self._src_dir)
         css_path = (self._out_dir / rel_path).with_suffix('.css')
 
-        map_path, output_style = None, 'compressed'
+        map_path = None
         if self._debug:
             map_path = css_path.with_suffix('.map')
-            output_style = 'nested'
-
-        if f.name.startswith('_'):
-            # mixin, not copied
-            return
 
         logger.debug('%s ▶ %s', rel_path, css_path.relative_to(self._out_dir))
-        try:
-            css = self._sass.compile(
-                filename=str(f),
-                source_map_filename=map_path and str(map_path),
-                output_style=output_style,
-                precision=10,
-            )
-        except self._sass.CompileError as e:
-            self._errors += 1
-            logger.error('"%s", compile error: %s', f, e)
+        css = self.generate_css(f, map_path)
+        if not css:
             return
 
         css_path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,3 +79,18 @@ class SassGenerator:
             map_path.write_text(css_map)
         css_path.write_text(css)
         self._files_generated += 1
+
+    def generate_css(self, f: Path, map_path=None):
+        output_style = 'nested' if self._debug else 'compressed'
+
+        try:
+            return self._sass.compile(
+                filename=str(f),
+                source_map_filename=map_path and str(map_path),
+                output_style=output_style,
+                precision=10,
+            )
+        except self._sass.CompileError as e:
+            self._errors += 1
+            logger.error('"%s", compile error: %s', f, e)
+            return
