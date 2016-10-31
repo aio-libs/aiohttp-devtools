@@ -7,7 +7,7 @@ from .conftest import mktree
 
 @pytest.yield_fixture
 def cli(loop, tmpworkdir, test_client):
-    app, observer, _ = serve_static(static_path=str(tmpworkdir), livereload=False, port=8000, loop=loop)
+    app, observer, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
     yield loop.run_until_complete(test_client(app))
 
     # this doesn't seem necessary and slows down tests a lot
@@ -20,8 +20,8 @@ async def test_simple_serve(cli, tmpworkdir):
         'foo': 'hello world',
     })
     r = await cli.get('/foo')
-    assert r.headers['content-type'] == 'application/octet-stream'
     assert r.status == 200
+    assert r.headers['content-type'] == 'application/octet-stream'
     text = await r.text()
     assert text == 'hello world'
 
@@ -34,18 +34,19 @@ async def test_file_missing(cli):
 
 
 async def test_html_file_livereload(loop, test_client, tmpworkdir):
-    app, observer, _ = serve_static(static_path=str(tmpworkdir), livereload=True, port=8000, loop=loop)
+    app, observer, port = serve_static(static_path=str(tmpworkdir), livereload=True, loop=loop)
+    assert port == 8000
     cli = await test_client(app)
     mktree(tmpworkdir, {
         'foo.html': '<h1>hi</h1>',
     })
     r = await cli.get('/foo')
-    assert r.headers['content-type'] == 'text/html'
     assert r.status == 200
+    assert r.headers['content-type'] == 'text/html'
     text = await r.text()
     assert text == '<h1>hi</h1>\n<script src="http://localhost:8000/livereload.js"></script>\n'
     r = await cli.get('/livereload.js')
-    assert r.headers['content-type'] == 'application/javascript'
     assert r.status == 200
+    assert r.headers['content-type'] == 'application/javascript'
     text = await r.text()
     assert text.startswith('(function e(t,n,r){')

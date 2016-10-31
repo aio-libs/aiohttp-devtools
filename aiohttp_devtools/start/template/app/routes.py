@@ -1,8 +1,7 @@
 # {% if example.is_message_board %}
+from .views import index, messages, message_data
 # {% else %}
-from .views import index, message_data, messages
-
-
+from .views import index
 # {% endif %}
 
 

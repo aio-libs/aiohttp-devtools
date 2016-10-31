@@ -84,7 +84,7 @@ class StartProject:
         }
         self.files_created = 0
         self.generate_directory(TEMPLATE_DIR)
-        logger.info('projected created, %d files generated', self.files_created)
+        logger.info('project created, %d files generated', self.files_created)
 
     def _choice_context(self, value, choices):
         return {'is_' + o.replace('-', '_'): value == o for o in choices}

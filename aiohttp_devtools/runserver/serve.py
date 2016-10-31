@@ -17,43 +17,51 @@ from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .log_handlers import fmt_size
 
-LIVE_RELOAD_SNIPPET = b'\n<script src="%s/livereload.js"></script>\n'
+LIVE_RELOAD_SNIPPET = b'\n<script src="http://localhost:%d/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
 
 
-def modify_main_app(app, **config):
-    aux_server = 'http://localhost:{aux_port}'.format(**config)
-    livereload_enabled = config['livereload']
-    dft_logger.debug('livereload enabled: %s', '✓' if livereload_enabled else '✖')
-    if livereload_enabled:
-        livereload_snippet = LIVE_RELOAD_SNIPPET % aux_server.encode()
+def modify_main_app(app, static_url, livereload, debug_toolbar, aux_port):
+    dft_logger.debug('livereload enabled: %s', '✓' if livereload else '✖')
+    if livereload:
+        livereload_snippet = LIVE_RELOAD_SNIPPET % aux_port
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
                 if hasattr(response, 'body'):
                     response.body += livereload_snippet
         app.on_response_prepare.append(on_prepare)
 
-    static_url = '{}/{}'.format(aux_server, config['static_url'].strip('/'))
+    static_url = 'http://localhost:{}/{}'.format(aux_port, static_url.strip('/'))
     app['static_root_url'] = static_url
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
-    if config['debug_toolbar']:
+    if debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
-def serve_main_app(**config):
-    setup_logging(config['verbose'])
-    app_factory, _ = import_string(config['app_path'], config['app_factory'])
+def create_main_app(*,
+                    app_path: str,
+                    app_factory: str=None,
+                    static_url: str='/static/',
+                    livereload: bool=True,
+                    debug_toolbar: bool=True,
+                    aux_port: int=8001,
+                    loop: asyncio.AbstractEventLoop=None):
+    app_factory, _ = import_string(app_path, app_factory)
 
-    loop = asyncio.new_event_loop()
+    loop = loop or asyncio.new_event_loop()
     app = app_factory(loop=loop)
 
-    if app is None:
-        raise TypeError('"app" may not be none')
+    modify_main_app(app, static_url, livereload, debug_toolbar, aux_port)
+    return app
 
-    modify_main_app(app, **config)
+
+def serve_main_app(*, main_port: int=8000, verbose: bool=False, **config):
+    setup_logging(verbose)
+    app = create_main_app(**config)
+    loop = app.loop
     handler = app.make_handler(access_log_format='%r %s %b')
-    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', config['main_port']), app.startup(), loop=loop)
+    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', main_port), app.startup(), loop=loop)
     server, startup_res = loop.run_until_complete(co)
 
     try:
@@ -123,8 +131,7 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
-        server_address = 'http://localhost:{}'.format(port)
-        livereload_snippet = LIVE_RELOAD_SNIPPET % server_address.encode()
+        livereload_snippet = LIVE_RELOAD_SNIPPET % port
         logger.debug('enabling livereload on auxiliary app')
     else:
         livereload_snippet = None

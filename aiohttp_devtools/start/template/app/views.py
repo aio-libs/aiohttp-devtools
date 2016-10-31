@@ -1,25 +1,21 @@
 # {% if database.is_none %}
 from datetime import datetime
+# {% endif %}
 
 # {% if template_engine.is_none %}
 from aiohttp import web
+# {% endif %}
+
 from aiohttp.hdrs import METH_POST
 from aiohttp.web_exceptions import HTTPFound
 from aiohttp.web_reqrep import json_response
+
 # {% if template_engine.is_jinja2 %}
 from aiohttp_jinja2 import template
+# {% endif %}
 
 # {% if database.is_postgres_sqlalchemy %}
 from .models import sa_messages
-
-
-# {% endif %}
-
-# {% endif %}
-
-
-# {% endif %}
-
 # {% endif %}
 
 
