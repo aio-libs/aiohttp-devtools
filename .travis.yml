@@ -9,6 +9,7 @@ script:
 - make test
 #- make docs
 after_success:
+- ls -lha
 - bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: pypi
