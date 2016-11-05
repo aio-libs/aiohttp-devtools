@@ -6,6 +6,7 @@ from flake8.api import legacy as flake8
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
+
 from .conftest import mktree
 
 slow = pytest.mark.skipif(pytest.config.getoption('--fast'), reason='not run with --fast flag')

@@ -22,7 +22,7 @@ test:
 
 .PHONY: testcov
 testcov:
-	py.test --cov=aiohttp_devtools --fast && (echo "building coverage html"; coverage combine; coverage html)
+	py.test --cov=aiohttp_devtools --isort --fast && (echo "building coverage html"; coverage combine; coverage html)
 
 .PHONY: all
 all: testcov lint

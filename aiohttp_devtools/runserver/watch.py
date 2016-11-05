@@ -6,7 +6,6 @@ from multiprocessing import Process
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
 from ..logs import rs_dft_logger as logger
-from ..tools.sass_generator import SassGenerator
 from .serve import serve_main_app
 
 # specific to jetbrains I think, very annoying if not completely ignored
@@ -126,18 +125,3 @@ class LiveReloadEventHandler(BaseEventHandler):
 
     def on_event(self, event):
         self._app.src_reload(None if self.skipped_event else event.src_path)
-
-
-class SassEventHandler(BaseEventHandler):
-    patterns = [
-        '*.s?ss',
-        '*.css',
-    ]
-
-    def __init__(self, input_dir: str, output_dir: str):
-        self.sass_gen = SassGenerator(input_dir, output_dir, True)
-        super().__init__()
-        self.sass_gen.build()
-
-    def on_event(self, event):
-        self.sass_gen.build()

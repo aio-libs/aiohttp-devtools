@@ -66,7 +66,6 @@ setup(
         'aiohttp_devtools',
         'aiohttp_devtools.runserver',
         'aiohttp_devtools.start',
-        'aiohttp_devtools.tools'
     ],
     zip_safe=True,
     entry_points="""

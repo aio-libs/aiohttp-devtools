@@ -7,7 +7,7 @@ from importlib import import_module
 from pathlib import Path
 
 import aiohttp_debugtoolbar
-from aiohttp import FileSender, MsgType, web
+from aiohttp import FileSender, WSMsgType, web
 from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
@@ -84,7 +84,7 @@ class AuxiliaryApplication(web.Application):
     def src_reload(self, path: str=None):
         cli_count = len(self[WS])
         if cli_count == 0:
-            return
+            return 0
 
         is_html = None
         if path:
@@ -112,6 +112,7 @@ class AuxiliaryApplication(web.Application):
 
         if reloads:
             logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, '' if reloads == 1 else 's')
+        return cli_count
 
     async def cleanup(self):
         logger.debug('closing %d websockets...', len(self[WS]))
@@ -163,7 +164,7 @@ async def livereload_js(request):
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
-WS_TYPE_LOOKUP = {k.value: v for v, k in MsgType.__members__.items()}
+WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
 
 
 async def websocket_handler(request):
@@ -172,7 +173,7 @@ async def websocket_handler(request):
     await ws.prepare(request)
 
     async for msg in ws:
-        if msg.tp == MsgType.text:
+        if msg.tp == WSMsgType.TEXT:
             try:
                 data = json.loads(msg.data)
             except json.JSONDecodeError as e:
@@ -198,7 +199,7 @@ async def websocket_handler(request):
                     request.app[WS].append((ws, url))
                 else:
                     logger.error('Unknown ws message %s', msg.data)
-        elif msg.tp == MsgType.error:
+        elif msg.tp == WSMsgType.ERROR:
             logger.error('ws connection closed with exception %s', ws.exception())
         else:
             logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.tp], msg.data)
