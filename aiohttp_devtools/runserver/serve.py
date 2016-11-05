@@ -10,7 +10,7 @@ import aiohttp_debugtoolbar
 from aiohttp import FileSender, MsgType, web
 from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
-from aiohttp.web_urldispatcher import StaticRoute
+from aiohttp.web_urldispatcher import StaticResource
 
 from ..logs import rs_aux_logger as logger
 from ..logs import rs_dft_logger as dft_logger
@@ -137,8 +137,11 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
         livereload_snippet = None
 
     if static_path:
-        route = CustomStaticRoute('static-router', static_url, static_path + '/', livereload_snippet=livereload_snippet)
-        app.router.register_route(route)
+        route = CustomStaticResource(static_url,
+                                     static_path + '/',
+                                     name='static-router',
+                                     tail_snippet=livereload_snippet)
+        app.router._reg_resource(route)
 
     return app
 
@@ -210,8 +213,8 @@ async def websocket_handler(request):
 
 class CustomFileSender(FileSender):
     def __init__(self, *args, **kwargs):
-        self.lr_snippet = kwargs.pop('livereload_snippet')
-        self.lr_snippet_len = len(self.lr_snippet)
+        self.tail_snippet = kwargs.pop('tail_snippet')
+        self.tail_snippet_len = len(self.tail_snippet)
         super().__init__(*args, **kwargs)
 
     async def send(self, request, filepath):
@@ -219,7 +222,7 @@ class CustomFileSender(FileSender):
         Send filepath to client using request.
 
         As with super except:
-        * adds lr_snippet_length to content_length and writes lr_snippet to the tail of the response.
+        * adds tail_snippet_length to content_length and writes tail_snippet to the tail of the response.
         """
 
         ct, encoding = mimetypes.guess_type(str(filepath))
@@ -239,13 +242,12 @@ class CustomFileSender(FileSender):
         resp.last_modified = st.st_mtime
 
         file_size = st.st_size
-        resp.content_length = file_size + self.lr_snippet_len if is_html else file_size
-        resp.set_tcp_cork(True)
+        resp.content_length = file_size + self.tail_snippet_len if is_html else file_size
         try:
             with filepath.open('rb') as f:
                 await self._sendfile_fallback(request, resp, f, file_size)
             if is_html:
-                resp.write(self.lr_snippet)
+                resp.write(self.tail_snippet)
                 await resp.drain()
         finally:
             resp.set_tcp_nodelay(True)
@@ -253,16 +255,16 @@ class CustomFileSender(FileSender):
         return resp
 
 
-class CustomStaticRoute(StaticRoute):
+class CustomStaticResource(StaticResource):
     def __init__(self, *args, **kwargs):
         self._asset_path = None  # TODO
-        livereload_snippet = kwargs.pop('livereload_snippet')
+        tail_snippet = kwargs.pop('tail_snippet')
         super().__init__(*args, **kwargs)
         self._show_index = True
-        if livereload_snippet:
+        if tail_snippet:
             self._file_sender = CustomFileSender(resp_factory=self._file_sender._response_factory,
                                                  chunk_size=self._file_sender._chunk_size,
-                                                 livereload_snippet=livereload_snippet)
+                                                 tail_snippet=tail_snippet)
 
     def modify_request(self, request):
         """
@@ -289,11 +291,11 @@ class CustomStaticRoute(StaticRoute):
                         # path is not not relative to self._directory
                         pass
 
-    async def handle(self, request):
+    async def _handle(self, request):
         self.modify_request(request)
         status, length = 'unknown', ''
         try:
-            response = await super().handle(request)
+            response = await super()._handle(request)
         except HTTPNotModified:
             status, length = 304, 0
             raise

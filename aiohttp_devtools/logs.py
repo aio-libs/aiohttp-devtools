@@ -8,7 +8,7 @@ rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
 
 tools_logger = logging.getLogger('adev.tools')
-start_logger = logging.getLogger('adev.start')
+main_logger = logging.getLogger('adev.main')
 
 LOG_COLOURS = {
     logging.DEBUG: 'white',
@@ -88,7 +88,7 @@ def log_config(verbose: bool) -> dict:
                 'handlers': ['default'],
                 'level': log_level,
             },
-            start_logger.name: {
+            main_logger.name: {
                 'handlers': ['no_ts'],
                 'level': log_level,
             },

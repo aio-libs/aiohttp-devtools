@@ -1,11 +1,11 @@
 import itertools
-from flake8.api import legacy as flake8
-import pytest
 
-from aiohttp_devtools.exceptions import ConfigError
+import pytest
+from flake8.api import legacy as flake8
+
+from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
-
 from tests.conftest import mktree
 
 
@@ -22,13 +22,13 @@ def test_start_simple(tmpdir, caplog):
         'tests',
     }
     assert """\
-adev.start: Starting new aiohttp project "foobar" at "/tmp/..."
-adev.start: config:
+adev.main: Starting new aiohttp project "foobar" at "/tmp/..."
+adev.main: config:
     template_engine: jinja2
     session: secure
     database: postgres-sqlalchemy
     example: message-board
-adev.start: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 def test_start_other_dir(tmpworkdir, caplog):
@@ -45,20 +45,20 @@ def test_start_other_dir(tmpworkdir, caplog):
         'tests',
     }
     assert """\
-adev.start: Starting new aiohttp project "foobar" at "the-path"
-adev.start: config:
+adev.main: Starting new aiohttp project "foobar" at "the-path"
+adev.main: config:
     template_engine: jinja2
     session: secure
     database: none
     example: message-board
-adev.start: project created, 15 files generated\n""" == caplog.log
+adev.main: project created, 15 files generated\n""" == caplog.log
 
 
 def test_conflicting_file(tmpdir):
     mktree(tmpdir, {
         'Makefile': '...',
     })
-    with pytest.raises(ConfigError) as excinfo:
+    with pytest.raises(AiohttpDevConfigError) as excinfo:
         StartProject(path=str(tmpdir), name='foobar')
     assert excinfo.value.args[0] == ('The path you supplied already has files/directories which would '
                                      'conflict with the new project: Makefile')

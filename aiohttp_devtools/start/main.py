@@ -4,8 +4,8 @@ from pathlib import Path
 from isort import SortImports
 from jinja2 import Template, TemplateError
 
-from ..exceptions import ConfigError
-from ..logs import start_logger as logger
+from ..exceptions import AiohttpDevConfigError
+from ..logs import main_logger as logger
 
 THIS_DIR = Path(__file__).parent
 TEMPLATE_DIR = THIS_DIR / 'template'  # type: Path
@@ -61,8 +61,8 @@ class StartProject:
             new_paths = {p.name for p in TEMPLATE_DIR.iterdir()}
             conflicts = existing_paths & new_paths
             if conflicts:
-                raise ConfigError("The path you supplied already has files/directories which would conflict "
-                                  "with the new project: {}".format(', '.join(sorted(conflicts))))
+                raise AiohttpDevConfigError('The path you supplied already has files/directories which would conflict '
+                                            'with the new project: {}'.format(', '.join(sorted(conflicts))))
 
         try:
             display_path = self.project_root.relative_to(Path('.').resolve())

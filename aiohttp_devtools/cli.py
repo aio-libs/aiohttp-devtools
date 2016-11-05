@@ -1,11 +1,12 @@
+import sys
 from pathlib import Path
 
 import click
 
 from .exceptions import AiohttpDevException
-from .logs import setup_logging
+from .logs import main_logger, setup_logging
 from .runserver import runserver as _runserver
-from .runserver import BadSetup, run_app, serve_static
+from .runserver import run_app, serve_static
 from .start import Options, StartProject
 from .version import VERSION
 
@@ -61,8 +62,9 @@ def runserver(**config):
     setup_logging(config['verbose'])
     try:
         run_app(*_runserver(**config))
-    except BadSetup as e:
-        raise click.BadParameter(e) from e
+    except AiohttpDevException as e:
+        main_logger.error('Error: %s', e)
+        sys.exit(2)
 
 
 class Choice2(click.Choice):
@@ -89,4 +91,5 @@ def start(*, path, name, template_engine, session, database, example, verbose):
         StartProject(path=path, name=name,
                      template_engine=template_engine, session=session, database=database, example=example)
     except AiohttpDevException as e:
-        raise click.BadParameter(e) from e
+        main_logger.error('Error: %s', e)
+        sys.exit(2)

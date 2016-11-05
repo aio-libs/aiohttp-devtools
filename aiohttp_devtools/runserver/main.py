@@ -7,13 +7,10 @@ from aiohttp.web import Application
 from trafaret_config import ConfigError
 from watchdog.observers import Observer
 
+from ..exceptions import AiohttpDevConfigError
 from ..logs import rs_dft_logger as logger
 from .serve import create_auxiliary_app, import_string
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
-
-
-class BadSetup(Exception):
-    pass
 
 
 def run_app(app, observer, port):
@@ -48,9 +45,9 @@ def check_app_factory(app_factory):
     try:
         app = app_factory(loop)
     except ConfigError as e:
-        raise BadSetup('Configuration Error: {}'.format(e)) from e
+        raise AiohttpDevConfigError('Configuration Error: {}'.format(e)) from e
     if not isinstance(app, Application):
-        raise BadSetup('app factory returns "{}" not an aiohttp.web.Application'.format(type(app)))
+        raise AiohttpDevConfigError('app factory returns "{}" not an aiohttp.web.Application'.format(type(app)))
     loop.run_until_complete(app.startup())
 
 

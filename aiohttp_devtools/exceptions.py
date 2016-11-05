@@ -4,5 +4,5 @@ class AiohttpDevException(Exception):
     pass
 
 
-class ConfigError(AiohttpDevException):
+class AiohttpDevConfigError(AiohttpDevException):
     pass
