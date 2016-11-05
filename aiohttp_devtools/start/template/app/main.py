@@ -22,15 +22,20 @@ BASE_DIR = THIS_DIR.parent
 SETTINGS_FILE = BASE_DIR / 'settings.yml'
 
 SETTINGS_STRUCTURE = t.Dict({
+    # app_path and static_path are used by aiohttp-devtools when serving your app locally,
+    # you may wish to use them yourself,
+    # eg. you might use static_path in a management script to deploy static assets
+    'app_path': t.String,
+    'static_path': t.String,
     # {% if database.is_none and example.is_message_board %}
     'message_file':  t.String() >> (lambda f: BASE_DIR / f),
     # {% elif database.is_postgres_sqlalchemy or database.is_postgres_raw %}
     'database': t.Dict({
         'name': t.String,
         'password': t.String,
-        t.Key(name='user', default='postgres'): t.String,
-        t.Key(name='host', default='localhost'): t.String,
-        t.Key(name='port', default=5432): t.Int(gte=0) >> str,
+        'user': t.String,
+        'host': t.String,
+        'port': t.Int(gte=0) >> str,
     }),
     # {% endif %}
 })

@@ -68,6 +68,7 @@ class StartProject:
             display_path = self.project_root.relative_to(Path('.').resolve())
         except ValueError:
             display_path = self.project_root
+
         logger.info('Starting new aiohttp project "%s" at "%s"', name, display_path)
         display_config = [
             ('template_engine', template_engine),

@@ -337,6 +337,11 @@ def import_string(file_path, attr_name=None, _trying_again=False):
     :param attr_name: attribute to get from module
     :return: (attribute, Path object for directory of file)
     """
+    try:
+        Path(file_path).resolve().relative_to(Path('.').resolve())
+    except ValueError as e:
+        raise ImportError('unable to import "%s" path is not relative '
+                          'to the current working directory' % file_path) from e
 
     module_path = file_path.replace('.py', '').replace('/', '.')
 
@@ -350,7 +355,10 @@ def import_string(file_path, attr_name=None, _trying_again=False):
         dft_logger.debug('adding current working director %s to pythonpath and reattempting import', p)
         sys.path.append(p)
         return import_string(file_path, attr_name, True)
+    return find_attr(attr_name, module, module_path)
 
+
+def find_attr(attr_name, module, module_path):
     if attr_name is None:
         try:
             attr_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))

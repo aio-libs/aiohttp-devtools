@@ -74,15 +74,29 @@ def test_conflicting_file(tmpdir):
     Options.DB_CHOICES,
     Options.EXAMPLE_CHOICES,
 ))
-def test_all_options(tmpdir, template_engine, session, database, example):
+async def test_all_options(tmpworkdir, template_engine, session, database, example):
     StartProject(
-        path=str(tmpdir),
+        path=str(tmpworkdir),
         name='foobar',
         template_engine=template_engine,
         session=session,
         database=database,
         example=example,
     )
+    assert 'app' in {p.basename for p in tmpworkdir.listdir()}
     style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([str(tmpdir)])
+    report = style_guide.check_files([str(tmpworkdir)])
     assert report.total_errors == 0
+    # FIXME for some reason this conflicts with other tests and fails when run with all tests
+    # could be to do with messed up sys.path
+    # import aiohttp
+    # from aiohttp_devtools.runserver.serve import create_main_app
+    # app = create_main_app(app_path='app/main.py', loop=loop)
+    # assert isinstance(app, aiohttp.web.Application)
+
+    # cli = await test_client(app)
+    # r = await cli.get('/')
+    # assert r.status == 200
+    # text = await r.text()
+    # # assert text == 'hello world'
+    # print(text)
