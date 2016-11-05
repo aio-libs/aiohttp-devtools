@@ -34,9 +34,8 @@ class Options:
     TEMPLATE_ENG_CHOICES = (TEMPLATE_ENG_JINJA2, NONE)
 
     SESSION_SECURE = 'secure'
-    SESSION_VANILLA = 'vanilla'
     SESSION_REDIS = 'redis'
-    SESSION_CHOICES = (SESSION_SECURE, SESSION_VANILLA, SESSION_REDIS, NONE)
+    SESSION_CHOICES = (SESSION_SECURE, SESSION_REDIS, NONE)
 
     DB_PG_SA = 'postgres-sqlalchemy'
     DB_PG_RAW = 'postgres-raw'
@@ -65,7 +64,10 @@ class StartProject:
                 raise ConfigError("The path you supplied already has files/directories which would conflict "
                                   "with the new project: {}".format(', '.join(sorted(conflicts))))
 
-        display_path = self.project_root.relative_to(Path('.').resolve())
+        try:
+            display_path = self.project_root.relative_to(Path('.').resolve())
+        except ValueError:
+            display_path = self.project_root
         logger.info('Starting new aiohttp project "%s" at "%s"', name, display_path)
         display_config = [
             ('template_engine', template_engine),
@@ -93,7 +95,8 @@ class StartProject:
         for pp in p.iterdir():
             if pp.is_dir():
                 self.generate_directory(pp)
-            elif pp.is_file():
+            else:
+                assert pp.is_file()
                 self.generate_file(pp)
 
     def generate_file(self, p: Path):
@@ -104,8 +107,9 @@ class StartProject:
             raise TemplateError('error in {}'.format(p)) from e
         text = text.strip('\n\t ')
         new_path = self.project_root / p.relative_to(self.template_dir)
-        if not text and p.name != '__init__.py':
-            # empty files don't get created
+        # print(new_path.name, repr(text[-10:]))
+        if len(text) < 3:
+            # empty files don't get created, in case a few characters get left behind
             logger.debug('not creating "%s", as it would be empty', new_path)
             return
         logger.debug('creating "%s"', new_path)
