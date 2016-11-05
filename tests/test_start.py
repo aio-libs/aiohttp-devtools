@@ -6,7 +6,9 @@ from flake8.api import legacy as flake8
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
-from tests.conftest import mktree
+from .conftest import mktree
+
+slow = pytest.mark.skipif(pytest.config.getoption('--fast'), reason='not run with --fast flag')
 
 
 def test_start_simple(tmpdir, caplog):
@@ -64,6 +66,7 @@ def test_conflicting_file(tmpdir):
                                      'conflict with the new project: Makefile')
 
 
+@slow
 @pytest.mark.parametrize('template_engine,session,database,example', itertools.product(
     Options.TEMPLATE_ENG_CHOICES,
     Options.SESSION_CHOICES,

@@ -66,7 +66,7 @@ def serve_main_app(*, main_port: int=8000, verbose: bool=False, **config):
 
     try:
         loop.run_forever()
-    except KeyboardInterrupt:  # pragma: no branch
+    except KeyboardInterrupt:  # pragma: no cover
         pass
     finally:
         server.close()

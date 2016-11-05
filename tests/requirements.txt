@@ -6,5 +6,6 @@ pytest
 pytest-aiohttp
 pytest-cov
 pytest-isort
+pytest-mock
 pytest-sugar
 sphinx
