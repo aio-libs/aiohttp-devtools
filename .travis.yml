@@ -2,8 +2,8 @@ language: python
 cache: pip
 python:
 - '3.5'
-- '3.6-dev'
-- 'nightly'
+#- '3.6-dev'  # https://travis-ci.org/samuelcolvin/aiohttp-devtools/jobs/173507111
+#- 'nightly'  # tried with 3.6b3 locally and couldn't replicate
 install:
 - make install
 script:

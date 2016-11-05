@@ -20,12 +20,12 @@ lint:
 test:
 	py.test --cov=aiohttp_devtools --isort && coverage combine
 
-.PHONY: .test-build-cov
-.test-build-cov:
+.PHONY: testcov
+testcov:
 	py.test --cov=aiohttp_devtools && (echo "building coverage html"; coverage combine; coverage html)
 
 .PHONY: all
-all: .test-build-cov lint
+all: testcov lint
 
 .PHONY: clean
 clean:
