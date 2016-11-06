@@ -11,7 +11,7 @@ from .start import Options, StartProject
 from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
-_file_existing = click.Path(exists=True, dir_okay=False, file_okay=True)
+_file_dir_existing = click.Path(exists=True, dir_okay=True, file_okay=True)
 _dir_may_exist = click.Path(dir_okay=True, file_okay=False, writable=True, resolve_path=True)
 
 
@@ -41,17 +41,18 @@ def serve(path, livereload, port, verbose):
 static_help = "Path of static files to serve, if excluded static files aren't served."
 static_url_help = 'URL path to serve static files from, default "/static/".'
 debugtoolbar_help = 'Whether to enable debug toolbar.'
+app_factory_help = 'name of the app factory to create an aiohttp.web.Application with,'
 port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
 
 
 @cli.command()
-@click.argument('app-path', type=_file_existing, required=True)
-@click.argument('app-factory', required=False)
+@click.argument('app-path', type=_file_dir_existing, required=True)
 @click.option('-s', '--static', 'static_path', type=_dir_existing, help=static_help)
 @click.option('--static-url', default='/static/', help=static_url_help)
 @click.option('--livereload/--no-livereload', default=True, help=livereload_help)
 @click.option('--debug-toolbar/--debug-toolbar', default=True, help=debugtoolbar_help)
+@click.option('--app-factory', required=False)
 @click.option('-p', '--port', 'main_port', default=8000, help=port_help)
 @click.option('--aux-port', default=8001, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)

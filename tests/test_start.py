@@ -1,9 +1,11 @@
 import itertools
 
+import aiohttp
 import pytest
 from flake8.api import legacy as flake8
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
+from aiohttp_devtools.runserver.serve import create_main_app
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
 
@@ -34,7 +36,7 @@ adev.main: config:
 adev.main: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
-def test_start_other_dir(tmpworkdir, caplog):
+async def test_start_other_dir(tmpworkdir, loop, test_client, caplog):
     StartProject(path=str(tmpworkdir.join('the-path')), name='foobar', database=Options.NONE)
     assert {p.basename for p in tmpworkdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpworkdir.join('the-path').listdir()} == {
@@ -55,6 +57,14 @@ adev.main: config:
     database: none
     example: message-board
 adev.main: project created, 15 files generated\n""" == caplog.log
+    app = create_main_app(app_path='the-path/app/main.py', loop=loop)
+    assert isinstance(app, aiohttp.web.Application)
+
+    cli = await test_client(app)
+    r = await cli.get('/')
+    assert r.status == 200
+    text = await r.text()
+    assert "Success! you've setup a basic aiohttp app." in text
 
 
 def test_conflicting_file(tmpdir):
@@ -74,7 +84,7 @@ def test_conflicting_file(tmpdir):
     Options.DB_CHOICES,
     Options.EXAMPLE_CHOICES,
 ))
-async def test_all_options(tmpworkdir, template_engine, session, database, example):
+async def test_all_options(tmpworkdir, loop, template_engine, session, database, example):
     StartProject(
         path=str(tmpworkdir),
         name='foobar',
@@ -89,10 +99,8 @@ async def test_all_options(tmpworkdir, template_engine, session, database, examp
     assert report.total_errors == 0
     # FIXME for some reason this conflicts with other tests and fails when run with all tests
     # could be to do with messed up sys.path
-    # import aiohttp
-    # from aiohttp_devtools.runserver.serve import create_main_app
-    # app = create_main_app(app_path='app/main.py', loop=loop)
-    # assert isinstance(app, aiohttp.web.Application)
+    app = create_main_app(app_path='app/main.py', loop=loop)
+    assert isinstance(app, aiohttp.web.Application)
 
     # cli = await test_client(app)
     # r = await cli.get('/')

@@ -14,15 +14,15 @@ isort:
 lint:
 	python setup.py check -rms
 	flake8 aiohttp_devtools/ tests/
-	pytest aiohttp_devtools --isort -p no:sugar -q --cache-clear
+	pytest aiohttp_devtools -p no:sugar -q --cache-clear
 
 .PHONY: test
 test:
-	py.test --cov=aiohttp_devtools --isort && coverage combine
+	py.test --cov=aiohttp_devtools && coverage combine
 
 .PHONY: testcov
 testcov:
-	py.test --cov=aiohttp_devtools --isort --fast && (echo "building coverage html"; coverage combine; coverage html)
+	py.test --cov=aiohttp_devtools --fast && (echo "building coverage html"; coverage combine; coverage html)
 
 .PHONY: all
 all: testcov lint

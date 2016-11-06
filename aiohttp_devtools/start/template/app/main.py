@@ -21,12 +21,14 @@ THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
 SETTINGS_FILE = BASE_DIR / 'settings.yml'
 
+DEV_DICT = t.Dict()
+DEV_DICT.allow_extra('*')
+
 SETTINGS_STRUCTURE = t.Dict({
-    # app_path and static_path are used by aiohttp-devtools when serving your app locally,
-    # you may wish to use them yourself,
-    # eg. you might use static_path in a management script to deploy static assets
-    'app_path': t.String,
-    'static_path': t.String,
+    # the "dev" dictionary contains information used by aiohttp-devtools to serve your app locally
+    # you may wish to use it yourself,
+    # eg. you might use dev.static_path in a management script to deploy static assets
+    'dev': DEV_DICT,
     # {% if database.is_none and example.is_message_board %}
     'message_file':  t.String() >> (lambda f: BASE_DIR / f),
     # {% elif database.is_postgres_sqlalchemy or database.is_postgres_raw %}

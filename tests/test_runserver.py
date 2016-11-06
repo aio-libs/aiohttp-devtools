@@ -65,6 +65,29 @@ async def test_run_app(loop, tmpworkdir, test_client):
     assert text == 'hello world'
 
 
+async def test_create_app_wrong_name(loop, tmpworkdir):
+    mktree(tmpworkdir, SIMPLE_APP)
+    with pytest.raises(ImportError) as excinfo:
+        create_main_app(app_path='app.py', loop=loop, app_factory='missing')
+    assert excinfo.value.args[0] == 'Module "app" does not define a "missing" attribute/class'
+
+
+async def test_app_factory_not_found(loop, tmpworkdir):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='hello world')
+
+def not_a_default_name(loop):
+    app = web.Application(loop=loop)
+    app.router.add_get('/', hello)
+    return app"""})
+    with pytest.raises(ImportError):
+        create_main_app(app_path='app.py', loop=loop)
+
+
 async def test_aux_app(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, {
         'test.txt': 'test value',
@@ -81,8 +104,6 @@ def test_run_app_http(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, SIMPLE_APP)
     mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    # for some reason calling setup_logging breaks subsequent tests
-    mock_setup_logging = mocker.patch('aiohttp_devtools.runserver.serve.setup_logging')
     loop.call_later(0.05, loop.stop)
 
     serve_main_app(app_path='app.py', loop=loop)
@@ -90,7 +111,6 @@ def test_run_app_http(tmpworkdir, loop, mocker):
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000)
     mock_modify_main_app.assert_called_with(mock.ANY, '/static/', True, True, 8001)
-    mock_setup_logging.assert_called_with(False)
 
 
 @pytest.fixture

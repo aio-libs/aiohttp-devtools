@@ -8,4 +8,5 @@ pytest-cov
 pytest-isort
 pytest-mock
 pytest-sugar
+pytest-xdist
 sphinx

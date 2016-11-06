@@ -41,10 +41,10 @@ def modify_main_app(app, static_url, livereload, debug_toolbar, aux_port):
 
 def create_main_app(*,
                     app_path: str,
-                    app_factory: str=None,
                     static_url: str='/static/',
                     livereload: bool=True,
                     debug_toolbar: bool=True,
+                    app_factory: str=None,
                     aux_port: int=8001,
                     loop: asyncio.AbstractEventLoop=None):
     app_factory, _ = import_string(app_path, app_factory)
@@ -338,12 +338,12 @@ def import_string(file_path, attr_name=None, _trying_again=False):
     :return: (attribute, Path object for directory of file)
     """
     try:
-        Path(file_path).resolve().relative_to(Path('.').resolve())
+        file_path = Path(file_path).resolve().relative_to(Path('.').resolve())
     except ValueError as e:
         raise ImportError('unable to import "%s" path is not relative '
                           'to the current working directory' % file_path) from e
 
-    module_path = file_path.replace('.py', '').replace('/', '.')
+    module_path = str(file_path).replace('.py', '').replace('/', '.')
 
     try:
         module = import_module(module_path)
