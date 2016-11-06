@@ -1,9 +1,6 @@
 import asyncio
 import json
 import mimetypes
-import os
-import sys
-from importlib import import_module
 from pathlib import Path
 
 import aiohttp_debugtoolbar
@@ -15,6 +12,7 @@ from aiohttp.web_urldispatcher import StaticResource
 from ..logs import rs_aux_logger as logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
+from .load import import_string
 from .log_handlers import fmt_size
 
 LIVE_RELOAD_SNIPPET = b'\n<script src="http://localhost:%d/livereload.js"></script>\n'
@@ -121,7 +119,7 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, loop=None):
+def create_auxiliary_app(*, static_path: Path, port: int, static_url='/', livereload=True, loop=None):
     app = AuxiliaryApplication(loop=loop)
     app[WS] = []
     app.update(
@@ -139,7 +137,7 @@ def create_auxiliary_app(*, static_path, port, static_url='/', livereload=True, 
 
     if static_path:
         route = CustomStaticResource(static_url,
-                                     static_path + '/',
+                                     str(static_path) + '/',
                                      name='static-router',
                                      tail_snippet=livereload_snippet)
         app.router._reg_resource(route)
@@ -317,60 +315,3 @@ def _get_asset_content(asset_path):
         return ''
     with asset_path.open() as f:
         return 'Asset file contents:\n\n{}'.format(f.read())
-
-
-APP_FACTORY_NAMES = [
-    'app',
-    'app_factory',
-    'get_app',
-    'create_app',
-]
-
-
-def import_string(file_path, attr_name=None, _trying_again=False):
-    """
-    Import attribute/class from from a python module. Raise ImportError if the import failed.
-
-    Approximately stolen from django.
-
-    :param file_path: path to python module
-    :param attr_name: attribute to get from module
-    :return: (attribute, Path object for directory of file)
-    """
-    try:
-        file_path = Path(file_path).resolve().relative_to(Path('.').resolve())
-    except ValueError as e:
-        raise ImportError('unable to import "%s" path is not relative '
-                          'to the current working directory' % file_path) from e
-
-    module_path = str(file_path).replace('.py', '').replace('/', '.')
-
-    try:
-        module = import_module(module_path)
-    except ImportError:
-        if _trying_again:
-            raise
-        # add current working directory to pythonpath and try again
-        p = os.getcwd()
-        dft_logger.debug('adding current working director %s to pythonpath and reattempting import', p)
-        sys.path.append(p)
-        return import_string(file_path, attr_name, True)
-    return find_attr(attr_name, module, module_path)
-
-
-def find_attr(attr_name, module, module_path):
-    if attr_name is None:
-        try:
-            attr_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))
-        except StopIteration as e:
-            raise ImportError('No name supplied and no default app factory found in "%s"' % module_path) from e
-        else:
-            dft_logger.debug('found default attribute "%s" in module "%s"' % (attr_name, module))
-
-    try:
-        attr = getattr(module, attr_name)
-    except AttributeError as e:
-        raise ImportError('Module "%s" does not define a "%s" attribute/class' % (module_path, attr_name)) from e
-
-    directory = Path(module.__file__).parent
-    return attr, directory

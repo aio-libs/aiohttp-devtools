@@ -1,4 +1,5 @@
 import sys
+import traceback
 from pathlib import Path
 
 import click
@@ -41,29 +42,42 @@ def serve(path, livereload, port, verbose):
 static_help = "Path of static files to serve, if excluded static files aren't served."
 static_url_help = 'URL path to serve static files from, default "/static/".'
 debugtoolbar_help = 'Whether to enable debug toolbar.'
-app_factory_help = 'name of the app factory to create an aiohttp.web.Application with,'
+app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, '
+                    'if missing default app-factory names are tried.')
 port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
 
 
+# defaults are all None here so default settings are defined in one place: DEV_DICT validation
 @cli.command()
 @click.argument('app-path', type=_file_dir_existing, required=True)
 @click.option('-s', '--static', 'static_path', type=_dir_existing, help=static_help)
-@click.option('--static-url', default='/static/', help=static_url_help)
-@click.option('--livereload/--no-livereload', default=True, help=livereload_help)
-@click.option('--debug-toolbar/--debug-toolbar', default=True, help=debugtoolbar_help)
-@click.option('--app-factory', required=False)
-@click.option('-p', '--port', 'main_port', default=8000, help=port_help)
-@click.option('--aux-port', default=8001, help=aux_port_help)
+@click.option('--static-url', help=static_url_help)
+@click.option('--livereload/--no-livereload', default=None, help=livereload_help)
+@click.option('--debug-toolbar/--no-debug-toolbar', default=None, help=debugtoolbar_help)
+@click.option('--app-factory', help=app_factory_help)
+@click.option('-p', '--port', 'main_port', help=port_help)
+@click.option('--aux-port', help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 def runserver(**config):
     """
     Run a development server for aiohttp apps.
+
+    Takes one argument "APP_PATH" which should be a path to either a directory containing a recognized default file
+    ("settings.y(a)ml", "app.py" or "main.py") or to a specific file.
+
+    If a yaml file is found the "dev" dictionary in that file is used to populate settings for runserver, if a python
+    file is found it's run directly, see the "--app-factory" option for details on how an app is loaded from a python
+    module.
     """
     setup_logging(config['verbose'])
     try:
-        run_app(*_runserver(**config))
+        _runserver(**config)
+        # run_app(*_runserver(**config))
     except AiohttpDevException as e:
+        if config['verbose']:
+            tb = click.style(traceback.format_exc().strip('\n'), fg='white', dim=True)
+            main_logger.warning('AiohttpDevException traceback:\n%s', tb)
         main_logger.error('Error: %s', e)
         sys.exit(2)
 

@@ -6,6 +6,7 @@ from unittest import mock
 import aiohttp
 import pytest
 
+from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
@@ -67,7 +68,7 @@ async def test_run_app(loop, tmpworkdir, test_client):
 
 async def test_create_app_wrong_name(loop, tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    with pytest.raises(ImportError) as excinfo:
+    with pytest.raises(AiohttpDevConfigError) as excinfo:
         create_main_app(app_path='app.py', loop=loop, app_factory='missing')
     assert excinfo.value.args[0] == 'Module "app" does not define a "missing" attribute/class'
 
@@ -84,7 +85,7 @@ def not_a_default_name(loop):
     app = web.Application(loop=loop)
     app.router.add_get('/', hello)
     return app"""})
-    with pytest.raises(ImportError):
+    with pytest.raises(AiohttpDevConfigError):
         create_main_app(app_path='app.py', loop=loop)
 
 

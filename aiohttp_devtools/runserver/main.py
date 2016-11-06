@@ -1,7 +1,6 @@
 import asyncio
 import os
 from multiprocessing import set_start_method
-from pathlib import Path
 
 from aiohttp.web import Application
 from trafaret_config import ConfigError
@@ -9,7 +8,8 @@ from watchdog.observers import Observer
 
 from ..exceptions import AiohttpDevConfigError
 from ..logs import rs_dft_logger as logger
-from .serve import create_auxiliary_app, import_string
+from .load import find_app_path, import_string, load_settings_file
+from .serve import create_auxiliary_app
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
@@ -51,44 +51,40 @@ def check_app_factory(app_factory):
     loop.run_until_complete(app.startup())
 
 
-def runserver(*,
-              app_path: str,
-              static_path: str=None,
-              static_url: str='/static/',
-              livereload: bool=True,
-              debug_toolbar: bool=True,
-              app_factory: str=None,
-              main_port: int=8000,
-              aux_port: int=8001,
-              verbose: bool=False,
-              loop: asyncio.AbstractEventLoop=None):
+def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEventLoop=None, **kwargs):
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
+    valid_app_path = find_app_path(app_path)
+    config = load_settings_file(valid_app_path, **kwargs)
 
-    _app_factory, code_path = import_string(app_path, app_factory)
+    logger.debug('config as loaded from key word arguments and possible yaml file:')
+    for k, v in config.items():
+        logger.debug('  %s: %r', k, v)
+
+    _app_factory, code_path = import_string(config['app_path'], config['app_factory'])
     check_app_factory(_app_factory)
 
     code_path = str(code_path)
-    static_path = static_path and str(Path(static_path).resolve())
+    static_path = config['static_path']
 
     aux_app = create_auxiliary_app(
-        static_path=static_path,
-        port=aux_port,
-        static_url=static_url,
-        livereload=livereload,
+        static_path=static_path and str(static_path),
+        port=config['aux_port'],
+        static_url=config['static_url'],
+        livereload=config['livereload'],
         loop=loop,
     )
 
     observer = Observer()
 
     config_dict = dict(
-        app_path=app_path,
-        static_url=static_url,
-        livereload=livereload,
-        debug_toolbar=debug_toolbar,
-        app_factory=app_factory,
-        main_port=main_port,
-        aux_port=aux_port,
+        app_path=config['app_path'],
+        static_url=config['static_url'],
+        livereload=config['livereload'],
+        debug_toolbar=config['debug_toolbar'],
+        app_factory=config['app_factory'],
+        main_port=config['main_port'],
+        aux_port=config['aux_port'],
         verbose=verbose,
     )
 
@@ -103,17 +99,17 @@ def runserver(*,
     if static_path:
         static_event_handler = LiveReloadEventHandler(aux_app)
         logger.debug('starting LiveReloadEventHandler to watch %s', static_path)
-        observer.schedule(static_event_handler, static_path, recursive=True)
+        observer.schedule(static_event_handler, static_path and str(static_path), recursive=True)
     observer.start()
 
-    url = 'http://localhost:{}'.format(aux_port)
+    url = 'http://localhost:{aux_port}'.format(**config)
     logger.info('Starting aux server at %s ◆', url)
 
     if static_path:
-        rel_path = Path(static_path).absolute().relative_to(os.getcwd())
-        logger.info('serving static files from ./%s/ at %s%s', rel_path, url, static_url)
+        rel_path = static_path.relative_to(os.getcwd())
+        logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config['static_url'])
 
-    return aux_app, observer, aux_port
+    return aux_app, observer, config['aux_port']
 
 
 def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loop: asyncio.AbstractEventLoop=None):

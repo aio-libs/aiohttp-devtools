@@ -3,7 +3,7 @@ import re
 
 import click
 
-from ..logs import LOG_COLOURS
+from ..logs import get_log_format
 
 
 class AuxiliaryHandler(logging.Handler):
@@ -11,7 +11,6 @@ class AuxiliaryHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        colour = LOG_COLOURS.get(record.levelno, 'red')
         m = re.match('^(\[.*?\] )', log_entry)
         time = click.style(m.groups()[0], fg='magenta')
         msg = log_entry[m.end():]
@@ -21,7 +20,7 @@ class AuxiliaryHandler(logging.Handler):
             else:
                 msg = '{} {}'.format(self.prefix, msg[2:])
         else:
-            msg = click.style(msg, fg=colour)
+            msg = click.style(msg, **get_log_format(record))
         click.echo(time + msg)
 
 

@@ -10,24 +10,27 @@ rs_aux_logger = logging.getLogger('adev.server.aux')
 tools_logger = logging.getLogger('adev.tools')
 main_logger = logging.getLogger('adev.main')
 
-LOG_COLOURS = {
-    logging.DEBUG: 'white',
-    logging.INFO: 'green',
-    logging.WARN: 'yellow',
+LOG_FORMATS = {
+    logging.DEBUG: {'fg': 'white', 'dim': True},
+    logging.INFO: {'fg': 'green'},
+    logging.WARN: {'fg': 'yellow'},
 }
+
+
+def get_log_format(record):
+    return LOG_FORMATS.get(record.levelno, {'fg': 'red'})
 
 
 class DefaultHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
-        colour = LOG_COLOURS.get(record.levelno, 'red')
         m = re.match('^(\[.*?\])', log_entry)
         if m:
             time = click.style(m.groups()[0], fg='magenta')
-            msg = click.style(log_entry[m.end():], fg=colour)
+            msg = click.style(log_entry[m.end():], **get_log_format(record))
             click.echo(time + msg)
         else:
-            click.secho(log_entry, fg=colour)
+            click.secho(log_entry, **get_log_format(record))
 
 
 def log_config(verbose: bool) -> dict:
@@ -42,7 +45,7 @@ def log_config(verbose: bool) -> dict:
         'disable_existing_loggers': True,
         'formatters': {
             'default': {
-                'format': '[%(asctime)s] %(name)-15s %(message)s' if verbose else '[%(asctime)s] %(message)s',
+                'format': '[%(asctime)s] %(message)s' if verbose else '[%(asctime)s] %(message)s',
                 'datefmt': '%H:%M:%S',
             },
             'no_ts': {
