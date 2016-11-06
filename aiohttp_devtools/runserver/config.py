@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 import sys
 from importlib import import_module
@@ -23,6 +22,7 @@ STD_FILE_NAMES = [
 DEV_DICT = t.Dict({
     'py_file': t.String,
     t.Key('static_path', default=None): t.Or(t.String | t.Null),
+    t.Key('python_path', default=None): t.Or(t.String | t.Null),
     t.Key('static_url', default='/static/'): t.String,
     t.Key('livereload', default=True): t.Bool,
     t.Key('debug_toolbar', default=True): t.Bool,
@@ -45,20 +45,30 @@ APP_FACTORY_NAMES = [
 
 class Config:
     def __init__(self, app_path: str, verbose=False, **kwargs):
-        self.app_path = self.find_app_path(app_path)
+        self.app_path = self._find_app_path(app_path)
         self.verbose = verbose
-        config = self.load_settings_file(**kwargs)
-        self.py_file = self._resolve_path(config, 'py_file', is_file=True)
-        self.py_file = self.py_file.relative_to(Path('.').resolve())
-        self.static_path = self._resolve_path(config, 'static_path', is_file=False)
+        self.settings_found = False
+        config = self._load_settings_file(**kwargs)
+
+        if self.settings_found:
+            logger.debug('Loaded settings file, using it directory as root')
+            self.root_dir = self.app_path.parent.resolve()
+        else:
+            logger.debug('Loaded python file, using working directory as root')
+            self.root_dir = Path('.').resolve()
+
+        self.py_file = self._resolve_path(config, 'py_file', 'is_file')
+        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_dir
+
+        self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
         self.static_url = config['static_url']
         self.livereload = config['livereload']
         self.debug_toolbar = config['debug_toolbar']
         self.app_factory_name = config['app_factory_name']
         self.main_port = config['main_port']
         self.aux_port = config['aux_port']
-        self.app_factory, self.code_directory = self.import_app_factory()
-        self.check_app_factory()
+        self.app_factory, self.code_directory = self._import_app_factory()
+        self._check_app_factory()
 
     @property
     def static_path_str(self):
@@ -68,7 +78,7 @@ class Config:
     def code_directory_str(self):
         return self.code_directory and str(self.code_directory)
 
-    def find_app_path(self, app_path: str) -> Path:
+    def _find_app_path(self, app_path: str) -> Path:
         path = Path(app_path).resolve()
         if path.is_file():
             logger.debug('app_path is a file, returning it directly')
@@ -87,7 +97,7 @@ class Config:
         raise AdevConfigError('unable to find a recognised default file ("settings.yml", "app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def load_settings_file(self, **kwargs) -> Dict:
+    def _load_settings_file(self, **kwargs) -> Dict:
         """
         Load a settings file (or simple python file) and return settings after overwriting with any non null kwargs
         :param path: path to load file from
@@ -98,6 +108,7 @@ class Config:
         try:
             if re.search('\.ya?ml$', self.app_path.name):
                 logger.debug('setting file found, loading yaml and overwriting with kwargs')
+                self.settings_found = True
                 try:
                     _data = read_and_validate(str(self.app_path), SETTINGS)
                 except ConfigError as e:
@@ -124,62 +135,70 @@ class Config:
 
         raise AdevConfigError('Unknown extension for app_path: %s, should be .py or .yml' % self.app_path.name)
 
-    def _resolve_path(self, config: Dict, attr: str, is_file):
-        path = config[attr]
-        if path is None:
+    def _resolve_path(self, config: Dict, attr: str, check: str):
+        _path = config[attr]
+        if _path is None:
             return
+
+        if _path.startswith('/'):
+            path = Path(_path)
+            error_msg = '{attr} "{path}" is not a valid path'
+        else:
+            path = Path(self.root_dir / _path)
+            error_msg = '{attr} "{path}" is not a valid path relative to {root}'
+
         try:
-            path = self.app_path.parent.joinpath(path).resolve()
-            if is_file:
-                assert path.is_file()
-            else:
-                assert path.is_dir()
-        except (OSError, AssertionError) as e:
-            raise ConfigError('{attr} "{path}" is not a valid directory relative to {app_path}'
-                              .format(attr=attr, path=path, app_path=self.app_path)) from e
+            path = path.resolve()
+        except OSError as e:
+            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_dir)) from e
+
+        if check == 'is_file':
+            if not path.is_file():
+                raise AdevConfigError('{} is not a file'.format(path))
+        else:
+            assert check == 'is_dir'
+            if not path.is_dir():
+                raise AdevConfigError('{} is not a directory'.format(path))
         return path
 
-    def import_app_factory(self, _trying_again=False):
+    def _import_app_factory(self):
         """
         Import attribute/class from from a python module. Raise AdevConfigError if the import failed.
 
         :return: (attribute, Path object for directory of file)
         """
 
-        module_path = str(self.py_file).replace('.py', '').replace('/', '.')
+        sys.path.append(str(self.python_path))
+
+        rel_py_file = self.py_file.relative_to(self.python_path)
+        module_path = str(rel_py_file).replace('.py', '').replace('/', '.')
 
         try:
             module = import_module(module_path)
         except ImportError as e:
-            if _trying_again:
-                raise AdevConfigError('error importing {}'.format(module_path)) from e
-            logger.debug('ImportError while loading %s, adding CWD to pythonpath and try again', module_path)
-            p = os.getcwd()
-            logger.debug('adding current working director %s to pythonpath and reattempting import', p)
-            sys.path.append(p)
-            return self.import_app_factory(True)
-        return self._find_app_factory(module)
+            raise AdevConfigError('error importing "{}" from "{}"'.format(module_path, self.python_path)) from e
 
-    def _find_app_factory(self, module):
+        logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
+
         if self.app_factory_name is None:
             try:
                 self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))
             except StopIteration as e:
                 raise AdevConfigError('No name supplied and no default app factory '
-                                      'found in {s.py_file}'.format(s=self)) from e
+                                      'found in {s.py_file.name}'.format(s=self)) from e
             else:
                 logger.debug('found default attribute "%s" in module "%s"', self.app_factory_name, module)
 
         try:
             attr = getattr(module, self.app_factory_name)
         except AttributeError as e:
-            raise AdevConfigError('Module "{s.py_file}" '
+            raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
         directory = Path(module.__file__).parent
         return attr, directory
 
-    def check_app_factory(self):
+    def _check_app_factory(self):
         """
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
@@ -200,4 +219,4 @@ class Config:
     def __str__(self):
         fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar',
                   'app_factory_name', 'main_port', 'aux_port',)
-        return 'Config:\n' + '\n  '.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
+        return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)

@@ -9,7 +9,6 @@ async def test_load_simple_app(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     Config(app_path='app.py')
 
-
 async def test_create_app_wrong_name(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
@@ -17,13 +16,13 @@ async def test_create_app_wrong_name(tmpworkdir):
     assert excinfo.value.args[0] == 'Module "app.py" does not define a "missing" attribute/class'
 
 
-async def test_yml_file(tmpworkdir):
+async def test_yml_file(tmpdir):
     files = dict(SIMPLE_APP)
     files['settings.yml'] = """\
 dev:
   py_file: app.py"""
-    mktree(tmpworkdir, files)
-    Config(app_path='.')
+    mktree(tmpdir, files)
+    Config(app_path=str(tmpdir))
 
 
 invalid_apps = [

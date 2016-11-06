@@ -37,10 +37,10 @@ adev.main: config:
 adev.main: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
-async def test_start_other_dir(tmpworkdir, loop, test_client, caplog):
-    StartProject(path=str(tmpworkdir.join('the-path')), name='foobar', database=Options.NONE)
-    assert {p.basename for p in tmpworkdir.listdir()} == {'the-path'}
-    assert {p.basename for p in tmpworkdir.join('the-path').listdir()} == {
+async def test_start_other_dir(tmpdir, loop, test_client, caplog):
+    StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=Options.NONE)
+    assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
+    assert {p.basename for p in tmpdir.join('the-path').listdir()} == {
         'app',
         'Makefile',
         'requirements.txt',
@@ -51,14 +51,14 @@ async def test_start_other_dir(tmpworkdir, loop, test_client, caplog):
         'tests',
     }
     assert """\
-adev.main: Starting new aiohttp project "foobar" at "the-path"
+adev.main: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
 adev.main: config:
     template_engine: jinja2
     session: secure
     database: none
     example: message-board
-adev.main: project created, 15 files generated\n""" == caplog.log
-    app = create_main_app(Config('the-path'), loop=loop)
+adev.main: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
+    app = create_main_app(Config(str(tmpdir.join('the-path'))), loop=loop)
     assert isinstance(app, aiohttp.web.Application)
 
     cli = await test_client(app)
@@ -85,25 +85,25 @@ def test_conflicting_file(tmpdir):
     Options.DB_CHOICES,
     Options.EXAMPLE_CHOICES,
 ))
-async def test_all_options(tmpworkdir, template_engine, session, database, example):
+async def test_all_options(tmpdir, template_engine, session, database, example):
     StartProject(
-        path=str(tmpworkdir),
+        path=str(tmpdir),
         name='foobar',
         template_engine=template_engine,
         session=session,
         database=database,
         example=example,
     )
-    assert 'app' in {p.basename for p in tmpworkdir.listdir()}
+    assert 'app' in {p.basename for p in tmpdir.listdir()}
     style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([str(tmpworkdir)])
+    report = style_guide.check_files([str(tmpdir)])
     assert report.total_errors == 0
     # FIXME for some reason this conflicts with other tests and fails when run with all tests
     # could be to do with messed up sys.path
     if database != 'none':
         # TODO currently fails on postgres connection
         return
-    Config('.')
+    Config(str(tmpdir))
 
     # app = create_main_app(config, loop=loop)
     # cli = await test_client(app)
