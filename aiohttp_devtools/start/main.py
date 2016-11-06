@@ -108,7 +108,6 @@ class StartProject:
             raise TemplateError('error in {}'.format(p)) from e
         text = text.strip('\n\t ')
         new_path = self.project_root / p.relative_to(self.template_dir)
-        # print(new_path.name, repr(text[-10:]))
         if len(text) < 3:
             # empty files don't get created, in case a few characters get left behind
             logger.debug('not creating "%s", as it would be empty', new_path)

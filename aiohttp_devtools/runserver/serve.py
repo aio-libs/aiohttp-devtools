@@ -20,6 +20,7 @@ JINJA_ENV = 'aiohttp_jinja2_environment'
 
 
 def modify_main_app(app, config: Config):
+    app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
     if config.livereload:
         livereload_snippet = LIVE_RELOAD_SNIPPET % config.aux_port
@@ -49,8 +50,15 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
     setup_logging(config.verbose)
     app = create_main_app(config, loop=loop)
     loop = app.loop
-    handler = app.make_handler(access_log_format='%r %s %b')
-    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', config.main_port), app.startup(), loop=loop)
+    handler = app.make_handler(
+        logger=dft_logger,
+        access_log_format='%r %s %b'
+    )
+    co = asyncio.gather(
+        loop.create_server(handler, '0.0.0.0', config.main_port, backlog=128),
+        app.startup(),
+        loop=loop
+    )
     server, startup_res = loop.run_until_complete(co)
 
     try:

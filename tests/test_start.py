@@ -110,5 +110,4 @@ async def test_all_options(tmpdir, template_engine, session, database, example):
     # r = await cli.get('/')
     # assert r.status == 200
     # text = await r.text()
-    # # assert text == 'hello world'
-    # print(text)
+    # # assert text == '???'

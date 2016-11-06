@@ -14,7 +14,22 @@ from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 from .conftest import SIMPLE_APP, mktree
 
 async def test_start_runserver(loop, tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='hello world')
+
+async def has_error(request):
+    raise RuntimeError(boom)
+
+def create_app(loop):
+    app = web.Application(loop=loop)
+    app.router.add_get('/', hello)
+    app.router.add_get('/error', has_error)
+    return app"""
+    })
     aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
@@ -30,6 +45,10 @@ async def test_start_runserver(loop, tmpworkdir):
             except (AssertionError, OSError):
                 await asyncio.sleep(0.1, loop=loop)
             else:
+                async with session.get('http://localhost:8000/error') as r:
+                    assert r.status == 500
+                    text = await r.text()
+                    assert 'raise RuntimeError(boom)' in text
                 app_running = True
                 break
     assert app_running
@@ -74,7 +93,7 @@ def test_run_app_http(tmpworkdir, loop, mocker):
     serve_main_app(config, loop=loop)
 
     assert loop.is_closed()
-    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000)
+    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 

@@ -176,7 +176,7 @@ class Config:
         try:
             module = import_module(module_path)
         except ImportError as e:
-            raise AdevConfigError('error importing "{}" from "{}"'.format(module_path, self.python_path)) from e
+            raise AdevConfigError('error importing "{}" from "{}": {}'.format(module_path, self.python_path, e)) from e
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
