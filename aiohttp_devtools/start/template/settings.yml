@@ -1,6 +1,6 @@
 # App settings go here, they're validated in app.main.load_settings
 dev:
-  app_path: app/main.py
+  py_file: app/main.py
   static_path: static/
 # {% if database.is_none and example.is_message_board %}
 message_file: 'messages.txt'

@@ -72,8 +72,7 @@ def runserver(**config):
     """
     setup_logging(config['verbose'])
     try:
-        _runserver(**config)
-        # run_app(*_runserver(**config))
+        run_app(*_runserver(**config))
     except AiohttpDevException as e:
         if config['verbose']:
             tb = click.style(traceback.format_exc().strip('\n'), fg='white', dim=True)

@@ -12,54 +12,45 @@ from aiohttp.web_urldispatcher import StaticResource
 from ..logs import rs_aux_logger as logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
-from .load import import_string
+from .config import Config
 from .log_handlers import fmt_size
 
 LIVE_RELOAD_SNIPPET = b'\n<script src="http://localhost:%d/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
 
 
-def modify_main_app(app, static_url, livereload, debug_toolbar, aux_port):
-    dft_logger.debug('livereload enabled: %s', '✓' if livereload else '✖')
-    if livereload:
-        livereload_snippet = LIVE_RELOAD_SNIPPET % aux_port
+def modify_main_app(app, config: Config):
+    dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
+    if config.livereload:
+        livereload_snippet = LIVE_RELOAD_SNIPPET % config.aux_port
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
                 if hasattr(response, 'body'):
                     response.body += livereload_snippet
         app.on_response_prepare.append(on_prepare)
 
-    static_url = 'http://localhost:{}/{}'.format(aux_port, static_url.strip('/'))
+    static_url = 'http://localhost:{}/{}'.format(config.aux_port, config.static_url.strip('/'))
     app['static_root_url'] = static_url
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
-    if debug_toolbar:
+    if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
-def create_main_app(*,
-                    app_path: str,
-                    static_url: str='/static/',
-                    livereload: bool=True,
-                    debug_toolbar: bool=True,
-                    app_factory: str=None,
-                    aux_port: int=8001,
-                    loop: asyncio.AbstractEventLoop=None):
-    app_factory, _ = import_string(app_path, app_factory)
-
+def create_main_app(config, *, loop: asyncio.AbstractEventLoop=None):
     loop = loop or asyncio.new_event_loop()
-    app = app_factory(loop=loop)
+    app = config.app_factory(loop=loop)
 
-    modify_main_app(app, static_url, livereload, debug_toolbar, aux_port)
+    modify_main_app(app, config)
     return app
 
 
-def serve_main_app(*, main_port: int=8000, verbose: bool=False, **config):
-    setup_logging(verbose)
-    app = create_main_app(**config)
+def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
+    setup_logging(config.verbose)
+    app = create_main_app(config, loop=loop)
     loop = app.loop
     handler = app.make_handler(access_log_format='%r %s %b')
-    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', main_port), app.startup(), loop=loop)
+    co = asyncio.gather(loop.create_server(handler, '0.0.0.0', config.main_port), app.startup(), loop=loop)
     server, startup_res = loop.run_until_complete(co)
 
     try:
@@ -119,7 +110,7 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path: Path, port: int, static_url='/', livereload=True, loop=None):
+def create_auxiliary_app(*, static_path: str, port: int, static_url='/', livereload=True, loop=None):
     app = AuxiliaryApplication(loop=loop)
     app[WS] = []
     app.update(
@@ -137,7 +128,7 @@ def create_auxiliary_app(*, static_path: Path, port: int, static_url='/', livere
 
     if static_path:
         route = CustomStaticResource(static_url,
-                                     str(static_path) + '/',
+                                     static_path + '/',
                                      name='static-router',
                                      tail_snippet=livereload_snippet)
         app.router._reg_resource(route)

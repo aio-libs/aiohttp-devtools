@@ -6,26 +6,12 @@ from unittest import mock
 import aiohttp
 import pytest
 
-from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver import runserver
+from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
-from .conftest import mktree
-
-SIMPLE_APP = {
-    'app.py': """\
-from aiohttp import web
-
-async def hello(request):
-    return web.Response(text='hello world')
-
-def create_app(loop):
-    app = web.Application(loop=loop)
-    app.router.add_get('/', hello)
-    return app"""
-}
-
+from .conftest import SIMPLE_APP, mktree
 
 async def test_start_runserver(loop, tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
@@ -57,36 +43,13 @@ async def test_start_runserver(loop, tmpworkdir):
 
 async def test_run_app(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
-    app = create_main_app(app_path='app.py', loop=loop)
+    app = create_main_app(Config(app_path='app.py'), loop=loop)
     assert isinstance(app, aiohttp.web.Application)
     cli = await test_client(app)
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
     assert text == 'hello world'
-
-
-async def test_create_app_wrong_name(loop, tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
-    with pytest.raises(AiohttpDevConfigError) as excinfo:
-        create_main_app(app_path='app.py', loop=loop, app_factory='missing')
-    assert excinfo.value.args[0] == 'Module "app" does not define a "missing" attribute/class'
-
-
-async def test_app_factory_not_found(loop, tmpworkdir):
-    mktree(tmpworkdir, {
-        'app.py': """\
-from aiohttp import web
-
-async def hello(request):
-    return web.Response(text='hello world')
-
-def not_a_default_name(loop):
-    app = web.Application(loop=loop)
-    app.router.add_get('/', hello)
-    return app"""})
-    with pytest.raises(AiohttpDevConfigError):
-        create_main_app(app_path='app.py', loop=loop)
 
 
 async def test_aux_app(loop, tmpworkdir, test_client):
@@ -107,11 +70,12 @@ def test_run_app_http(tmpworkdir, loop, mocker):
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.05, loop.stop)
 
-    serve_main_app(app_path='app.py', loop=loop)
+    config = Config(app_path='app.py')
+    serve_main_app(config, loop=loop)
 
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000)
-    mock_modify_main_app.assert_called_with(mock.ANY, '/static/', True, True, 8001)
+    mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
 @pytest.fixture
