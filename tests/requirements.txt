@@ -10,3 +10,10 @@ pytest-mock
 pytest-sugar
 pytest-xdist
 sphinx
+
+# required to run "start" apps
+aiohttp-jinja2
+aiohttp-session[secure]
+aiohttp-session[aioredis]
+aiopg
+SQLAlchemy
