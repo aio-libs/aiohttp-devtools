@@ -1,18 +1,29 @@
 language: python
+
 cache: pip
+
 python:
 - '3.5'
 - '3.6-dev'
 - 'nightly'
+
+matrix:
+  allow_failures:
+  - python: '3.6-dev'
+  - python: 'nightly'
+
 install:
 - make install
+
 script:
 - make lint
 - make test
 #- make docs
+
 after_success:
 - ls -lha
 - bash <(curl -s https://codecov.io/bash)
+
 deploy:
   provider: pypi
   user: samuelcolvin
@@ -21,9 +32,4 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
-
-matrix:
-    allow_failures:
-    # https://github.com/KeepSafe/aiohttp/issues/1371
-    - python: '3.6-dev'
-    - python: 'nightly'
+    python: 3.5

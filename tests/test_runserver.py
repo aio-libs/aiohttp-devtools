@@ -13,7 +13,25 @@ from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
 from .conftest import SIMPLE_APP, mktree
 
-async def test_start_runserver(loop, tmpworkdir):
+
+async def test_server_running(loop):
+    async with aiohttp.ClientSession(loop=loop) as session:
+        for i in range(20):
+            try:
+                async with session.get('http://localhost:8000/') as r:
+                    assert r.status == 200
+                    assert (await r.text()) == 'hello world'
+            except (AssertionError, OSError):
+                await asyncio.sleep(0.1, loop=loop)
+            else:
+                async with session.get('http://localhost:8000/error') as r:
+                    assert r.status == 500
+                    text = await r.text()
+                    assert 'raise RuntimeError(boom)' in text
+                return True
+
+
+def test_start_runserver(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -30,28 +48,13 @@ def create_app(loop):
     app.router.add_get('/error', has_error)
     return app"""
     })
+    loop = asyncio.new_event_loop()
     aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
 
-    # this has started the app running in a separate process, check it's working. ugly but comprehensive check
-    app_running = False
-    async with aiohttp.ClientSession(loop=loop) as session:
-        for i in range(20):
-            try:
-                async with session.get('http://localhost:8000/') as r:
-                    assert r.status == 200
-                    assert (await r.text()) == 'hello world'
-            except (AssertionError, OSError):
-                await asyncio.sleep(0.1, loop=loop)
-            else:
-                async with session.get('http://localhost:8000/error') as r:
-                    assert r.status == 500
-                    text = await r.text()
-                    assert 'raise RuntimeError(boom)' in text
-                app_running = True
-                break
-    assert app_running
+    server_running = loop.run_until_complete(test_server_running(loop))
+    assert server_running
 
     assert len(observer._handlers) == 1
     event_handlers = list(observer._handlers.values())[0]

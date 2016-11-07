@@ -68,7 +68,6 @@ class Config:
         self.main_port = config['main_port']
         self.aux_port = config['aux_port']
         self.app_factory, self.code_directory = self._import_app_factory()
-        self._check_app_factory()
 
     @property
     def static_path_str(self):
@@ -198,7 +197,7 @@ class Config:
         directory = Path(module.__file__).parent
         return attr, directory
 
-    def _check_app_factory(self):
+    def check(self, loop=None):
         """
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
@@ -206,7 +205,7 @@ class Config:
         logger.debug('checking app factory "%s"', self.app_factory_name)
         if not callable(self.app_factory):
             raise AdevConfigError('app_factory "{s.app_factory_name}" is not callable'.format(s=self))
-        loop = asyncio.new_event_loop()
+        loop = loop or asyncio.get_event_loop()
         try:
             app = self.app_factory(loop)
         except ConfigError as e:
