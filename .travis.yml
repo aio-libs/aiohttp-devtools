@@ -2,8 +2,8 @@ language: python
 cache: pip
 python:
 - '3.5'
-#- '3.6-dev'  # https://travis-ci.org/samuelcolvin/aiohttp-devtools/jobs/173507111
-#- 'nightly'  # tried with 3.6b3 locally and couldn't replicate
+- '3.6-dev'
+- 'nightly'
 install:
 - make install
 script:
@@ -21,3 +21,9 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
+
+matrix:
+    allow_failures:
+    # https://github.com/KeepSafe/aiohttp/issues/1371
+    - python: '3.6-dev'
+    - python: 'nightly'
