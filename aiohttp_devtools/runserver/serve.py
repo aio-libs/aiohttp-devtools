@@ -135,10 +135,13 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
         livereload_snippet = None
 
     if static_path:
-        route = CustomStaticResource(static_url,
-                                     static_path + '/',
-                                     name='static-router',
-                                     tail_snippet=livereload_snippet)
+        route = CustomStaticResource(
+            static_url,
+            static_path + '/',
+            name='static-router',
+            tail_snippet=livereload_snippet,
+            follow_symlinks=True
+        )
         app.router._reg_resource(route)
 
     return app
@@ -260,9 +263,11 @@ class CustomStaticResource(StaticResource):
         super().__init__(*args, **kwargs)
         self._show_index = True
         if tail_snippet:
-            self._file_sender = CustomFileSender(resp_factory=self._file_sender._response_factory,
-                                                 chunk_size=self._file_sender._chunk_size,
-                                                 tail_snippet=tail_snippet)
+            self._file_sender = CustomFileSender(
+                resp_factory=self._file_sender._response_factory,
+                chunk_size=self._file_sender._chunk_size,
+                tail_snippet=tail_snippet
+            )
 
     def modify_request(self, request):
         """
