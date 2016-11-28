@@ -1,8 +1,10 @@
+import os
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from setuptools import setup
 
-long_description = Path(__file__).resolve().parent.joinpath('README.rst').read_text()
+THIS_DIR = Path(__file__).resolve().parent
+long_description = THIS_DIR.joinpath('README.rst').read_text()
 
 # avoid loading the package before requirements are installed:
 version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module()
@@ -10,11 +12,10 @@ version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module
 
 def check_livereload_js():
     import hashlib
-    from pathlib import Path
     live_reload_221_hash = 'a451e4d39b8d7ef62d380d07742b782f'
     live_reload_221_url = 'https://raw.githubusercontent.com/livereload/livereload-js/v2.2.1/dist/livereload.js'
 
-    path = Path(__file__).absolute().parent.joinpath('aiohttp_devtools/runserver/livereload.js')
+    path = THIS_DIR.joinpath('aiohttp_devtools/runserver/livereload.js')
 
     def check_path():
         with path.open('rb') as fr:
@@ -36,6 +37,16 @@ def check_livereload_js():
         raise RuntimeError('checksums do not match for {} after download'.format(path))
 
 check_livereload_js()
+
+package = THIS_DIR.joinpath('aiohttp_devtools/start')
+
+start_package_data = []
+
+for _root, _, files in os.walk(str(THIS_DIR.joinpath('aiohttp_devtools/start/template'))):
+    root = Path(_root)
+    for f in files:
+        p = root / f
+        start_package_data.append(str(p.relative_to(package)))
 
 setup(
     name='aiohttp-devtools',
@@ -61,7 +72,10 @@ setup(
     author_email='s@muelcolvin.com',
     url='https://github.com/samuelcolvin/aiohttp-devtools',
     license='MIT',
-    package_data={'aiohttp_devtools.runserver': ['livereload.js']},
+    package_data={
+        'aiohttp_devtools.runserver': ['livereload.js'],
+        'aiohttp_devtools.start': start_package_data,
+    },
     packages=[
         'aiohttp_devtools',
         'aiohttp_devtools.runserver',

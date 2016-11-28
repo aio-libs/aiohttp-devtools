@@ -98,7 +98,8 @@ class StartProject:
                 self.generate_directory(pp)
             else:
                 assert pp.is_file()
-                self.generate_file(pp)
+                if not pp.name.endswith('.pyc'):
+                    self.generate_file(pp)
 
     def generate_file(self, p: Path):
         try:
