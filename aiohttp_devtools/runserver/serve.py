@@ -8,6 +8,7 @@ from aiohttp import FileSender, WSMsgType, web
 from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
+from yarl import unquote
 
 from ..logs import rs_aux_logger as logger
 from ..logs import rs_dft_logger as dft_logger
@@ -24,6 +25,7 @@ def modify_main_app(app, config: Config):
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
     if config.livereload:
         livereload_snippet = LIVE_RELOAD_SNIPPET % config.aux_port
+
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
                 if hasattr(response, 'body'):
@@ -136,7 +138,7 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
 
     if static_path:
         route = CustomStaticResource(
-            static_url,
+            static_url.rstrip('/'),
             static_path + '/',
             name='static-router',
             tail_snippet=livereload_snippet,
@@ -261,6 +263,7 @@ class CustomStaticResource(StaticResource):
         self._asset_path = None  # TODO
         tail_snippet = kwargs.pop('tail_snippet')
         super().__init__(*args, **kwargs)
+        print('prefix', repr(self._prefix))
         self._show_index = True
         if tail_snippet:
             self._file_sender = CustomFileSender(
@@ -273,7 +276,7 @@ class CustomStaticResource(StaticResource):
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
-        filename = request.match_info['filename']
+        filename = unquote(request.match_info['filename'])
         raw_path = self._directory.joinpath(filename)
         try:
             filepath = raw_path.resolve()

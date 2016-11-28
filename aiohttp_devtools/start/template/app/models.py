@@ -12,5 +12,6 @@ class Message(Base):
     message = Column(Text)
     timestamp = Column(DateTime(), server_default=func.now(), nullable=False)
 
+
 sa_messages = Message.__table__
 # {% endif %}

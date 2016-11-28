@@ -5,9 +5,11 @@ from aiohttp_devtools.runserver.config import Config
 
 from .conftest import SIMPLE_APP, mktree
 
+
 async def test_load_simple_app(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     Config(app_path='app.py')
+
 
 async def test_create_app_wrong_name(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)

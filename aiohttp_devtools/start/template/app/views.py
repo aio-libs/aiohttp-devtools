@@ -50,6 +50,7 @@ BASE_PAGE = """\
 </main>
 </body>"""
 
+
 async def index(request):
     """
     This is the view handler for the "/" url.
