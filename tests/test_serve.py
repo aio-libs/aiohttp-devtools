@@ -50,3 +50,17 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
     assert r.headers['content-type'] == 'application/javascript'
     text = await r.text()
     assert text.startswith('(function e(t,n,r){')
+
+
+async def test_serve_index(loop, test_client, tmpworkdir):
+    app, observer, port = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
+    assert port == 8000
+    cli = await test_client(app)
+    mktree(tmpworkdir, {
+        'index.html': '<h1>hello index</h1>',
+    })
+    r = await cli.get('/')
+    assert r.status == 200
+    assert r.headers['content-type'] == 'text/html'
+    text = await r.text()
+    assert text == '<h1>hello index</h1>'

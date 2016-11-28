@@ -263,7 +263,6 @@ class CustomStaticResource(StaticResource):
         self._asset_path = None  # TODO
         tail_snippet = kwargs.pop('tail_snippet')
         super().__init__(*args, **kwargs)
-        print('prefix', repr(self._prefix))
         self._show_index = True
         if tail_snippet:
             self._file_sender = CustomFileSender(
