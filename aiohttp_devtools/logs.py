@@ -42,7 +42,7 @@ def log_config(verbose: bool) -> dict:
     log_level = 'DEBUG' if verbose else 'INFO'
     return {
         'version': 1,
-        'disable_existing_loggers': True,
+        'disable_existing_loggers': False,
         'formatters': {
             'default': {
                 'format': '[%(asctime)s] %(message)s' if verbose else '[%(asctime)s] %(message)s',
