@@ -88,13 +88,13 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=1.1.6',
-        'aiohttp-debugtoolbar>=0.1.3',
+        'aiohttp>=1.2.0',
+        'aiohttp-debugtoolbar>=0.3.0',
         'click>=6.6',
         'isort>=4.2.5',
-        'Jinja2>=2.8',
+        'Jinja2>=2.8.1',
         'trafaret>=0.7.5',
-        'trafaret_config>=0.1.1',
+        'trafaret_config>=1.0.1',
         'watchdog>=0.8.3',
     ],
 )

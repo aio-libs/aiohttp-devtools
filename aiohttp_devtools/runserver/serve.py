@@ -279,6 +279,9 @@ class CustomStaticResource(StaticResource):
         raw_path = self._directory.joinpath(filename)
         try:
             filepath = raw_path.resolve()
+            if not filepath.exists():
+                # simulate strict=True for python 3.6 which is not permitted with 3.5
+                raise FileNotFoundError()
         except FileNotFoundError:
             try:
                 html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
