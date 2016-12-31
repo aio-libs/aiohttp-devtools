@@ -1,6 +1,6 @@
 {# This file is special: lines are made unique, stripped and sorted before the new requirements.txt file is created #}
 
-aiohttp==1.1.6
+aiohttp==1.2.0
 trafaret-config==1.0.1
 
 {% if template_engine.is_jinja2 %}
