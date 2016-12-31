@@ -19,4 +19,4 @@ aiohttp-session[secure]==0.7.1
 aiohttp-session[aioredis]==0.7.1
 aiopg==0.12.0
 SQLAlchemy==1.1.4
-trafaret-config==0.1.1
+trafaret-config==1.0.1
