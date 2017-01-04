@@ -96,7 +96,12 @@ class PyCodeEventHandler(BaseEventHandler):
             logger.debug('stopping server process...')
             os.kill(self._process.pid, signal.SIGINT)
             self._process.join(5)
-            logger.debug('process stopped')
+            if self._process.exitcode is None:
+                logger.warning('process has not terminated, sending SIGKILL')
+                os.kill(self._process.pid, signal.SIGKILL)
+                self._process.join(1)
+            else:
+                logger.debug('process stopped')
         else:
             logger.warning('server process already dead, exit code: %d', self._process.exitcode)
 

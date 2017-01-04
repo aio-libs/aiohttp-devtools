@@ -1,4 +1,3 @@
-import asyncio
 import re
 import sys
 from importlib import import_module
@@ -197,22 +196,21 @@ class Config:
         directory = Path(module.__file__).parent
         return attr, directory
 
-    def check(self, loop=None):
+    def check(self, loop):
         """
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
         """
         logger.debug('checking app factory "%s"', self.app_factory_name)
         if not callable(self.app_factory):
-            raise AdevConfigError('app_factory "{s.app_factory_name}" is not callable'.format(s=self))
-        loop = loop or asyncio.get_event_loop()
+            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable'.format(self))
         try:
             app = self.app_factory(loop)
         except ConfigError as e:
-            raise AdevConfigError('app factory "{}" caused ConfigError: {}'.format(self.app_factory_name, e)) from e
+            raise AdevConfigError('app factory "{.app_factory_name}" caused ConfigError: {}'.format(self, e)) from e
         if not isinstance(app, Application):
-            raise AdevConfigError('app factory "{}" returned "{}" not an '
-                                  'aiohttp.web.Application'.format(self.app_factory_name, app.__class__.__name__))
+            raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
+                                  'aiohttp.web.Application'.format(self, app))
         loop.run_until_complete(app.startup())
 
     def __str__(self):

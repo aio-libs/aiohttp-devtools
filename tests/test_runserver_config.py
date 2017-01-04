@@ -75,8 +75,8 @@ def app_factory(loop):
 
 
 @pytest.mark.parametrize('files,exc', invalid_apps, ids=['%s...' % v[1][:40] for v in invalid_apps])
-def test_all_options(tmpworkdir, files, exc):
+def test_all_options(tmpworkdir, files, exc, loop):
     mktree(tmpworkdir, files)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='.').check()
+        Config(app_path='.').check(loop)
     assert exc.format(tmpworkdir=tmpworkdir) == excinfo.value.args[0]

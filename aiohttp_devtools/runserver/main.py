@@ -6,7 +6,7 @@ from watchdog.observers import Observer
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import create_auxiliary_app
+from .serve import check_port_open, create_auxiliary_app
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
@@ -35,7 +35,9 @@ def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEvent
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
     config = Config(app_path, verbose, **kwargs)
+    loop = loop or asyncio.get_event_loop()
     config.check(loop)
+    loop.run_until_complete(check_port_open(config.main_port, loop))
 
     logger.debug('config as loaded from key word arguments and possible yaml file:\n%s', config)
 

@@ -2,6 +2,7 @@ import asyncio
 import json
 import mimetypes
 from pathlib import Path
+from time import sleep
 
 import aiohttp_debugtoolbar
 from aiohttp import FileSender, WSMsgType, web
@@ -10,7 +11,8 @@ from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import unquote
 
-from ..logs import rs_aux_logger as logger
+from ..exceptions import AiohttpDevException
+from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
@@ -18,6 +20,7 @@ from .log_handlers import fmt_size
 
 LIVE_RELOAD_SNIPPET = b'\n<script src="http://localhost:%d/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
+HOST = '0.0.0.0'
 
 
 def modify_main_app(app, config: Config):
@@ -40,24 +43,45 @@ def modify_main_app(app, config: Config):
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
-def create_main_app(config, *, loop: asyncio.AbstractEventLoop=None):
-    loop = loop or asyncio.new_event_loop()
-    app = config.app_factory(loop=loop)
+async def check_port_open(port, loop, delay=1):
+    # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
+    # this approach replicates aiohttp so should always give the same answer
+    port_open = False
+    for i in range(5, 0, -1):
+        try:
+            server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
+        except OSError as e:
+            if e.errno != 98:
+                raise
+            dft_logger.warning('port %d is already in use, waiting %d...', port, i)
+            sleep(delay)
+        else:
+            server.close()
+            await server.wait_closed()
+            port_open = True
+            break
+    if not port_open:
+        raise AiohttpDevException('The port {} is already is use'.format(port))
 
+
+def create_main_app(config, loop):
+    app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     return app
 
 
 def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
     setup_logging(config.verbose)
+
+    loop = loop or asyncio.new_event_loop()
+    loop.run_until_complete(check_port_open(config.main_port, loop))
     app = create_main_app(config, loop=loop)
-    loop = app.loop
     handler = app.make_handler(
         logger=dft_logger,
         access_log_format='%r %s %b'
     )
     co = asyncio.gather(
-        loop.create_server(handler, '0.0.0.0', config.main_port, backlog=128),
+        loop.create_server(handler, HOST, config.main_port, backlog=128),
         app.startup(),
         loop=loop
     )
@@ -93,10 +117,10 @@ class AuxiliaryApplication(web.Application):
         reloads = 0
         for ws, url in self[WS]:
             if path and is_html and path not in {url, url + '.html', url + '/index.html'}:
-                logger.debug('skipping reload for client at %s', url)
+                aux_logger.debug('skipping reload for client at %s', url)
                 continue
             reloads += 1
-            logger.debug('reload client at %s', url)
+            aux_logger.debug('reload client at %s', url)
             data = {
                 'command': 'reload',
                 'path': path or url,
@@ -107,14 +131,15 @@ class AuxiliaryApplication(web.Application):
                 ws.send_str(json.dumps(data))
             except RuntimeError as e:
                 # eg. "RuntimeError: websocket connection is closing"
-                logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
+                aux_logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
 
         if reloads:
-            logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, '' if reloads == 1 else 's')
+            s = '' if reloads == 1 else 's'
+            aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
         return cli_count
 
     async def cleanup(self):
-        logger.debug('closing %d websockets...', len(self[WS]))
+        aux_logger.debug('closing %d websockets...', len(self[WS]))
         coros = [ws.close() for ws, _ in self[WS]]
         await asyncio.gather(*coros, loop=self._loop)
         return await super().cleanup()
@@ -132,7 +157,7 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         livereload_snippet = LIVE_RELOAD_SNIPPET % port
-        logger.debug('enabling livereload on auxiliary app')
+        aux_logger.debug('enabling livereload on auxiliary app')
     else:
         livereload_snippet = None
 
@@ -151,7 +176,7 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
 
 async def livereload_js(request):
     if request.if_modified_since:
-        logger.debug('> %s %s %s 0B', request.method, request.path, 304)
+        aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
     script_key = 'livereload_script'
@@ -162,7 +187,7 @@ async def livereload_js(request):
             lr_script = f.read()
             request.app[script_key] = lr_script
 
-    logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
+    aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
@@ -179,12 +204,12 @@ async def websocket_handler(request):
             try:
                 data = json.loads(msg.data)
             except json.JSONDecodeError as e:
-                logger.error('JSON decode error: %s', str(e))
+                aux_logger.error('JSON decode error: %s', str(e))
             else:
                 command = data['command']
                 if command == 'hello':
                     if 'http://livereload.com/protocols/official-7' not in data['protocols']:
-                        logger.error('live reload protocol 7 not supported by client %s', msg.data)
+                        aux_logger.error('live reload protocol 7 not supported by client %s', msg.data)
                         ws.close()
                     else:
                         handshake = {
@@ -196,20 +221,20 @@ async def websocket_handler(request):
                         }
                         ws.send_str(json.dumps(handshake))
                 elif command == 'info':
-                    logger.debug('browser connected: %s', data)
+                    aux_logger.debug('browser connected: %s', data)
                     url = '/' + data['url'].split('/', 3)[-1]
                     request.app[WS].append((ws, url))
                 else:
-                    logger.error('Unknown ws message %s', msg.data)
+                    aux_logger.error('Unknown ws message %s', msg.data)
         elif msg.tp == WSMsgType.ERROR:
-            logger.error('ws connection closed with exception %s', ws.exception())
+            aux_logger.error('ws connection closed with exception %s', ws.exception())
         else:
-            logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.tp], msg.data)
+            aux_logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.tp], msg.data)
 
     if url is None:
-        logger.warning('browser disconnected, appears no websocket connection was made')
+        aux_logger.warning('browser disconnected, appears no websocket connection was made')
     else:
-        logger.debug('browser disconnected')
+        aux_logger.debug('browser disconnected')
         request.app[WS].remove((ws, url))
     return ws
 
@@ -314,7 +339,7 @@ class CustomStaticResource(StaticResource):
         else:
             status, length = response.status, response.content_length
         finally:
-            l = logger.info if status in {200, 304} else logger.warning
+            l = aux_logger.info if status in {200, 304} else aux_logger.warning
             l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
         return response
 
