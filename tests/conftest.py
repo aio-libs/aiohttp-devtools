@@ -14,3 +14,7 @@ def create_app(loop):
     app.router.add_get('/', hello)
     return app"""
 }
+
+
+def get_slow(_pytest):
+    return _pytest.mark.skipif(_pytest.config.getoption('--fast'), reason='not run with --fast flag')

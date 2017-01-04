@@ -11,7 +11,8 @@ from aiohttp_devtools.runserver.serve import create_main_app
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
 
-slow = pytest.mark.skipif(pytest.config.getoption('--fast'), reason='not run with --fast flag')
+from .conftest import get_slow
+slow = get_slow(pytest)
 
 
 def test_start_simple(tmpdir, caplog):

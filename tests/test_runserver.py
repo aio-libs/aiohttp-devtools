@@ -12,9 +12,12 @@ from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, get_slow
+
+slow = get_slow(pytest)
 
 
+@slow
 async def test_server_running(loop):
     async with aiohttp.ClientSession(loop=loop) as session:
         for i in range(20):
@@ -32,6 +35,7 @@ async def test_server_running(loop):
                 return True
 
 
+@slow
 def test_start_runserver(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\

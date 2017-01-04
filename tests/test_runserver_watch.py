@@ -1,3 +1,4 @@
+import signal
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -101,7 +102,7 @@ def test_livereload():
     app.src_reload.assert_called_once_with('foo.jinja')
 
 
-def test_pycode(mocker):
+def test_pycode(mocker, caplog):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
     mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     app = MagicMock()
@@ -109,11 +110,12 @@ def test_pycode(mocker):
     PyCodeEventHandler(app, config)
     mock_process.assert_called_once_with(target=serve_main_app, args=(config,))
     assert mock_os_kill.call_count == 0
+    assert 'adev.server.dft INFO: Starting dev server at' in caplog
+    assert 'adev.server.dft INFO: Restarting dev server at' not in caplog
 
 
-def test_pycode_event(mocker):
+def test_pycode_event(mocker, caplog):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
-    mock_process.pid = 123
     mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     app = MagicMock()
     config = MagicMock()
@@ -123,3 +125,41 @@ def test_pycode_event(mocker):
     eh.dispatch(Event(src_path='foo.py'))
     assert mock_process.call_count == 2
     assert mock_os_kill.call_count == 1
+    assert 'adev.server.dft INFO: Starting dev server at' in caplog
+    assert 'adev.server.dft INFO: Restarting dev server at' in caplog
+
+
+def test_pycode_event_dead_process(mocker):
+    mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
+    process = MagicMock()
+    process.is_alive = MagicMock(return_value=False)
+    mock_process.return_value = process
+    mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
+    app = MagicMock()
+    config = MagicMock()
+
+    eh = PyCodeEventHandler(app, config)
+    eh._change_dt = datetime(2017, 1, 1)
+    eh.dispatch(Event(src_path='foo.py'))
+    assert mock_process.call_count == 2
+    assert mock_os_kill.call_count == 0
+
+
+def test_pycode_event_process_not_ending(mocker):
+    mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
+    process = MagicMock()
+    process.pid = 123
+    process.exitcode = None
+    mock_process.return_value = process
+    mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
+    app = MagicMock()
+    config = MagicMock()
+
+    eh = PyCodeEventHandler(app, config)
+    eh._change_dt = datetime(2017, 1, 1)
+    eh.dispatch(Event(src_path='foo.py'))
+    assert mock_process.call_count == 2
+    assert mock_os_kill.call_args_list == [
+        ((123, signal.SIGINT),),
+        ((123, signal.SIGKILL),),
+    ]
