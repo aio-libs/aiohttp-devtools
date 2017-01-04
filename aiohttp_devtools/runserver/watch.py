@@ -36,7 +36,6 @@ class BaseEventHandler(PatternMatchingEventHandler):
         super().__init__(*args, **kwargs)
 
     def dispatch(self, event):
-
         if event.is_directory:
             return
 
@@ -65,7 +64,7 @@ class BaseEventHandler(PatternMatchingEventHandler):
         self.skipped_event = False
 
     def on_event(self, event):
-        pass
+        raise NotImplementedError()
 
 
 class PyCodeEventHandler(BaseEventHandler):

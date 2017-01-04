@@ -5,13 +5,14 @@ from unittest import mock
 
 import aiohttp
 import pytest
+from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
-from .conftest import SIMPLE_APP, mktree
+from .conftest import SIMPLE_APP
 
 
 async def test_server_running(loop):
@@ -118,14 +119,14 @@ async def test_websocket_hello(aux_cli, caplog):
                 'protocols': ['http://livereload.com/protocols/official-7']
             }
             break  # noqa
-    assert 'adev.server.aux: browser disconnected, appears no websocket connection was made' in caplog.log
+    assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in caplog
 
 
 async def test_websocket_info(aux_cli, caplog):
     caplog.set_level(logging.DEBUG)
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
-    assert 'adev.server.aux: browser connected:' in caplog
+    assert 'adev.server.aux DEBUG: browser connected:' in caplog
 
 
 async def test_websocket_bad(aux_cli, caplog):
@@ -134,10 +135,10 @@ async def test_websocket_bad(aux_cli, caplog):
         ws.send_json({'command': 'hello', 'protocols': ['not official-7']})
         ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
         ws.send_bytes(b'this is bytes')
-    assert 'adev.server.aux: live reload protocol 7 not supported' in caplog.log
-    assert 'adev.server.aux: JSON decode error' in caplog.log
-    assert 'adev.server.aux: Unknown ws message' in caplog.log
-    assert "adev.server.aux: unknown websocket message type binary, data: b'this is bytes'" in caplog.log
+    assert 'adev.server.aux ERROR: live reload protocol 7 not supported' in caplog.log
+    assert 'adev.server.aux ERROR: JSON decode error' in caplog.log
+    assert 'adev.server.aux ERROR: Unknown ws message' in caplog.log
+    assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in caplog
 
 
 async def test_websocket_reload(aux_cli, caplog):
@@ -151,5 +152,5 @@ async def test_websocket_reload(aux_cli, caplog):
             'plugins': 'bang',
         })
         await asyncio.sleep(0.05, loop=app.loop)
-        assert 'adev.server.aux: browser connected:' in caplog
+        assert 'adev.server.aux DEBUG: browser connected:' in caplog
         assert app.src_reload('foobar') == 1

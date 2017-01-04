@@ -3,14 +3,13 @@ import itertools
 import aiohttp
 import pytest
 from flake8.api import legacy as flake8
+from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_main_app
 from aiohttp_devtools.start import StartProject
 from aiohttp_devtools.start.main import Options
-
-from .conftest import mktree
 
 slow = pytest.mark.skipif(pytest.config.getoption('--fast'), reason='not run with --fast flag')
 
@@ -28,13 +27,13 @@ def test_start_simple(tmpdir, caplog):
         'tests',
     }
     assert """\
-adev.main: Starting new aiohttp project "foobar" at "/tmp/..."
-adev.main: config:
+adev.main INFO: Starting new aiohttp project "foobar" at "/tmp/..."
+adev.main INFO: config:
     template_engine: jinja2
     session: secure
     database: postgres-sqlalchemy
     example: message-board
-adev.main: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main INFO: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 async def test_start_other_dir(tmpdir, loop, test_client, caplog):
@@ -51,13 +50,13 @@ async def test_start_other_dir(tmpdir, loop, test_client, caplog):
         'tests',
     }
     assert """\
-adev.main: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
-adev.main: config:
+adev.main INFO: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
+adev.main INFO: config:
     template_engine: jinja2
     session: secure
     database: none
     example: message-board
-adev.main: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
     app = create_main_app(Config(str(tmpdir.join('the-path'))), loop=loop)
     assert isinstance(app, aiohttp.web.Application)
 

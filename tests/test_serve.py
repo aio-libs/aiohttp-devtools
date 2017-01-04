@@ -1,8 +1,7 @@
 import pytest
+from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import serve_static
-
-from .conftest import mktree
 
 
 @pytest.yield_fixture

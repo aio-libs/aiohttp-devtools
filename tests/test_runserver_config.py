@@ -1,9 +1,10 @@
 import pytest
+from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP, mktree
+from .conftest import SIMPLE_APP
 
 
 async def test_load_simple_app(tmpworkdir):
