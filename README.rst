@@ -13,7 +13,7 @@ Installation
 
 Requires **python 3.5** or **python 3.6**.
 
-.. code::
+.. code:: shell
 
     pip install aiohttp-devtools
 
@@ -21,6 +21,7 @@ Usage
 -----
 
 The ``aiohttp-devtools`` CLI (and it's shorter alias ``adev``) Consists of three sub-commands:
+`runserver`_, `serve`_ and `start`_.
 
 runserver
 ~~~~~~~~~
@@ -29,7 +30,7 @@ Provides a simple local server for running your application while you're develop
 
 Usage is simply
 
-.. code::
+.. code:: shell
 
     adev runserver <app-path>
 
@@ -51,11 +52,11 @@ For more options see ``adev runserver --help``.
 serve
 ~~~~~
 
-Similar to _`runserver` except just serves static files.
+Similar to `runserver`_ except just serves static files.
 
 Usage is simply
 
-.. code::
+.. code:: shell
 
     adev serve <path-to-directory-to-serve>
 
@@ -69,7 +70,7 @@ Is a "cookie cutter" command to create a new bare bones aiohttp app similar to d
 
 Usage is simply
 
-.. code::
+.. code:: shell
 
     adev start <path-to-directory-to-create-project-in>
 
@@ -92,11 +93,66 @@ You're then asked a bunch of questions about the the application you're about to
 
 * **Example** the newly created app can include
 
-  - **message board**: a simple which demonstrates a little of aiohttp's usage
+  - **message board**: which demonstrates a little of aiohttp's usage. Messages and be added via posting to a form, are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
   - **none**: no example, just a single simple view is created.
 
-For more options see ``adev start --help``, or just run ``adev start .`` and follow instructions.
+For more options see ``adev start --help``, or just run ``adev start foobar`` and follow instructions.
 
+
+Tutorial
+--------
+
+To demonstrate what adev can do let's walk through creating a new application:
+
+First let's create a clean python environment to work in (it's assumed you've already got
+**python 3.5**, **pip** and **virtualenv**) and install adev
+(we might as well also install ``ipython`` as it alwasy comes in useful).
+
+.. code:: shell
+
+    mkdir my_new_app && cd my_new_app
+    virtualenv -p /usr/bin/python3.5 env
+    . env/bin/activate
+    pip install aiohttp-devtools ipython
+
+
+We're now ready to build our new application with `start`_, using the current directory ``.`` will put files where
+we want them and will prompt adev to name the project ``my_new_app`` after the current directory.
+
+We're going to explicitly choose no database here to make, this tutorial easier but you can remove that option
+and choose to use a proper database if you like.
+
+You can just hit return to choose the default for all the option options.
+
+
+.. code:: shell
+
+    adev start . --database none
+
+That's it your, app is now created.
+
+If you went of piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings.
+
+Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
+``./requirements.txt``, to install simply run
+
+.. code:: shell
+
+    pip install -r requirements.txt
+
+You can then run your app with just
+
+.. code:: shell
+
+    adev runserver .
+
+With that:
+
+* your app should be being served at ``localhost:8000`` (you can go and play with it in a browser).
+* Your static files are being served at ``localhost:8001``, adev has supplied configured your app to know that so it should be rendering properly.
+* any changes to your app's code (``*.py`` files) should cause the server to reload, changes to any files (``*.py``, ``*.jinja``, ``*.js`` etc.) will cause livereload to prompt your browser to reload the required pages.
+
+**That's it, go develop.**
 
 .. |Build Status| image:: https://travis-ci.org/samuelcolvin/aiohttp-devtools.svg?branch=master
    :target: https://travis-ci.org/samuelcolvin/aiohttp-devtools
