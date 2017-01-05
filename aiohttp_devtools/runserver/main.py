@@ -6,14 +6,14 @@ from watchdog.observers import Observer
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import check_port_open, create_auxiliary_app
+from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
 def run_app(app, observer, port):
     loop = app.loop
     handler = app.make_handler(access_log=None)
-    server = loop.run_until_complete(loop.create_server(handler, '0.0.0.0', port))
+    server = loop.run_until_complete(loop.create_server(handler, HOST, port))
 
     try:
         loop.run_forever()

@@ -1,24 +1,28 @@
 import asyncio
 import json
-import logging
+import os
+import signal
+import time
+from multiprocessing import Process
 from unittest import mock
 
 import aiohttp
 import pytest
+from aiohttp.web import Application
 from pytest_toolbox import mktree
 
-from aiohttp_devtools.runserver import runserver
+from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
-from .conftest import SIMPLE_APP, get_slow
+from .conftest import SIMPLE_APP, get_ifboxed, get_slow
 
 slow = get_slow(pytest)
+ifboxed = get_ifboxed(pytest)
 
 
-@slow
-async def test_server_running(loop):
+async def check_server_running(loop):
     async with aiohttp.ClientSession(loop=loop) as session:
         for i in range(20):
             try:
@@ -30,13 +34,12 @@ async def test_server_running(loop):
             else:
                 async with session.get('http://localhost:8000/error') as r:
                     assert r.status == 500
-                    text = await r.text()
-                    assert 'raise RuntimeError(boom)' in text
+                    assert 'raise ValueError()' in (await r.text())
                 return True
 
 
 @slow
-def test_start_runserver(tmpworkdir):
+def test_start_runserver(tmpworkdir, caplog):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -45,30 +48,50 @@ async def hello(request):
     return web.Response(text='hello world')
 
 async def has_error(request):
-    raise RuntimeError(boom)
+    raise ValueError()
 
 def create_app(loop):
     app = web.Application(loop=loop)
     app.router.add_get('/', hello)
     app.router.add_get('/error', has_error)
-    return app"""
+    return app""",
+        'static_dir/foo.js': 'var bar=1;',
     })
     loop = asyncio.new_event_loop()
-    aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop)
+    aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop, static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
 
-    server_running = loop.run_until_complete(test_server_running(loop))
+    server_running = loop.run_until_complete(check_server_running(loop))
     assert server_running
 
-    assert len(observer._handlers) == 1
-    event_handlers = list(observer._handlers.values())[0]
-    assert len(event_handlers) == 2
+    assert len(observer._handlers) == 2
+    event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
     code_event_handler._process.terminate()
+    assert (
+        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
+        'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
+        'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
+    ) == caplog
 
 
-async def test_run_app(loop, tmpworkdir, test_client):
+def kill_parent_soon():
+    time.sleep(0.2)
+    os.kill(os.getppid(), signal.SIGINT)
+
+
+@ifboxed
+@slow
+def test_run_app(loop, unused_port):
+    app = Application(loop=loop)
+    obersver = mock.MagicMock()
+    port = unused_port()
+    Process(target=kill_parent_soon).start()
+    run_app(app, obersver, port)
+
+
+async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
     app = create_main_app(Config(app_path='app.py'), loop=loop)
     assert isinstance(app, aiohttp.web.Application)
@@ -126,11 +149,15 @@ async def test_websocket_hello(aux_cli, caplog):
     assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in caplog
 
 
-async def test_websocket_info(aux_cli, caplog):
-    caplog.set_level(logging.DEBUG)
-    async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
+async def test_websocket_info(aux_cli, loop):
+    assert len(aux_cli.server.app['websockets']) == 0
+    ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
+    try:
         ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
-    assert 'adev.server.aux DEBUG: browser connected:' in caplog
+        await asyncio.sleep(0.05, loop=loop)
+        assert len(aux_cli.server.app['websockets']) == 1
+    finally:
+        await ws.close()
 
 
 async def test_websocket_bad(aux_cli, caplog):
@@ -145,16 +172,16 @@ async def test_websocket_bad(aux_cli, caplog):
     assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in caplog
 
 
-async def test_websocket_reload(aux_cli, caplog):
-    caplog.set_level(logging.DEBUG)
-    app = aux_cli._server.app
-    assert app.src_reload('foobar') == 0
-    async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
+async def test_websocket_reload(aux_cli, loop):
+    assert aux_cli.server.app.src_reload('foobar') == 0
+    ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
+    try:
         ws.send_json({
             'command': 'info',
             'url': 'foobar',
             'plugins': 'bang',
         })
-        await asyncio.sleep(0.05, loop=app.loop)
-        assert 'adev.server.aux DEBUG: browser connected:' in caplog
-        assert app.src_reload('foobar') == 1
+        await asyncio.sleep(0.05, loop=loop)
+        assert aux_cli.server.app.src_reload('foobar') == 1
+    finally:
+        await ws.close()

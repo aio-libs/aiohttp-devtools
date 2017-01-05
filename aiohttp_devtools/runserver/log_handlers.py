@@ -32,13 +32,17 @@ class AiohttpAccessHandler(logging.Handler):
         m = re.match('^(\[.*?\] )', log_entry)
         time = click.style(m.groups()[0], fg='magenta')
         msg = log_entry[m.end():]
-        method, path, _, code, size = msg.split(' ')
-        size = fmt_size(int(size))
-        msg = '{method} {path} {code} {size}'.format(method=method, path=path, code=code, size=size)
-        if (code == '304' and size == '0B') or path.startswith('/_debugtoolbar/'):
-            msg = click.style(msg, dim=True)
-        msg = '{} {}'.format(self.prefix, msg)
-        click.echo(time + msg)
+        try:
+            method, path, _, code, size = msg.split(' ')
+        except ValueError:
+            click.echo(time + msg)
+        else:
+            size = fmt_size(int(size))
+            msg = '{method} {path} {code} {size}'.format(method=method, path=path, code=code, size=size)
+            if (code == '304' and size == '0B') or path.startswith('/_debugtoolbar/'):
+                msg = click.style(msg, dim=True)
+            msg = '{} {}'.format(self.prefix, msg)
+            click.echo(time + msg)
 
 
 def fmt_size(num):
