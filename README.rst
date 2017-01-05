@@ -37,15 +37,16 @@ Usage is simply
 ``app-path`` can be a path to either a directory containing a recognized default file (``settings.y(a)ml``, ``app.py``
 or ``main.py``) or to a specific file.
 
-If a yaml file is found the "dev" dictionary in that file is used to populate settings for runserver,
+If a yaml file is found the "dev" dictionary in that file is used to populate settings for runserver
+(the `start`_ command creates such a file),
 if a python file is found it's run directly, the ``--app-factory`` option can be used to define which method is called,
 if not supplied some default method names are tried.
 
 ``runserver`` has a couple of useful features:
 
-* **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload_` for more details.
-* **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate to serve static files you only need locally
-* **debugtoolbar** is automatically enabled using `aiohttp debugtoolbar`_.
+* **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload`_ for more details.
+* **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally
+* a **debug toolbar** is automatically enabled using `aiohttp debugtoolbar`_.
 
 For more options see ``adev runserver --help``.
 
@@ -65,7 +66,7 @@ Like ``runserver`` you get nice live reloading and access logs. For more options
 start
 ~~~~~
 
-Is a "cookie cutter" command to create a new bare bones aiohttp app similar to django's "startproject".
+Creates a new bare bones aiohttp app similar to django's "startproject".
 
 
 Usage is simply
@@ -76,24 +77,24 @@ Usage is simply
 
 You're then asked a bunch of questions about the the application you're about to create, you get to choose:
 
-* **Template Engine** options are
+* **Template Engine**, options are
 
   - **jinja** views are rendered using Jinja2 templates via `aiohttp_jinja2`_.
   - **none** views are rendered directly.
 
-* **Session** options are
+* **Session**, options are
 
   - **secure** will implemented encrypted cookie sessions using `aiohttp_session`_.
-  - **none** will mean no sessions
+  - **none** - session are not implemented
 
-* **Database** options are:
+* **Database**, options are:
 
   - **pg-sqlalchemy** will use postgresql via `aiopg`_ and the `SqlAlchemy`_ ORM.
   - **none** will use no database, persistence in examples is achieved by simply writing to file. This is a quick way to get started but is obviously not suitable for production use!
 
-* **Example** the newly created app can include
+* **Example**, the newly created app can include some basic functionality
 
-  - **message board**: which demonstrates a little of aiohttp's usage. Messages and be added via posting to a form, are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
+  - **message board**: which demonstrates a little of aiohttp's usage. Messages can be added via posting to a form, are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
   - **none**: no example, just a single simple view is created.
 
 For more options see ``adev start --help``, or just run ``adev start foobar`` and follow instructions.
@@ -102,18 +103,18 @@ For more options see ``adev start --help``, or just run ``adev start foobar`` an
 Tutorial
 --------
 
-To demonstrate what adev can do let's walk through creating a new application:
+To demonstrate what adev can do, let's walk through creating a new application:
 
-First let's create a clean python environment to work in (it's assumed you've already got
-**python 3.5**, **pip** and **virtualenv**) and install adev
-(we might as well also install ``ipython`` as it alwasy comes in useful).
+First let's create a clean python environment to work in and install aiohttp-devtools.
+
+(it is assumed you've already got **python 3.5**, **pip** and **virtualenv** installed)
 
 .. code:: shell
 
     mkdir my_new_app && cd my_new_app
     virtualenv -p /usr/bin/python3.5 env
     . env/bin/activate
-    pip install aiohttp-devtools ipython
+    pip install aiohttp-devtools
 
 
 We're now ready to build our new application with `start`_, using the current directory ``.`` will put files where
@@ -129,16 +130,17 @@ You can just hit return to choose the default for all the option options.
 
     adev start . --database none
 
-That's it your, app is now created.
-
-If you went of piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings.
+That's it, your app is now created.
 
 Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
-``./requirements.txt``, to install simply run
+``./requirements.txt`` byt `start`_, to install simply run
 
 .. code:: shell
 
     pip install -r requirements.txt
+
+If you went off-piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings,
+Then run ``make reset-database`` to create a database.
 
 You can then run your app with just
 
@@ -146,11 +148,13 @@ You can then run your app with just
 
     adev runserver .
 
+`runserver`_ notices the ``settings.yml`` files and uses that to decide how to serve your app.
+
 With that:
 
 * your app should be being served at ``localhost:8000`` (you can go and play with it in a browser).
-* Your static files are being served at ``localhost:8001``, adev has supplied configured your app to know that so it should be rendering properly.
-* any changes to your app's code (``*.py`` files) should cause the server to reload, changes to any files (``*.py``, ``*.jinja``, ``*.js`` etc.) will cause livereload to prompt your browser to reload the required pages.
+* Your static files are being served at ``localhost:8001``, adev has configured your app to know that so it should be rendering properly.
+* any changes to your app's code (``.py`` files) should cause the server to reload, changes to any files (``.py`` as well as ``.jinja``, ``.js``, ``.css`` etc.) will cause livereload to prompt your browser to reload the required pages.
 
 **That's it, go develop.**
 
