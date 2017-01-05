@@ -20,5 +20,5 @@ def get_slow(_pytest):
     return _pytest.mark.skipif(_pytest.config.getoption('--fast'), reason='not run with --fast flag')
 
 
-def get_ifboxed(_pytest):
+def get_if_boxed(_pytest):
     return _pytest.mark.skipif(not _pytest.config.getoption('--boxed'), reason='only run with --boxed flag')

@@ -1,4 +1,4 @@
-# {% if database.is_postgres_sqlalchemy %}
+# {% if database.is_pg_sqlalchemy %}
 from sqlalchemy import Column, DateTime, Integer, Sequence, String, Text, func
 from sqlalchemy.ext.declarative import declarative_base
 

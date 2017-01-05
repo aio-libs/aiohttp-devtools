@@ -1,12 +1,12 @@
 from pathlib import Path
 
 from aiohttp import web
-# {% if database.is_postgres_sqlalchemy %}
+# {% if database.is_pg_sqlalchemy %}
 from aiopg.sa.engine import _create_engine
 from sqlalchemy.engine.url import URL
 # {% endif %}
 
-# {% if template_engine.is_jinja2 %}
+# {% if template_engine.is_jinja %}
 import aiohttp_jinja2
 from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 import jinja2
@@ -31,7 +31,7 @@ SETTINGS_STRUCTURE = t.Dict({
     'dev': DEV_DICT,
     # {% if database.is_none and example.is_message_board %}
     'message_file':  t.String() >> (lambda f: BASE_DIR / f),
-    # {% elif database.is_postgres_sqlalchemy or database.is_postgres_raw %}
+    # {% elif database.is_pg_sqlalchemy or database.is_pg_raw %}
     'database': t.Dict({
         'name': t.String,
         'password': t.String,
@@ -51,7 +51,7 @@ def load_settings() -> dict:
     settings_file = SETTINGS_FILE.resolve()
     return read_and_validate(str(settings_file), SETTINGS_STRUCTURE)
 
-# {% if template_engine.is_jinja2 %}
+# {% if template_engine.is_jinja %}
 
 
 @jinja2.contextfilter
@@ -114,7 +114,7 @@ def static_url(context, static_file_path):
 # {% endif %}
 
 
-# {% if database.is_postgres_sqlalchemy %}
+# {% if database.is_pg_sqlalchemy %}
 def pg_dsn(db_settings: dict) -> str:
     """
     :param db_settings: dict of connection settings, see SETTINGS_STRUCTURE for definition
@@ -144,7 +144,7 @@ def create_app(loop):
     app = web.Application(loop=loop)
     app['name'] = '{{ name }}'
     app.update(load_settings())
-    # {% if template_engine.is_jinja2 %}
+    # {% if template_engine.is_jinja %}
 
     jinja2_loader = jinja2.FileSystemLoader(str(THIS_DIR / 'templates'))
     aiohttp_jinja2.setup(app, loader=jinja2_loader, app_key=JINJA2_APP_KEY)
@@ -153,7 +153,7 @@ def create_app(loop):
         static=static_url,
     )
     # {% endif %}
-    # {% if database.is_postgres_sqlalchemy %}
+    # {% if database.is_pg_sqlalchemy %}
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)
     # {% endif %}

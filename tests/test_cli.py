@@ -115,4 +115,4 @@ def test_start_help():
     result = runner.invoke(cli, ['start', '--help'])
     assert result.exit_code == 0
     assert 'Create a new aiohttp app.' in result.output
-    assert '--template-engine [jinja2*|none]' in result.output
+    assert '--template-engine [jinja*|none]' in result.output

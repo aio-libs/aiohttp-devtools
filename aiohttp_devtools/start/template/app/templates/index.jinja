@@ -3,7 +3,7 @@ Life gets slightly tricky here as wer're generating jinja2 with jinja2 and have 
 inside the page for `if example.is_message_board`, easiest not to use `raw` at all and render eventual
 jinja2 tags as strings.
 #}
-{% if template_engine.is_jinja2 %}
+{% if template_engine.is_jinja %}
 {{ "{% extends 'base.jinja' %}" }}
 
 {{ '{% block content %}' }}

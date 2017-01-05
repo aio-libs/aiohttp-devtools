@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 from pathlib import Path
 
 from isort import SortImports
@@ -26,33 +27,75 @@ FILES_REGEXES = {
 FILES_REGEXES = {k: [(re.compile(p, f), r) for p, r, f in v] for k, v in FILES_REGEXES.items()}
 
 
-class Options:
-    # could use Enums here but they wouldn't play well with click
+class TemplateChoice(str, Enum):
+    """
+    Template Engines
+
+    Please choose which template engine you wish to use. With "none" views will be rendered directly.
+    """
+    JINJA = 'jinja'
     NONE = 'none'
 
-    TEMPLATE_ENG_JINJA2 = 'jinja2'
-    TEMPLATE_ENG_CHOICES = (TEMPLATE_ENG_JINJA2, NONE)
+    @classmethod
+    def default(cls):
+        return cls.JINJA
 
-    SESSION_SECURE = 'secure'
-    SESSION_REDIS = 'redis'
-    SESSION_CHOICES = (SESSION_SECURE, SESSION_REDIS, NONE)
 
-    DB_PG_SA = 'postgres-sqlalchemy'
-    DB_PG_RAW = 'postgres-raw'
-    DB_CHOICES = (DB_PG_SA, DB_PG_RAW, NONE)
+class SessionChoices(str, Enum):
+    """
+    Sessions
 
-    EXAMPLE_MESSAGE_BOARD = 'message-board'
-    EXAMPLE_CHOICES = (EXAMPLE_MESSAGE_BOARD, NONE)
+    Please choose how you want sessions to be managed.
+    * "none" will mean no sessions
+    * "secure" will use encrypted cookies
+    * "redis" will use redis to store session data
+    """
+    SECURE = 'secure'
+    REDIS = 'redis'
+    NONE = 'none'
+
+    @classmethod
+    def default(cls):
+        return cls.SECURE
+
+
+class DatabaseChoice(str, Enum):
+    """
+    Databases
+
+    Please choose which database backend you wish to use.
+    """
+    PG_SA = 'pg-sqlalchemy'
+    PG_RAW = 'pg-raw'
+    NONE = 'none'
+
+    @classmethod
+    def default(cls):
+        return cls.PG_SA
+
+
+class ExampleChoice(str, Enum):
+    """
+    Example
+
+    Please choose whether you want a simple example "message board" app to be created.
+    """
+    MESSAGE_BOARD = 'message-board'
+    NONE = 'none'
+
+    @classmethod
+    def default(cls):
+        return cls.MESSAGE_BOARD
 
 
 class StartProject:
     def __init__(self, *,
                  path: str,
                  name: str,
-                 template_engine: str=Options.TEMPLATE_ENG_JINJA2,
-                 session: str=Options.SESSION_SECURE,
-                 database: str=Options.DB_PG_SA,
-                 example: str=Options.EXAMPLE_MESSAGE_BOARD,
+                 template_engine: TemplateChoice=TemplateChoice.default(),
+                 session: SessionChoices=SessionChoices.default(),
+                 database: DatabaseChoice=DatabaseChoice.default(),
+                 example: ExampleChoice=ExampleChoice.default(),
                  template_dir: Path=TEMPLATE_DIR) -> None:
         self.project_root = Path(path)
         self.template_dir = template_dir
@@ -80,17 +123,17 @@ class StartProject:
         self.ctx = {
             'name': name,
             'clean_name': re.sub('[^\w_]', '', re.sub('[.-]', '_', name)),
-            'template_engine': self._choice_context(template_engine, Options.TEMPLATE_ENG_CHOICES),
-            'session': self._choice_context(session, Options.SESSION_CHOICES),
-            'database': self._choice_context(database, Options.DB_CHOICES),
-            'example': self._choice_context(example, Options.EXAMPLE_CHOICES),
+            'template_engine': self._choice_context(template_engine, TemplateChoice),
+            'session': self._choice_context(session, SessionChoices),
+            'database': self._choice_context(database, DatabaseChoice),
+            'example': self._choice_context(example, ExampleChoice),
         }
         self.files_created = 0
         self.generate_directory(TEMPLATE_DIR)
         logger.info('project created, %d files generated', self.files_created)
 
-    def _choice_context(self, value, choices):
-        return {'is_' + o.replace('-', '_'): value == o for o in choices}
+    def _choice_context(self, value, choice_enum):
+        return {'is_' + o.replace('-', '_'): value == o for o in choice_enum.__members__.values()}
 
     def generate_directory(self, p: Path):
         for pp in p.iterdir():

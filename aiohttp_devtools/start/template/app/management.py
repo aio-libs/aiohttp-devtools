@@ -1,9 +1,9 @@
-# {% if database.is_postgres_sqlalchemy or database.is_postgres_raw %}
+# {% if database.is_pg_sqlalchemy or database.is_pg_raw %}
 import psycopg2
 
 from .main import load_settings
 
-# {% if database.is_postgres_sqlalchemy %}
+# {% if database.is_pg_sqlalchemy %}
 from sqlalchemy import create_engine
 from .main import pg_dsn
 from .models import Base
@@ -48,7 +48,7 @@ def prepare_database(delete_existing: bool) -> bool:
     cur.close()
     conn.close()
 
-    # {% if database.is_postgres_sqlalchemy %}
+    # {% if database.is_pg_sqlalchemy %}
     engine = create_engine(pg_dsn(db))
     print('creating tables from model definition...')
     Base.metadata.create_all(engine)

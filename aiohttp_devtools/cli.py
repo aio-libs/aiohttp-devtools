@@ -1,6 +1,7 @@
 import sys
 import traceback
 from pathlib import Path
+from textwrap import dedent
 
 import click
 
@@ -8,7 +9,7 @@ from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
 from .runserver import runserver as _runserver
 from .runserver import run_app, serve_static
-from .start import Options, StartProject
+from .start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
@@ -81,29 +82,67 @@ def runserver(**config):
         sys.exit(2)
 
 
-class Choice2(click.Choice):
+def _enum_choices(enum):
+    return [m.value for m in enum.__members__.values()]
+
+
+def _display_enum_choices(enum):
+    dft = enum.default()
+    return '[{}*|{}]'.format(click.style(dft, bold=True), '|'.join(c for c in _enum_choices(enum) if c != dft))
+
+
+class EnumChoice(click.Choice):
+    def __init__(self, choice_enum):
+        self._enum = choice_enum
+        super().__init__(_enum_choices(choice_enum))
+
     def get_metavar(self, param):
-        return '[{}*|{}]'.format(click.style(self.choices[0], bold=True), '|'.join(self.choices[1:]))
+        return _display_enum_choices(self._enum)
+
+
+DECISIONS = [
+      ('template_engine', TemplateChoice),
+      ('session', SessionChoices),
+      ('database', DatabaseChoice),
+      ('example', ExampleChoice),
+]
 
 
 @cli.command()
 @click.argument('path', type=_dir_may_exist, required=True)
 @click.argument('name', required=False)
-@click.option('--template-engine', type=Choice2(Options.TEMPLATE_ENG_CHOICES), default=Options.TEMPLATE_ENG_JINJA2)
-@click.option('--session', type=Choice2(Options.SESSION_CHOICES), default=Options.SESSION_SECURE)
-@click.option('--database', type=Choice2(Options.DB_CHOICES), default=Options.DB_PG_SA)
-@click.option('--example', type=Choice2(Options.EXAMPLE_CHOICES), default=Options.EXAMPLE_MESSAGE_BOARD)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
-def start(*, path, name, template_engine, session, database, example, verbose):
+@click.option('--template-engine', type=EnumChoice(TemplateChoice), required=False)
+@click.option('--session', type=EnumChoice(SessionChoices), required=False)
+@click.option('--database', type=EnumChoice(DatabaseChoice), required=False)
+@click.option('--example', type=EnumChoice(ExampleChoice), required=False)
+def start(*, path, name, verbose, **kwargs):
     """
     Create a new aiohttp app.
     """
     setup_logging(verbose)
     if name is None:
         name = Path(path).name
+
+    for kwarg_name, choice_enum in DECISIONS:
+        docs = dedent(choice_enum.__doc__).split('\n')
+        title, *help_text = filter(bool, docs)
+        click.secho('\n' + title, fg='green')
+        using = kwargs[kwarg_name]
+        if using:
+            click.echo('using: {}'.format(using))
+            continue
+
+        click.secho('\n'.join(help_text), dim=True)
+        choices = _display_enum_choices(choice_enum)
+        kwargs[kwarg_name] = click.prompt(
+            'choose which {} to use {}'.format(kwarg_name, choices),
+            type=EnumChoice(choice_enum),
+            show_default=False,
+            default=choice_enum.default().value
+        )
     try:
-        StartProject(path=path, name=name,
-                     template_engine=template_engine, session=session, database=database, example=example)
+        StartProject(path=path, name=name, **kwargs)
     except AiohttpDevException as e:
         main_logger.error('Error: %s', e)
         sys.exit(2)

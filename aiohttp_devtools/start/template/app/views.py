@@ -11,17 +11,17 @@ from aiohttp.hdrs import METH_POST
 from aiohttp.web_exceptions import HTTPFound
 from aiohttp.web_reqrep import json_response
 
-# {% if database.is_postgres_sqlalchemy %}
+# {% if database.is_pg_sqlalchemy %}
 from .models import sa_messages
 # {% endif %}
 # {% endif %}
 
-# {% if template_engine.is_jinja2 %}
+# {% if template_engine.is_jinja %}
 from aiohttp_jinja2 import template
 # {% endif %}
 
 
-# {% if template_engine.is_jinja2 %}
+# {% if template_engine.is_jinja %}
 @template('index.jinja')
 async def index(request):
     """
@@ -108,7 +108,7 @@ async def process_form(request):
         now = datetime.now().isoformat()
         f.write('{username}|{timestamp}|{message}'.format(timestamp=now, **new_message))
 
-    # {% elif database.is_postgres_sqlalchemy %}
+    # {% elif database.is_pg_sqlalchemy %}
     async with request.app['pg_engine'].acquire() as conn:
         await conn.execute(sa_messages.insert().values(
             username=new_message['username'],
@@ -120,7 +120,7 @@ async def process_form(request):
     raise HTTPFound(request.app.router['messages'].url())
 
 
-# {% if template_engine.is_jinja2 %}
+# {% if template_engine.is_jinja %}
 @template('messages.jinja')
 # {% endif %}
 async def messages(request):
@@ -130,7 +130,7 @@ async def messages(request):
     else:
         form_errors = None
 
-    # {% if template_engine.is_jinja2 %}
+    # {% if template_engine.is_jinja %}
     return {
         'title': 'Message board',
         'form_errors': form_errors,
@@ -187,7 +187,7 @@ async def message_data(request):
                 ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
                 messages.append({'username': username, 'timestamp':  ts, 'message': message})
         messages.reverse()
-    # {% elif database.is_postgres_sqlalchemy %}
+    # {% elif database.is_pg_sqlalchemy %}
 
     async with request.app['pg_engine'].acquire() as conn:
         async for row in conn.execute(sa_messages.select().order_by(sa_messages.c.timestamp.desc())):

@@ -5,14 +5,15 @@ import pytest
 from flake8.api import legacy as flake8
 from pytest_toolbox import mktree
 
+from aiohttp_devtools.cli import _enum_choices
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_main_app
-from aiohttp_devtools.start import StartProject
-from aiohttp_devtools.start.main import Options
+from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 
-from .conftest import get_slow
+from .conftest import get_if_boxed, get_slow
 slow = get_slow(pytest)
+if_boxed = get_if_boxed(pytest)
 
 
 def test_start_simple(tmpdir, caplog):
@@ -30,15 +31,15 @@ def test_start_simple(tmpdir, caplog):
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at "/tmp/..."
 adev.main INFO: config:
-    template_engine: jinja2
+    template_engine: jinja
     session: secure
-    database: postgres-sqlalchemy
+    database: pg-sqlalchemy
     example: message-board
 adev.main INFO: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 async def test_start_other_dir(tmpdir, loop, test_client, caplog):
-    StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=Options.NONE)
+    StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpdir.join('the-path').listdir()} == {
         'app',
@@ -53,7 +54,7 @@ async def test_start_other_dir(tmpdir, loop, test_client, caplog):
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
 adev.main INFO: config:
-    template_engine: jinja2
+    template_engine: jinja
     session: secure
     database: none
     example: message-board
@@ -78,12 +79,13 @@ def test_conflicting_file(tmpdir):
                                      'conflict with the new project: Makefile')
 
 
+@if_boxed
 @slow
 @pytest.mark.parametrize('template_engine,session,database,example', itertools.product(
-    Options.TEMPLATE_ENG_CHOICES,
-    Options.SESSION_CHOICES,
-    Options.DB_CHOICES,
-    Options.EXAMPLE_CHOICES,
+    _enum_choices(TemplateChoice),
+    _enum_choices(SessionChoices),
+    _enum_choices(DatabaseChoice),
+    _enum_choices(ExampleChoice),
 ))
 async def test_all_options(tmpdir, template_engine, session, database, example):
     StartProject(

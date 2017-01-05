@@ -16,10 +16,10 @@ from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
-from .conftest import SIMPLE_APP, get_ifboxed, get_slow
+from .conftest import SIMPLE_APP, get_if_boxed, get_slow
 
 slow = get_slow(pytest)
-ifboxed = get_ifboxed(pytest)
+if_boxed = get_if_boxed(pytest)
 
 
 async def check_server_running(loop):
@@ -81,7 +81,7 @@ def kill_parent_soon():
     os.kill(os.getppid(), signal.SIGINT)
 
 
-@ifboxed
+@if_boxed
 @slow
 def test_run_app(loop, unused_port):
     app = Application(loop=loop)
