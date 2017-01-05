@@ -11,11 +11,21 @@ import aiohttp_jinja2
 from aiohttp_jinja2 import APP_KEY as JINJA2_APP_KEY
 import jinja2
 # {% endif %}
+# {% if session.is_secure %}
+import base64
+import aiohttp_session
+from aiohttp_session.cookie_storage import EncryptedCookieStorage
+# {% endif %}
 
 import trafaret as t
 from trafaret_config import read_and_validate
 
-from .routes import setup_routes
+# {% if example.is_message_board %}
+from .views import index, messages, message_data
+# {% else %}
+from .views import index
+# {% endif %}
+
 
 THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
@@ -39,6 +49,9 @@ SETTINGS_STRUCTURE = t.Dict({
         'host': t.String,
         'port': t.Int(gte=0) >> str,
     }),
+    # {% endif %}
+    # {% if session.is_secure %}
+    'cookie_secret_key': t.String,
     # {% endif %}
 })
 
@@ -140,6 +153,14 @@ async def cleanup(app: web.Application):
 # {% endif %}
 
 
+def setup_routes(app):
+    app.router.add_get('/', index, name='index')
+    # {% if example.is_message_board %}
+    app.router.add_route('*', '/messages', messages, name='messages')
+    app.router.add_get('/messages/data', message_data, name='message-data')
+    # {% endif %}
+
+
 def create_app(loop):
     app = web.Application(loop=loop)
     app['name'] = '{{ name }}'
@@ -154,8 +175,15 @@ def create_app(loop):
     )
     # {% endif %}
     # {% if database.is_pg_sqlalchemy %}
+
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)
     # {% endif %}
+    # {% if session.is_secure %}
+
+    secret_key = base64.urlsafe_b64decode(app['cookie_secret_key'])
+    aiohttp_session.setup(app, EncryptedCookieStorage(secret_key))
+    # {% endif %}
+
     setup_routes(app)
     return app

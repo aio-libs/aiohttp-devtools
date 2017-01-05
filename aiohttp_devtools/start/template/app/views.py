@@ -14,6 +14,10 @@ from aiohttp.web_reqrep import json_response
 # {% if database.is_pg_sqlalchemy %}
 from .models import sa_messages
 # {% endif %}
+
+# {% if session.is_secure %}
+from aiohttp_session import get_session
+# {% endif %}
 # {% endif %}
 
 # {% if template_engine.is_jinja %}
@@ -98,6 +102,12 @@ async def process_form(request):
 
     if missing_fields:
         return 'Invalid form submission, missing fields: {}'.format(', '.join(missing_fields))
+    # {% if session.is_secure %}
+
+    # simple demonstration of sessions by saving the username and pre-populating it in the form next time
+    session = await get_session(request)
+    session['username'] = new_message['username']
+    # {% endif %}
 
     # {% if database.is_none %}
     # hack: if no database is available we use a plain old file to store messages.
@@ -106,7 +116,7 @@ async def process_form(request):
     new_message['username'] = new_message['username'].replace('|', '')
     with request.app['message_file'].open('a') as f:
         now = datetime.now().isoformat()
-        f.write('{username}|{timestamp}|{message}'.format(timestamp=now, **new_message))
+        f.write('{username}|{timestamp}|{message}\n'.format(timestamp=now, **new_message))
 
     # {% elif database.is_pg_sqlalchemy %}
     async with request.app['pg_engine'].acquire() as conn:
@@ -129,11 +139,21 @@ async def messages(request):
         form_errors = await process_form(request)
     else:
         form_errors = None
+    # {% if session.is_secure %}
+
+    # simple demonstration of sessions by pre-populating username if it's already been set
+    session = await get_session(request)
+    username = session.get('username', '')
+    # {% else %}
+    # we're not using sessions so there's no way to pre-populate the username
+    username = ''
+    # {% endif %}
 
     # {% if template_engine.is_jinja %}
     return {
         'title': 'Message board',
         'form_errors': form_errors,
+        'username': username,
     }
     # {% else %}
     ctx = dict(
@@ -145,7 +165,7 @@ async def messages(request):
     {form_errors}
     <p>
       <label for="username">Your name:</label>
-      <input type="text" name="username" id="username" placeholder="fred blogs">
+      <input type="text" name="username" id="username" placeholder="Fred Bloggs" value="{username}">
       <label for="message">Message:</label>
       <input type="text" name="message" id="message" placeholder="hello there">
     </p>
@@ -160,7 +180,8 @@ async def messages(request):
             message_url=request.app.router['messages'].url(),
             message_data_url=request.app.router['message-data'].url(),
             message_display_js_url=request.app['static_url'] + '/message_display.js',
-            form_errors=form_errors and '<div class="form-errors">{}</div>'.format(form_errors)
+            form_errors=form_errors and '<div class="form-errors">{}</div>'.format(form_errors),
+            username=username,
         )
     )
     return web.Response(text=BASE_PAGE.format(**ctx), content_type='text/html')

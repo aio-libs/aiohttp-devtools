@@ -74,6 +74,7 @@ def test_runserver_no_args():
 
 def test_start(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
+    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
     runner = CliRunner()
     result = runner.invoke(cli, ['start', 'foobar'])
     assert result.exit_code == 0
@@ -87,6 +88,7 @@ def test_start(mocker):
 
 def test_start_with_choice(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
+    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
     runner = CliRunner()
     result = runner.invoke(cli, ['start', '--database', 'pg-raw', 'foobar'])
     assert result.exit_code == 0
@@ -100,6 +102,7 @@ def test_start_with_choice(mocker):
 
 def test_start_different_name(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
+    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
     runner = CliRunner()
     result = runner.invoke(cli, ['start', 'foobar', 'splosh'])
     assert result.exit_code == 0
@@ -111,6 +114,7 @@ def test_start_different_name(mocker):
 
 def test_start_error(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
+    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
     mock_start_project.side_effect = AiohttpDevException('foobar')
     runner = CliRunner()
     result = runner.invoke(cli, ['start', 'foobar'])

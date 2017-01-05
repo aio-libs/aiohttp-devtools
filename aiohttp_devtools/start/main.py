@@ -1,3 +1,5 @@
+import base64
+import os
 import re
 from enum import Enum
 from pathlib import Path
@@ -125,6 +127,7 @@ class StartProject:
         self.ctx = {
             'name': name,
             'clean_name': re.sub('[^\w_]', '', re.sub('[.-]', '_', name)),
+            'cookie_secret_key': base64.urlsafe_b64encode(os.urandom(32)).decode(),
             'template_engine': self._choice_context(template_engine, TemplateChoice),
             'session': self._choice_context(session, SessionChoices),
             'database': self._choice_context(database, DatabaseChoice),
