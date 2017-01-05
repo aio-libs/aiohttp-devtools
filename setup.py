@@ -90,7 +90,7 @@ setup(
     """,
     install_requires=[
         'aiohttp>=1.2.0',
-        'aiohttp-debugtoolbar>=0.3.0',
+        'aiohttp_debugtoolbar>=0.3.0',
         'click>=6.6',
         'isort>=4.2.5',
         'Jinja2>=2.8.1',
