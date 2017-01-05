@@ -4,7 +4,9 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, get_if_boxed
+
+if_boxed = get_if_boxed(pytest)
 
 
 async def test_load_simple_app(tmpworkdir):
@@ -75,6 +77,7 @@ def app_factory(loop):
 ]
 
 
+@if_boxed
 @pytest.mark.parametrize('files,exc', invalid_apps, ids=['%s...' % v[1][:40] for v in invalid_apps])
 def test_all_options(tmpworkdir, files, exc, loop):
     mktree(tmpworkdir, files)

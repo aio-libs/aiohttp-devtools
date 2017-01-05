@@ -2,8 +2,14 @@ import signal
 from datetime import datetime
 from unittest.mock import MagicMock
 
+import pytest
+from aiohttp.web import Application
+
 from aiohttp_devtools.runserver.serve import serve_main_app
 from aiohttp_devtools.runserver.watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
+from tests.conftest import get_if_boxed
+
+if_boxed = get_if_boxed(pytest)
 
 
 class Event:
@@ -163,3 +169,44 @@ def test_pycode_event_process_not_ending(mocker):
         ((123, signal.SIGINT),),
         ((123, signal.SIGKILL),),
     ]
+
+
+@if_boxed
+async def test_pycode_src_reload_when_live_timeout(caplog, loop, mocker, unused_port):
+    caplog.set_level(10)
+    mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
+    process = MagicMock()
+    process.pid = 123
+    process.exitcode = None
+    mock_process.return_value = process
+
+    app = MagicMock()
+    app.loop = loop
+    config = MagicMock()
+    config.main_port = unused_port()
+
+    eh = PyCodeEventHandler(app, config)
+    r = await eh.src_reload_when_live(2)
+    assert r is None
+    assert 'adev.server.dft DEBUG: try 1 | OSError 111 app not running' in caplog
+    assert app.src_reload.call_count == 0
+
+
+async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_client):
+    caplog.set_level(10)
+    mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
+    process = MagicMock()
+    process.pid = 123
+    process.exitcode = None
+    mock_process.return_value = process
+
+    app = Application(loop=loop)
+    app.src_reload = MagicMock(return_value=0)
+    cli = await test_client(app)
+    config = MagicMock()
+    config.main_port = cli.server.port
+
+    eh = PyCodeEventHandler(app, config)
+    r = await eh.src_reload_when_live(2)
+    assert r == 0
+    assert app.src_reload.call_count == 1

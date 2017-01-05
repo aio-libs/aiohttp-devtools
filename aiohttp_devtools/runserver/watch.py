@@ -1,8 +1,10 @@
+import asyncio
 import os
 import signal
 from datetime import datetime
 from multiprocessing import Process
 
+from aiohttp import ClientSession
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
 from ..logs import rs_dft_logger as logger
@@ -80,6 +82,23 @@ class PyCodeEventHandler(BaseEventHandler):
         logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
         self.stop_process()
         self._start_process()
+        self._app.loop.call_later(1, self._app.src_reload)
+        self._app.loop.create_task(self.src_reload_when_live())
+
+    async def src_reload_when_live(self, checks=20):
+        url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
+        logger.debug('checking app at "%s" is running before prompting reload...', url)
+        async with ClientSession(loop=self._app.loop) as session:
+            for i in range(checks):
+                await asyncio.sleep(0.1, loop=self._app.loop)
+                try:
+                    async with session.get(url):
+                        pass
+                except OSError as e:
+                    logger.debug('try %d | OSError %d app not running', i, e.errno)
+                else:
+                    logger.debug('try %d | app running, reloading...', i)
+                    return self._app.src_reload()
 
     def _start_process(self):
         if self._change_count == 0:

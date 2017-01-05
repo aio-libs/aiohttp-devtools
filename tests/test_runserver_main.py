@@ -38,6 +38,7 @@ async def check_server_running(loop):
                 return True
 
 
+@if_boxed
 @slow
 def test_start_runserver(tmpworkdir, caplog):
     mktree(tmpworkdir, {
@@ -114,6 +115,7 @@ async def test_aux_app(loop, tmpworkdir, test_client):
     assert text == 'test value'
 
 
+@if_boxed
 def test_run_app_http(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, SIMPLE_APP)
     mocker.spy(loop, 'create_server')

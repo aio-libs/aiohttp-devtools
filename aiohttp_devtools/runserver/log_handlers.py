@@ -24,6 +24,10 @@ class AuxiliaryHandler(logging.Handler):
         click.echo(time + msg)
 
 
+dbtb = '/_debugtoolbar/'
+check = '?_checking_alive=1'
+
+
 class AiohttpAccessHandler(logging.Handler):
     prefix = click.style('●', fg='blue')
 
@@ -39,7 +43,7 @@ class AiohttpAccessHandler(logging.Handler):
         else:
             size = fmt_size(int(size))
             msg = '{method} {path} {code} {size}'.format(method=method, path=path, code=code, size=size)
-            if (code == '304' and size == '0B') or path.startswith('/_debugtoolbar/'):
+            if (code, size) == ('304', '0B') or path.startswith(dbtb) or path.endswith(check):
                 msg = click.style(msg, dim=True)
             msg = '{} {}'.format(self.prefix, msg)
             click.echo(time + msg)

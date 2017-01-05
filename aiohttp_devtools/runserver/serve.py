@@ -122,6 +122,7 @@ class AuxiliaryApplication(web.Application):
             is_html = mimetypes.guess_type(path)[0] == 'text/html'
 
         reloads = 0
+        aux_logger.debug('prompting source reload for %d clients', len(self[WS]))
         for ws, url in self[WS]:
             if path and is_html and path not in {url, url + '.html', url + '/index.html'}:
                 aux_logger.debug('skipping reload for client at %s', url)

@@ -38,6 +38,7 @@ adev.main INFO: config:
 adev.main INFO: project created, 16 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
+@if_boxed
 async def test_start_other_dir(tmpdir, loop, test_client, caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
