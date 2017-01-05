@@ -18,11 +18,11 @@ lint:
 
 .PHONY: test
 test:
-	py.test --cov=aiohttp_devtools && coverage combine
+	pytest --cov=aiohttp_devtools --boxed && coverage combine
 
 .PHONY: testcov
 testcov:
-	py.test --cov=aiohttp_devtools --fast && (echo "building coverage html"; coverage combine; coverage html)
+	pytest --cov=aiohttp_devtools --boxed --fast -n 4 && (echo "building coverage html"; coverage combine; coverage html)
 
 .PHONY: all
 all: testcov lint

@@ -29,7 +29,7 @@ async def test_file_missing(cli):
     r = await cli.get('/foo')
     assert r.status == 404
     text = await r.text()
-    assert '404: Not Found\n\n' in text
+    assert '404: Not Found\n' in text
 
 
 async def test_html_file_livereload(loop, test_client, tmpworkdir):

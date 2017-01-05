@@ -51,7 +51,7 @@ async def check_port_open(port, loop, delay=1):
         try:
             server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
         except OSError as e:
-            if e.errno != 98:
+            if e.errno != 98:  # pragma: no cover
                 raise
             dft_logger.warning('port %d is already in use, waiting %d...', port, i)
             sleep(delay)
@@ -105,6 +105,13 @@ WS = 'websockets'
 
 class AuxiliaryApplication(web.Application):
     def src_reload(self, path: str=None):
+        """
+        prompt each connected browser to reload by sending websocket message.
+
+        :param path: if supplied this must be a path relative to app['static_path'],
+            eg. reload of a single file is only supported for static resources.
+        :return: number of sources reloaded
+        """
         cli_count = len(self[WS])
         if cli_count == 0:
             return 0
@@ -119,7 +126,6 @@ class AuxiliaryApplication(web.Application):
             if path and is_html and path not in {url, url + '.html', url + '/index.html'}:
                 aux_logger.debug('skipping reload for client at %s', url)
                 continue
-            reloads += 1
             aux_logger.debug('reload client at %s', url)
             data = {
                 'command': 'reload',
@@ -132,11 +138,13 @@ class AuxiliaryApplication(web.Application):
             except RuntimeError as e:
                 # eg. "RuntimeError: websocket connection is closing"
                 aux_logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
+            else:
+                reloads += 1
 
         if reloads:
             s = '' if reloads == 1 else 's'
             aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
-        return cli_count
+        return reloads
 
     async def cleanup(self):
         aux_logger.debug('closing %d websockets...', len(self[WS]))
@@ -285,7 +293,6 @@ class CustomFileSender(FileSender):
 
 class CustomStaticResource(StaticResource):
     def __init__(self, *args, **kwargs):
-        self._asset_path = None  # TODO
         tail_snippet = kwargs.pop('tail_snippet')
         super().__init__(*args, **kwargs)
         self._show_index = True
@@ -333,7 +340,8 @@ class CustomStaticResource(StaticResource):
             status, length = 304, 0
             raise
         except HTTPNotFound:
-            _404_msg = '404: Not Found\n\n' + _get_asset_content(self._asset_path)
+            # TODO include list of files in 404 body
+            _404_msg = '404: Not Found\n'
             response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
             status, length = response.status, response.content_length
         else:
@@ -342,10 +350,3 @@ class CustomStaticResource(StaticResource):
             l = aux_logger.info if status in {200, 304} else aux_logger.warning
             l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
         return response
-
-
-def _get_asset_content(asset_path):
-    if not asset_path:
-        return ''
-    with asset_path.open() as f:
-        return 'Asset file contents:\n\n{}'.format(f.read())
