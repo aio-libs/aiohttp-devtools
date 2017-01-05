@@ -12,6 +12,7 @@ from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices
 from aiohttp_devtools.start.main import enum_choices
 
 from .conftest import get_if_boxed, get_slow
+
 slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
@@ -35,7 +36,7 @@ adev.main INFO: config:
     session: secure
     database: pg-sqlalchemy
     example: message-board
-adev.main INFO: project created, 16 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main INFO: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 @if_boxed
@@ -59,7 +60,7 @@ adev.main INFO: config:
     session: secure
     database: none
     example: message-board
-adev.main INFO: project created, 14 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
     app = create_main_app(Config(str(tmpdir.join('the-path'))), loop=loop)
     assert isinstance(app, aiohttp.web.Application)
 
