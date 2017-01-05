@@ -20,7 +20,7 @@ Requires **python 3.5** or **python 3.6**.
 Usage
 -----
 
-The ``aiohttp-devtools`` CLI (and it's shorter alias ``adev``) Consists of three sub-commands:
+The ``aiohttp-devtools`` CLI (and it's shorter alias ``adev``) consist of three sub-commands:
 `runserver`_, `serve`_ and `start`_.
 
 runserver
@@ -112,7 +112,7 @@ First let's create a clean python environment to work in and install aiohttp-dev
 .. code:: shell
 
     mkdir my_new_app && cd my_new_app
-    virtualenv -p /usr/bin/python3.5 env
+    virtualenv -p `which python3.5` env
     . env/bin/activate
     pip install aiohttp-devtools
 
@@ -123,26 +123,26 @@ we want them and will prompt adev to name the project ``my_new_app`` after the c
 We're going to explicitly choose no database here to make, this tutorial easier but you can remove that option
 and choose to use a proper database if you like.
 
-You can just hit return to choose the default for all the option options.
+You can just hit return to choose the default for all the options.
 
 
 .. code:: shell
 
     adev start . --database none
 
-That's it, your app is now created.
+That's it, your app is now created. You might want to have a look through the local directory's file tree.
 
 Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
-``./requirements.txt`` byt `start`_, to install simply run
+``./requirements.txt`` by `start`_, to install simply run
 
 .. code:: shell
 
     pip install -r requirements.txt
 
-If you went off-piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings,
-Then run ``make reset-database`` to create a database.
+(If you went off-piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings,
+then run ``make reset-database`` to create a database.)
 
-You can then run your app with just
+You can then run your app with just:
 
 .. code:: shell
 
