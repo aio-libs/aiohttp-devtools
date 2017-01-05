@@ -10,6 +10,7 @@ from .logs import main_logger, setup_logging
 from .runserver import runserver as _runserver
 from .runserver import run_app, serve_static
 from .start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
+from .start.main import check_dir_clean, enum_choices, enum_default
 from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
@@ -82,19 +83,15 @@ def runserver(**config):
         sys.exit(2)
 
 
-def _enum_choices(enum):
-    return [m.value for m in enum.__members__.values()]
-
-
 def _display_enum_choices(enum):
-    dft = enum.default()
-    return '[{}*|{}]'.format(click.style(dft, bold=True), '|'.join(c for c in _enum_choices(enum) if c != dft))
+    dft = enum_default(enum)
+    return '[{}*|{}]'.format(click.style(dft, bold=True), '|'.join(c for c in enum_choices(enum) if c != dft))
 
 
 class EnumChoice(click.Choice):
     def __init__(self, choice_enum):
         self._enum = choice_enum
-        super().__init__(_enum_choices(choice_enum))
+        super().__init__(enum_choices(choice_enum))
 
     def get_metavar(self, param):
         return _display_enum_choices(self._enum)
@@ -121,27 +118,27 @@ def start(*, path, name, verbose, **kwargs):
     Create a new aiohttp app.
     """
     setup_logging(verbose)
-    if name is None:
-        name = Path(path).name
+    try:
+        check_dir_clean(Path(path))
+        if name is None:
+            name = Path(path).name
 
-    for kwarg_name, choice_enum in DECISIONS:
-        docs = dedent(choice_enum.__doc__).split('\n')
-        title, *help_text = filter(bool, docs)
-        click.secho('\n' + title, fg='green')
-        using = kwargs[kwarg_name]
-        if using:
-            click.echo('using: {}'.format(using))
+        for kwarg_name, choice_enum in DECISIONS:
+            docs = dedent(choice_enum.__doc__).split('\n')
+            title, *help_text = filter(bool, docs)
+            click.secho('\n' + title, fg='green')
+            if kwargs[kwarg_name] is None:
+                click.secho('\n'.join(help_text), dim=True)
+                choices = _display_enum_choices(choice_enum)
+                kwargs[kwarg_name] = click.prompt(
+                    'choose which {} to use {}'.format(kwarg_name, choices),
+                    type=EnumChoice(choice_enum),
+                    show_default=False,
+                    default=enum_default(choice_enum),
+                )
+            click.echo('using: {}'.format(click.style(kwargs[kwarg_name], bold=True)))
             continue
 
-        click.secho('\n'.join(help_text), dim=True)
-        choices = _display_enum_choices(choice_enum)
-        kwargs[kwarg_name] = click.prompt(
-            'choose which {} to use {}'.format(kwarg_name, choices),
-            type=EnumChoice(choice_enum),
-            show_default=False,
-            default=choice_enum.default().value
-        )
-    try:
         StartProject(path=path, name=name, **kwargs)
     except AiohttpDevException as e:
         main_logger.error('Error: %s', e)

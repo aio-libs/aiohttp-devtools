@@ -5,11 +5,11 @@ import pytest
 from flake8.api import legacy as flake8
 from pytest_toolbox import mktree
 
-from aiohttp_devtools.cli import _enum_choices
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_main_app
 from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
+from aiohttp_devtools.start.main import enum_choices
 
 from .conftest import get_if_boxed, get_slow
 slow = get_slow(pytest)
@@ -75,17 +75,16 @@ def test_conflicting_file(tmpdir):
     })
     with pytest.raises(AiohttpDevConfigError) as excinfo:
         StartProject(path=str(tmpdir), name='foobar')
-    assert excinfo.value.args[0] == ('The path you supplied already has files/directories which would '
-                                     'conflict with the new project: Makefile')
+    assert excinfo.value.args[0].endswith('has files/directories which would conflict with the new project: Makefile')
 
 
 @if_boxed
 @slow
 @pytest.mark.parametrize('template_engine,session,database,example', itertools.product(
-    _enum_choices(TemplateChoice),
-    _enum_choices(SessionChoices),
-    _enum_choices(DatabaseChoice),
-    _enum_choices(ExampleChoice),
+    enum_choices(TemplateChoice),
+    enum_choices(SessionChoices),
+    enum_choices(DatabaseChoice),
+    enum_choices(ExampleChoice),
 ))
 async def test_all_options(tmpdir, template_engine, session, database, example):
     StartProject(

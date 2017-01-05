@@ -29,83 +29,85 @@ FILES_REGEXES = {k: [(re.compile(p, f), r) for p, r, f in v] for k, v in FILES_R
 
 class TemplateChoice(str, Enum):
     """
-    Template Engines
+    Template Engine
 
-    Please choose which template engine you wish to use. With "none" views will be rendered directly.
+    Please choose which template engine you wish to use.
+    * with "jinja" views will be rendered using Jinja2 templates using aiohttp-jinja2.
+    * with "none" views will be rendered directly.
     """
-    JINJA = 'jinja'
+    JINJA = 'jinja'  # default
     NONE = 'none'
-
-    @classmethod
-    def default(cls):
-        return cls.JINJA
 
 
 class SessionChoices(str, Enum):
     """
-    Sessions
+    Session
 
     Please choose how you want sessions to be managed.
-    * "none" will mean no sessions
     * "secure" will use encrypted cookies
     * "redis" will use redis to store session data
+    * "none" will mean no sessions
     """
-    SECURE = 'secure'
+    SECURE = 'secure'  # default
     REDIS = 'redis'
     NONE = 'none'
-
-    @classmethod
-    def default(cls):
-        return cls.SECURE
 
 
 class DatabaseChoice(str, Enum):
     """
-    Databases
+    Database
 
     Please choose which database backend you wish to use.
+    * "pg-sqlalchemy" will use postgresql, models are setup for SqlAlchemy and the SqlAlchemy ORM is used for queries
+    * "pg-raw" will use postgresql, tables are created with a SQL script and raw queries are executed
+    * "none" will use no database, persistence in examples is achieved by simply writing to file
     """
-    PG_SA = 'pg-sqlalchemy'
+    PG_SA = 'pg-sqlalchemy'  # default
     PG_RAW = 'pg-raw'
     NONE = 'none'
-
-    @classmethod
-    def default(cls):
-        return cls.PG_SA
 
 
 class ExampleChoice(str, Enum):
     """
     Example
 
-    Please choose whether you want a simple example "message board" app to be created.
+    Please choose whether you want a simple example "message board" app to be created demonstrating a little
+    more of aiohttp's usage than the single simple view created with "none".
     """
-    MESSAGE_BOARD = 'message-board'
+    MESSAGE_BOARD = 'message-board'  # default
     NONE = 'none'
 
-    @classmethod
-    def default(cls):
-        return cls.MESSAGE_BOARD
+
+def enum_choices(enum):
+    return [m.value for m in enum.__members__.values()]
+
+
+def enum_default(enum):
+    return next(v for v in enum.__members__.values())
+
+
+def check_dir_clean(d: Path):
+    if d.exists():
+        existing_paths = {p.name for p in d.iterdir()}
+        new_paths = {p.name for p in TEMPLATE_DIR.iterdir()}
+        conflicts = existing_paths & new_paths
+        if conflicts:
+            raise AiohttpDevConfigError('The path "{}" already has files/directories which would conflict '
+                                        'with the new project: {}'.format(d, ', '.join(sorted(conflicts))))
 
 
 class StartProject:
     def __init__(self, *,
                  path: str,
                  name: str,
-                 template_engine: TemplateChoice=TemplateChoice.default(),
-                 session: SessionChoices=SessionChoices.default(),
-                 database: DatabaseChoice=DatabaseChoice.default(),
-                 example: ExampleChoice=ExampleChoice.default(),
+                 template_engine: TemplateChoice=enum_default(TemplateChoice),
+                 session: SessionChoices=enum_default(SessionChoices),
+                 database: DatabaseChoice=enum_default(DatabaseChoice),
+                 example: ExampleChoice=enum_default(ExampleChoice),
                  template_dir: Path=TEMPLATE_DIR) -> None:
         self.project_root = Path(path)
         self.template_dir = template_dir
-        if self.project_root.exists():
-            existing_paths = {p.name for p in self.project_root.iterdir()}
-            new_paths = {p.name for p in TEMPLATE_DIR.iterdir()}
-            conflicts = existing_paths & new_paths
-            if conflicts:
-                raise AiohttpDevConfigError('The path you supplied already has files/directories which would conflict '
-                                            'with the new project: {}'.format(', '.join(sorted(conflicts))))
+        check_dir_clean(self.project_root)
 
         try:
             display_path = self.project_root.relative_to(Path('.').resolve())
@@ -132,8 +134,8 @@ class StartProject:
         self.generate_directory(TEMPLATE_DIR)
         logger.info('project created, %d files generated', self.files_created)
 
-    def _choice_context(self, value, choice_enum):
-        return {'is_' + o.replace('-', '_'): value == o for o in choice_enum.__members__.values()}
+    def _choice_context(self, value, enum):
+        return {'is_' + o.replace('-', '_'): value == o for o in enum_choices(enum)}
 
     def generate_directory(self, p: Path):
         for pp in p.iterdir():
