@@ -60,11 +60,11 @@ class DatabaseChoice(str, Enum):
     Database
 
     Please choose which database backend you wish to use.
-    * "pg-sqlalchemy" will use postgresql, models are setup for SqlAlchemy and the SqlAlchemy ORM is used for queries
+    * "pg-sqlalchemy" will use postgresql via aiopg and the SqlAlchemy ORM
     * "none" will use no database, persistence in examples is achieved by simply writing to file
     """
     PG_SA = 'pg-sqlalchemy'  # default
-    # * "pg-raw" will use postgresql, tables are created with a SQL script and raw queries are executed
+    # * "pg-raw" will use postgresql via aiopg with no ORM
     # PG_RAW = 'pg-raw' TODO
     NONE = 'none'
 
