@@ -46,12 +46,12 @@ class SessionChoices(str, Enum):
     Session
 
     Please choose how you want sessions to be managed.
-    * "secure" will use encrypted cookies
-    * "redis" will use redis to store session data
+    * "secure" will implemented encrypted cookie sessions using aiohttp-session
     * "none" will mean no sessions
     """
     SECURE = 'secure'  # default
-    REDIS = 'redis'
+    # * "redis" will use redis to store session data
+    # REDIS = 'redis' TODO
     NONE = 'none'
 
 
@@ -61,11 +61,11 @@ class DatabaseChoice(str, Enum):
 
     Please choose which database backend you wish to use.
     * "pg-sqlalchemy" will use postgresql, models are setup for SqlAlchemy and the SqlAlchemy ORM is used for queries
-    * "pg-raw" will use postgresql, tables are created with a SQL script and raw queries are executed
     * "none" will use no database, persistence in examples is achieved by simply writing to file
     """
     PG_SA = 'pg-sqlalchemy'  # default
-    PG_RAW = 'pg-raw'
+    # * "pg-raw" will use postgresql, tables are created with a SQL script and raw queries are executed
+    # PG_RAW = 'pg-raw' TODO
     NONE = 'none'
 
 

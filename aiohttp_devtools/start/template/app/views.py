@@ -214,8 +214,6 @@ async def message_data(request):
         async for row in conn.execute(sa_messages.select().order_by(sa_messages.c.timestamp.desc())):
             ts = '{:%Y-%m-%d %H:%M:%S}'.format(row.timestamp)
             messages.append({'username': row.username, 'timestamp':  ts, 'message': row.message})
-    # {% else %}
-    # TODO
     # {% endif %}
     return json_response(messages)
 # {% endif %}

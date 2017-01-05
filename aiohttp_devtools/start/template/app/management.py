@@ -1,17 +1,11 @@
-# {% if database.is_pg_sqlalchemy or database.is_pg_raw %}
+# {% if database.is_pg_sqlalchemy %}
 import psycopg2
 
 from .main import load_settings
 
-# {% if database.is_pg_sqlalchemy %}
 from sqlalchemy import create_engine
 from .main import pg_dsn
 from .models import Base
-
-# {% else %}
-# TODO
-# {% endif %}
-
 
 
 def prepare_database(delete_existing: bool) -> bool:

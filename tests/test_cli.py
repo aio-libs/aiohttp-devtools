@@ -90,14 +90,14 @@ def test_start_with_choice(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
     mocker.patch('aiohttp_devtools.cli.check_dir_clean')
     runner = CliRunner()
-    result = runner.invoke(cli, ['start', '--database', 'pg-raw', 'foobar'])
+    result = runner.invoke(cli, ['start', '--database', 'pg-sqlalchemy', 'foobar'])
     assert result.exit_code == 0
     assert mock_start_project.call_count == 1
     call_kwargs = mock_start_project.call_args[1]
     assert call_kwargs['path'].endswith('/foobar')
     assert call_kwargs['name'] == 'foobar'
     assert 'Please choose which database backend you wish to use.' not in result.output
-    assert 'using: pg-raw' in result.output
+    assert 'using: pg-sqlalchemy' in result.output
 
 
 def test_start_different_name(mocker):

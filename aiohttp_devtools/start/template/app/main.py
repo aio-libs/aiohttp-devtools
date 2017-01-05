@@ -41,7 +41,7 @@ SETTINGS_STRUCTURE = t.Dict({
     'dev': DEV_DICT,
     # {% if database.is_none and example.is_message_board %}
     'message_file':  t.String() >> (lambda f: BASE_DIR / f),
-    # {% elif database.is_pg_sqlalchemy or database.is_pg_raw %}
+    # {% elif database.is_pg_sqlalchemy %}
     'database': t.Dict({
         'name': t.String,
         'password': t.String,
