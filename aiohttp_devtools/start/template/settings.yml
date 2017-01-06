@@ -4,7 +4,7 @@ dev:
   static_path: static/
 # {% if database.is_none and example.is_message_board %}
 message_file: 'messages.txt'
-# {% elif database.is_postgres_sqlalchemy or database.is_postgres_raw %}
+# {% elif database.is_pg_sqlalchemy %}
 database:
   name: '{{ clean_name }}'
   user: 'postgres'  # TODO make sure connection settings here are correct

@@ -164,7 +164,7 @@ class StartProject:
         logger.debug('creating "%s"', new_path)
 
         if p.name == 'requirements.txt':
-            packages = {p.strip() for p in text.split('\n') if p.strip()}
+            packages = {p.strip() for p in text.split('\n') if p.strip() and p.strip() != '#'}
             text = '\n'.join(sorted(packages))
         else:
             # helpful when debugging: print(text.replace(' ', '·').replace('\n', '⏎\n'))
