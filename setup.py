@@ -2,6 +2,7 @@ import os
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from setuptools import setup
+from grablib import Grab
 
 THIS_DIR = Path(__file__).resolve().parent
 long_description = THIS_DIR.joinpath('README.rst').read_text()
@@ -9,34 +10,9 @@ long_description = THIS_DIR.joinpath('README.rst').read_text()
 # avoid loading the package before requirements are installed:
 version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module()
 
-
-def check_livereload_js():
-    import hashlib
-    live_reload_221_hash = 'a451e4d39b8d7ef62d380d07742b782f'
-    live_reload_221_url = 'https://raw.githubusercontent.com/livereload/livereload-js/v2.2.1/dist/livereload.js'
-
-    path = THIS_DIR.joinpath('aiohttp_devtools/runserver/livereload.js')
-
-    def check_path():
-        with path.open('rb') as fr:
-            file_hash = hashlib.md5(fr.read()).hexdigest()
-        return file_hash == live_reload_221_hash
-
-    if path.is_file():
-        if check_path():
-            return
-
-    import urllib.request
-
-    print('downloading livereload:\nurl:  {}\npath: {}'.format(live_reload_221_url, path))
-    with urllib.request.urlopen(live_reload_221_url) as r:
-        with path.open('wb') as fw:
-            fw.write(r.read())
-
-    if not check_path():
-        raise RuntimeError('checksums do not match for {} after download'.format(path))
-
-check_livereload_js()
+# make sure livereload.js exists.
+grab = Grab(THIS_DIR / 'grablib.yml')
+grab.download()
 
 package = THIS_DIR.joinpath('aiohttp_devtools/start')
 

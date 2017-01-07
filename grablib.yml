@@ -1,0 +1,3 @@
+download_root: 'aiohttp_devtools/runserver'
+download:
+  'GITHUB/livereload/livereload-js/v2.2.1/dist/livereload.js': '/'
