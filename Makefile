@@ -1,9 +1,9 @@
 .PHONY: install
 install:
-	pip install -U pip
+	pip install -U setuptools pip
 	pip install .
-	python setup.py check  # bodge to make sure livereload is downloaded
-	pip install -Ur tests/requirements.txt
+	pip install -r tests/requirements.txt
+	grablib
 
 .PHONY: isort
 isort:

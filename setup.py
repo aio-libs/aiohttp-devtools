@@ -2,17 +2,12 @@ import os
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from setuptools import setup
-from grablib import Grab
 
 THIS_DIR = Path(__file__).resolve().parent
 long_description = THIS_DIR.joinpath('README.rst').read_text()
 
 # avoid loading the package before requirements are installed:
 version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module()
-
-# make sure livereload.js exists.
-grab = Grab(THIS_DIR / 'grablib.yml')
-grab.download()
 
 package = THIS_DIR.joinpath('aiohttp_devtools/start')
 
