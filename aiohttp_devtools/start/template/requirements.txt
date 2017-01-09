@@ -8,7 +8,7 @@ pytest-aiohttp==0.1.3
 pytest-cov==2.4.0
 
 # {% if template_engine.is_jinja2 %}
-aiohttp-jinja2==0.8.0
+aiohttp-jinja2==0.13.0
 # {% endif %}
 
 # {% if session.is_secure %}
