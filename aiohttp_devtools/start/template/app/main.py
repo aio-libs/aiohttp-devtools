@@ -65,7 +65,7 @@ def substitute_environ(s_dict: dict, prefix: str) -> dict:
     Names are searched hierarchically with underscores representing levels, environment variables must be
     capitalised.
 
-    For sample lets say we have ` {'foo': 'bar', 'subdict': {'value': 123}}` with prefix 'APP_',
+    For example lets say we have ` {'foo': 'bar', 'subdict': {'value': 123}}` with prefix 'APP_',
     the environment variable "APP_FOO = spam" would replace "bar" and "APP_SUBDICT_VALUE = 3"
     would be converted to int and replace 123 in the dict.
 
@@ -76,7 +76,7 @@ def substitute_environ(s_dict: dict, prefix: str) -> dict:
     for key, value in s_dict.items():
         if isinstance(value, dict):
             s_dict[key] = substitute_environ(value, prefix + key + '_')
-        elif isinstance(value, dict):
+        elif isinstance(value, list):
             # doesn't make sense, we can't do anything here
             pass
         else:

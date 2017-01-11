@@ -7,7 +7,8 @@ message_file: 'messages.txt'
 # {% elif database.is_pg_sqlalchemy %}
 database:
   name: '{{ clean_name }}'
-  user: 'postgres'  # TODO make sure connection settings here are correct
+  user: 'postgres'  # TODO you need to make sure connection settings here are correct
+  # you can override password without saving it with an env variable: `APP_DATABASE_PASSWORD=waffle`
   password: 'You need to set this!'
   host: localhost
   port: 5432

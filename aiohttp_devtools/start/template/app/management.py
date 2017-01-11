@@ -13,7 +13,7 @@ def prepare_database(delete_existing: bool) -> bool:
     (Re)create a fresh database and run migrations.
 
     :param delete_existing: whether or not to drop an existing database if it exists
-    :return: whether or not a database as (re)created
+    :return: whether or not a database has been (re)created
     """
     db = load_settings()['database']
 
