@@ -19,6 +19,7 @@ install:
 script:
 - make lint
 - make test
+- make check_tag_version
 #- make docs
 
 after_success:
