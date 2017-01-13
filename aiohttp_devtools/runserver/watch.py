@@ -8,7 +8,7 @@ from aiohttp import ClientSession
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
 from ..logs import rs_dft_logger as logger
-from .serve import serve_main_app
+from .serve import WS, serve_main_app
 
 # specific to jetbrains I think, very annoying if not completely ignored
 JB_BACKUP_FILE = '*___jb_???___'
@@ -82,10 +82,11 @@ class PyCodeEventHandler(BaseEventHandler):
         logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
         self.stop_process()
         self._start_process()
-        self._app.loop.call_later(1, self._app.src_reload)
         self._app.loop.create_task(self.src_reload_when_live())
 
     async def src_reload_when_live(self, checks=20):
+        if not self._app[WS]:
+            return
         url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
         logger.debug('checking app at "%s" is running before prompting reload...', url)
         async with ClientSession(loop=self._app.loop) as session:
@@ -101,10 +102,8 @@ class PyCodeEventHandler(BaseEventHandler):
                     return self._app.src_reload()
 
     def _start_process(self):
-        if self._change_count == 0:
-            logger.info('Starting dev server at http://localhost:%s ●', self._config.main_port)
-        else:
-            logger.info('Restarting dev server at http://localhost:%s ●', self._config.main_port)
+        act = 'Start' if self._change_count == 0 else 'Restart'
+        logger.info('%sing dev server at http://localhost:%s ●', act, self._config.main_port)
 
         self._process = Process(target=serve_main_app, args=(self._config,))
         self._process.start()

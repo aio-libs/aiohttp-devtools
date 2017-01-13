@@ -201,6 +201,7 @@ async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_cl
     mock_process.return_value = process
 
     app = Application(loop=loop)
+    app['websockets'] = [None]
     app.src_reload = MagicMock(return_value=0)
     cli = await test_client(app)
     config = MagicMock()
@@ -210,3 +211,24 @@ async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_cl
     r = await eh.src_reload_when_live(2)
     assert r == 0
     assert app.src_reload.call_count == 1
+
+
+async def test_pycode_src_reload_when_live_no_webs(caplog, loop, mocker, test_client):
+    caplog.set_level(10)
+    mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
+    process = MagicMock()
+    process.pid = 123
+    process.exitcode = None
+    mock_process.return_value = process
+
+    app = Application(loop=loop)
+    app['websockets'] = []
+    app.src_reload = MagicMock()
+    cli = await test_client(app)
+    config = MagicMock()
+    config.main_port = cli.server.port
+
+    eh = PyCodeEventHandler(app, config)
+    r = await eh.src_reload_when_live(2)
+    assert r is None
+    assert not app.src_reload.called
