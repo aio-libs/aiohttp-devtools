@@ -24,7 +24,7 @@ if_boxed = get_if_boxed(pytest)
 
 async def check_server_running(loop):
     async with aiohttp.ClientSession(loop=loop) as session:
-        for i in range(20):
+        for i in range(30):
             try:
                 async with session.get('http://localhost:8000/') as r:
                     assert r.status == 200
@@ -63,14 +63,14 @@ def create_app(loop):
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
 
-    server_running = loop.run_until_complete(check_server_running(loop))
-    assert server_running
+    assert loop.run_until_complete(check_server_running(loop))
 
     assert len(observer._handlers) == 2
     event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
     code_event_handler._process.terminate()
     assert (
+        'adev.server.dft INFO: pre-check enabled, checking app factory\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
@@ -116,11 +116,12 @@ async def test_aux_app(loop, tmpworkdir, test_client):
 
 
 @if_boxed
+@slow
 def test_run_app_http(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, SIMPLE_APP)
     mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    loop.call_later(0.05, loop.stop)
+    loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
     serve_main_app(config, loop=loop)
