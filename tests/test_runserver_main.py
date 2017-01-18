@@ -22,20 +22,33 @@ slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
 
-async def check_server_running(loop):
+async def check_server_running(loop, *, live_reload, check_errors=False):
+    port_open = False
+    for i in range(30):
+        try:
+            await loop.create_connection(lambda: asyncio.Protocol(), host='localhost', port=8000)
+        except OSError:
+            await asyncio.sleep(0.1, loop=loop)
+        else:
+            port_open = True
+            break
+    assert port_open
+
     async with aiohttp.ClientSession(loop=loop) as session:
-        for i in range(30):
-            try:
-                async with session.get('http://localhost:8000/') as r:
-                    assert r.status == 200
-                    assert (await r.text()) == 'hello world'
-            except (AssertionError, OSError):
-                await asyncio.sleep(0.1, loop=loop)
+        async with session.get('http://localhost:8000/') as r:
+            assert r.status == 200
+            assert r.headers['content-type'].startswith('text/html')
+            text = await r.text()
+            assert '<h1>hello world</h1>' in text
+            if live_reload:
+                assert '<script src="http://localhost:8001/livereload.js"></script>' in text
             else:
-                async with session.get('http://localhost:8000/error') as r:
-                    assert r.status == 500
-                    assert 'raise ValueError()' in (await r.text())
-                return True
+                assert '<script src="http://localhost:8001/livereload.js"></script>' not in text
+
+        if check_errors:
+            async with session.get('http://localhost:8000/error') as r:
+                assert r.status == 500
+                assert 'raise ValueError()' in (await r.text())
 
 
 @if_boxed
@@ -46,7 +59,7 @@ def test_start_runserver(tmpworkdir, caplog):
 from aiohttp import web
 
 async def hello(request):
-    return web.Response(text='hello world')
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
 
 async def has_error(request):
     raise ValueError()
@@ -62,18 +75,58 @@ def create_app(loop):
     aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop, static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-
-    assert loop.run_until_complete(check_server_running(loop))
-
     assert len(observer._handlers) == 2
     event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
-    code_event_handler._process.terminate()
+
+    try:
+        loop.run_until_complete(check_server_running(loop, live_reload=True, check_errors=True))
+    finally:
+        code_event_handler._process.terminate()
     assert (
         'adev.server.dft INFO: pre-check enabled, checking app factory\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
+    ) == caplog
+
+
+@if_boxed
+@slow
+def test_start_runserver_yml_no_checks(tmpworkdir, caplog):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+def create_app(loop):
+    app = web.Application(loop=loop)
+    app.router.add_get('/', hello)
+    return app""",
+        'settings.yml': """\
+dev:
+  py_file: app.py
+  pre_check: false
+  livereload: false
+        """
+    })
+    loop = asyncio.new_event_loop()
+    aux_app, observer, aux_port = runserver(app_path='settings.yml', loop=loop)
+    assert isinstance(aux_app, aiohttp.web.Application)
+    assert aux_port == 8001
+    assert len(observer._handlers) == 1
+    event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
+    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
+
+    try:
+        loop.run_until_complete(check_server_running(loop, live_reload=False))
+    finally:
+        code_event_handler._process.terminate()
+    assert (
+        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
+        'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
     ) == caplog
 
 

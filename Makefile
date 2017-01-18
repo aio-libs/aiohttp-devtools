@@ -5,12 +5,6 @@ install:
 	pip install -r tests/requirements.txt
 	grablib
 
-.PHONY: check_tag_version
-check_tag_version:
-	python -c "import sys, os; \
-		from aiohttp_devtools.version import VERSION; \
-		os.getenv('TRAVIS_TAG') not in (None, '', str(VERSION)) and sys.exit(1)"
-
 .PHONY: isort
 isort:
 	isort -rc -w 120 -sg */template/* aiohttp_devtools

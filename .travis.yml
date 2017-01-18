@@ -19,7 +19,7 @@ install:
 script:
 - make lint
 - make test
-- make check_tag_version
+- ./tests/check_tag.py
 #- make docs
 
 after_success:

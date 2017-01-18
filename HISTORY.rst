@@ -3,6 +3,11 @@
 History
 -------
 
+0.1.3 (2017-01-18)
+------------------
+* add ``app.cleanup()`` to pre-checks
+* add ``--pre-check/--no-pre-check`` flag
+
 0.1.2 (2017-01-11)
 ------------------
 * move to ``grablib`` for downloading ``livereload.js``
