@@ -44,6 +44,7 @@ def serve(path, livereload, port, verbose):
 static_help = "Path of static files to serve, if excluded static files aren't served."
 static_url_help = 'URL path to serve static files from, default "/static/".'
 debugtoolbar_help = 'Whether to enable debug toolbar.'
+precheck_help = "Whether to start and stop the app before creating it in a subprocess to check it's working."
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, '
                     'if missing default app-factory names are tried.')
 port_help = 'Port to serve app from, default 8000.'
@@ -57,6 +58,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 800
 @click.option('--static-url', help=static_url_help)
 @click.option('--livereload/--no-livereload', default=None, help=livereload_help)
 @click.option('--debug-toolbar/--no-debug-toolbar', default=None, help=debugtoolbar_help)
+@click.option('--pre-check/--no-pre-check', default=None, help=debugtoolbar_help)
 @click.option('--app-factory', help=app_factory_help)
 @click.option('-p', '--port', 'main_port', help=port_help)
 @click.option('--aux-port', help=aux_port_help)

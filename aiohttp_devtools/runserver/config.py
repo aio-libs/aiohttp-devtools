@@ -25,6 +25,7 @@ DEV_DICT = t.Dict({
     t.Key('static_url', default='/static/'): t.String,
     t.Key('livereload', default=True): t.Bool,
     t.Key('debug_toolbar', default=True): t.Bool,
+    t.Key('pre_check', default=True): t.Bool,
     t.Key('app_factory', default=None) >> 'app_factory_name': t.Or(t.String | t.Null),
     t.Key('main_port', default=8000): t.Int(gte=0),
     t.Key('aux_port', default=8001): t.Int(gte=0),
@@ -63,6 +64,7 @@ class Config:
         self.static_url = config['static_url']
         self.livereload = config['livereload']
         self.debug_toolbar = config['debug_toolbar']
+        self.pre_check = config['pre_check']
         self.app_factory_name = config['app_factory_name']
         self.main_port = config['main_port']
         self.aux_port = config['aux_port']
@@ -201,7 +203,10 @@ class Config:
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
         """
-        logger.debug('checking app factory "%s"', self.app_factory_name)
+        if not self.pre_check:
+            logger.debug('pre-check disabled, not checking app factory')
+            return
+        logger.info('pre-check enabled, checking app factory')
         if not callable(self.app_factory):
             raise AdevConfigError('app_factory "{.app_factory_name}" is not callable'.format(self))
         try:
@@ -211,9 +216,16 @@ class Config:
         if not isinstance(app, Application):
             raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                   'aiohttp.web.Application'.format(self, app))
-        loop.run_until_complete(app.startup())
+        logger.debug('app "%s" successfully created', app)
+        loop.run_until_complete(self._startup_cleanup(app))
+
+    async def _startup_cleanup(self, app):
+        logger.debug('running app startup...')
+        await app.startup()
+        logger.debug('running app cleanup...')
+        await app.cleanup()
 
     def __str__(self):
-        fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar',
+        fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar', 'pre_check',
                   'app_factory_name', 'main_port', 'aux_port',)
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
