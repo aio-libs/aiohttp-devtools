@@ -45,7 +45,6 @@ def modify_main_app(app, config: Config):
 async def check_port_open(port, loop, delay=1):
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
-    port_open = False
     for i in range(5, 0, -1):
         try:
             server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
@@ -57,10 +56,8 @@ async def check_port_open(port, loop, delay=1):
         else:
             server.close()
             await server.wait_closed()
-            port_open = True
-            break
-    if not port_open:
-        raise AiohttpDevException('The port {} is already is use'.format(port))
+            return
+    raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
 def create_main_app(config, loop):

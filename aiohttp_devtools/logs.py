@@ -45,7 +45,7 @@ def log_config(verbose: bool) -> dict:
         'disable_existing_loggers': False,
         'formatters': {
             'default': {
-                'format': '[%(asctime)s] %(message)s' if verbose else '[%(asctime)s] %(message)s',
+                'format': '[%(asctime)s] %(message)s',
                 'datefmt': '%H:%M:%S',
             },
             'no_ts': {
