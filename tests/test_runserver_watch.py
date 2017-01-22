@@ -206,6 +206,7 @@ async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_cl
     cli = await test_client(app)
     config = MagicMock()
     config.main_port = cli.server.port
+    config.ssl_context = None
 
     eh = PyCodeEventHandler(app, config)
     r = await eh.src_reload_when_live(2)

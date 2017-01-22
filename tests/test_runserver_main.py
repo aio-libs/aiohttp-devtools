@@ -72,7 +72,7 @@ def create_app(loop):
         'static_dir/foo.js': 'var bar=1;',
     })
     loop = asyncio.new_event_loop()
-    aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop, static_path='static_dir')
+    aux_app, observer, aux_port, ssl_context = runserver(app_path='app.py', loop=loop, static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(observer._handlers) == 2
@@ -113,7 +113,7 @@ dev:
         """
     })
     loop = asyncio.new_event_loop()
-    aux_app, observer, aux_port = runserver(app_path='settings.yml', loop=loop)
+    aux_app, observer, aux_port, ssl_context = runserver(app_path='settings.yml', loop=loop)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(observer._handlers) == 1
@@ -141,8 +141,9 @@ def test_run_app(loop, unused_port):
     app = Application(loop=loop)
     obersver = mock.MagicMock()
     port = unused_port()
+    ssl_context = None
     Process(target=kill_parent_soon).start()
-    run_app(app, obersver, port)
+    run_app(app, obersver, port, ssl_context)
 
 
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
@@ -180,7 +181,7 @@ def test_run_app_http(tmpworkdir, loop, mocker):
     serve_main_app(config, loop=loop)
 
     assert loop.is_closed()
-    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
+    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128, ssl=None)
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 

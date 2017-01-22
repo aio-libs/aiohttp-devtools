@@ -28,6 +28,8 @@ class BaseEventHandler(PatternMatchingEventHandler):
         '*/aiohttp_devtools/*',  # itself
         '*~',                    # linux temporary file
         '*.sw?',                 # vim temporary file
+        '*#',                    # emacs temporary file
+        '*.#*'                   # emacs temporary file
     ]
     skipped_event = False
 
@@ -75,6 +77,7 @@ class PyCodeEventHandler(BaseEventHandler):
     def __init__(self, app, config):
         self._app = app
         self._config = config
+        self.proto = 'https' if config.ssl_context else 'http'
         super().__init__()
         self._start_process()
 
@@ -87,7 +90,7 @@ class PyCodeEventHandler(BaseEventHandler):
     async def src_reload_when_live(self, checks=20):
         if not self._app[WS]:
             return
-        url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
+        url = '{}://localhost:{.main_port}/?_checking_alive=1'.format(self.proto, self._config)
         logger.debug('checking app at "%s" is running before prompting reload...', url)
         async with ClientSession(loop=self._app.loop) as session:
             for i in range(checks):
