@@ -1,4 +1,5 @@
 import re
+import ssl
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -23,6 +24,8 @@ DEV_DICT = t.Dict({
     t.Key('static_path', default=None): t.Or(t.String | t.Null),
     t.Key('python_path', default=None): t.Or(t.String | t.Null),
     t.Key('static_url', default='/static/'): t.String,
+    t.Key('ssl_cert', default=None): t.Or(t.String | t.Null),
+    t.Key('ssl_key', default=None): t.Or(t.String | t.Null),
     t.Key('livereload', default=True): t.Bool,
     t.Key('debug_toolbar', default=True): t.Bool,
     t.Key('pre_check', default=True): t.Bool,
@@ -68,7 +71,21 @@ class Config:
         self.app_factory_name = config['app_factory_name']
         self.main_port = config['main_port']
         self.aux_port = config['aux_port']
+        self.ssl_cert = config['ssl_cert']
+        self.ssl_key = config['ssl_key']
         self.app_factory, self.code_directory = self._import_app_factory()
+
+    @property
+    def ssl_context(self):
+        if not self.ssl_cert or not self.ssl_key:
+            return
+        try:
+            ctx = ssl.SSLContext(protocol=ssl.PROTOCOL_SSLv23)
+            ctx.load_cert_chain(self.ssl_cert, keyfile=self.ssl_key)
+            return ctx
+        except (FileNotFoundError, ssl.SSLError):
+            logger.error('wrong certificate or keyfile')
+            return
 
     @property
     def static_path_str(self):
