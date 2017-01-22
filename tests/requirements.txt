@@ -14,7 +14,7 @@ pytest-sugar==0.8.0
 pytest-timeout==1.2.0
 pytest-toolbox==0.1
 pytest-xdist==1.15.0
-Sphinx==1.5.1
+Sphinx==1.5.2
 
 # required to run "start" apps
 aiohttp-jinja2==0.13.0
