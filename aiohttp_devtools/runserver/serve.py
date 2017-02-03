@@ -17,16 +17,17 @@ from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
 
-LIVE_RELOAD_SNIPPET = b'\n<script src="http://localhost:%d/livereload.js"></script>\n'
+LIVE_RELOAD_SNIPPET = b'\n<script src="%s://localhost:%d/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
 HOST = '0.0.0.0'
 
 
 def modify_main_app(app, config: Config):
     app._debug = True
+    prot = b'https' if config.ssl_context else b'http'
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
     if config.livereload:
-        livereload_snippet = LIVE_RELOAD_SNIPPET % config.aux_port
+        livereload_snippet = LIVE_RELOAD_SNIPPET % (prot, config.aux_port)
 
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
@@ -34,7 +35,7 @@ def modify_main_app(app, config: Config):
                     response.body += livereload_snippet
         app.on_response_prepare.append(on_prepare)
 
-    static_url = 'http://localhost:{}/{}'.format(config.aux_port, config.static_url.strip('/'))
+    static_url = '{}://localhost:{}/{}'.format(prot, config.aux_port, config.static_url.strip('/'))
     app['static_root_url'] = static_url
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
@@ -77,7 +78,7 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
         access_log_format='%r %s %b'
     )
     co = asyncio.gather(
-        loop.create_server(handler, HOST, config.main_port, backlog=128),
+        loop.create_server(handler, HOST, config.main_port, backlog=128, ssl=config.ssl_context),
         app.startup(),
         loop=loop
     )
@@ -150,7 +151,7 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path: str, port: int, static_url='/', livereload=True, loop=None):
+def create_auxiliary_app(*, static_path: str, port: int, static_url='/', livereload=True, loop=None, ssl_context=None):
     app = AuxiliaryApplication(loop=loop)
     app[WS] = []
     app.update(
@@ -161,7 +162,8 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
-        livereload_snippet = LIVE_RELOAD_SNIPPET % port
+        prot = b'https' if ssl_context else b'http'
+        livereload_snippet = LIVE_RELOAD_SNIPPET % (prot, port)
         aux_logger.debug('enabling livereload on auxiliary app')
     else:
         livereload_snippet = None

@@ -56,6 +56,8 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 800
 @click.argument('app-path', type=_file_dir_existing, required=True)
 @click.option('-s', '--static', 'static_path', type=_dir_existing, help=static_help)
 @click.option('--static-url', help=static_url_help)
+@click.option('--ssl-cert', 'ssl_cert', type=_file_dir_existing)
+@click.option('--ssl-key', 'ssl_key', type=_file_dir_existing)
 @click.option('--livereload/--no-livereload', default=None, help=livereload_help)
 @click.option('--debug-toolbar/--no-debug-toolbar', default=None, help=debugtoolbar_help)
 @click.option('--pre-check/--no-pre-check', default=None, help=debugtoolbar_help)
