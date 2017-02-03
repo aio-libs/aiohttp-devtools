@@ -10,10 +10,10 @@ from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
-def run_app(app, observer, port):
+def run_app(app, observer, port, ssl_context):
     loop = app.loop
     handler = app.make_handler(access_log=None)
-    server = loop.run_until_complete(loop.create_server(handler, HOST, port))
+    server = loop.run_until_complete(loop.create_server(handler, HOST, port, ssl=ssl_context))
 
     try:
         loop.run_forever()
@@ -47,6 +47,7 @@ def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEvent
         static_url=config.static_url,
         livereload=config.livereload,
         loop=loop,
+        ssl_context=config.ssl_context,
     )
 
     observer = Observer()
@@ -72,7 +73,7 @@ def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEvent
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return aux_app, observer, config.aux_port
+    return aux_app, observer, config.aux_port, config.ssl_context
 
 
 def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loop: asyncio.AbstractEventLoop=None):
