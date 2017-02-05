@@ -50,6 +50,8 @@ class AiohttpAccessHandler(logging.Handler):
 
 
 def fmt_size(num):
+    if not num:
+        return ''
     if num < 1024:
         return '{:0.0f}B'.format(num)
     else:
