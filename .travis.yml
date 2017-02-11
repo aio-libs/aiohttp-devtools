@@ -5,16 +5,21 @@ cache: pip
 python:
 - '3.5'
 - '3.6'
-- '3.6-dev'
 - 'nightly'  # currently 3.7
+
+env:
+- 'AIOHTTP_VERSION=aiohttp==1.2'
+- 'AIOHTTP_VERSION=aiohttp==1.3'
+- 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
 
 matrix:
   allow_failures:
-  - python: '3.6-dev'
   - python: 'nightly'
+  - env: 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
 
 install:
 - make install
+- pip install ${AIOHTTP_VERSION}
 
 script:
 - make lint
