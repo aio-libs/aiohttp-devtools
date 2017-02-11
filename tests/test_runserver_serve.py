@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from aiohttp_devtools.exceptions import AiohttpDevException
+from aiohttp_devtools.runserver.log_handlers import fmt_size
 from aiohttp_devtools.runserver.serve import AuxiliaryApplication, check_port_open
 
 
@@ -96,3 +97,13 @@ async def test_aux_cleanup(loop):
     aux_app['websockets'] = [(ws, '/foo/bar')]
     await aux_app.cleanup()
     assert ws.close.call_count == 1
+
+
+@pytest.mark.parametrize('value,result', [
+    (None, ''),
+    ('', ''),
+    (1000, '1000B'),
+    (2000, '2.0KB'),
+])
+def test_fmt_size_large(value, result):
+    assert fmt_size(value) == result

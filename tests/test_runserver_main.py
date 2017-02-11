@@ -24,7 +24,7 @@ if_boxed = get_if_boxed(pytest)
 
 async def check_server_running(loop, *, live_reload, check_errors=False):
     port_open = False
-    for i in range(30):
+    for i in range(50):
         try:
             await loop.create_connection(lambda: asyncio.Protocol(), host='localhost', port=8000)
         except OSError:

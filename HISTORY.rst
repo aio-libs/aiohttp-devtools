@@ -3,6 +3,13 @@
 History
 -------
 
+0.1.4 (2017-02-11)
+------------------
+* resolve conflicts with aiohttp 1.3.0
+* test build matrix to test with all recent version of aiohttp and master
+* dependency updates
+* fix for `fmt_size` with size is ``None``
+
 0.1.3 (2017-01-18)
 ------------------
 * add ``app.cleanup()`` to pre-checks
