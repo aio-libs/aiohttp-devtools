@@ -174,7 +174,11 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
             tail_snippet=livereload_snippet,
             follow_symlinks=True
         )
-        app.router._reg_resource(route)
+        try:
+            app.router.register_resource(route)
+        except AttributeError:
+            # aiohttp < 1.3
+            app.router._reg_resource(route)
 
     return app
 
