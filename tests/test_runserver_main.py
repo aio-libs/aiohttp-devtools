@@ -93,6 +93,32 @@ def create_app(loop):
 
 @if_boxed
 @slow
+def test_start_runserver_app_instance(tmpworkdir, caplog):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+app = web.Application()
+app.router.add_get('/', hello)
+"""
+    })
+    aux_app, observer, aux_port = runserver(app_path='app.py')
+    assert len(observer._handlers) == 1
+    event_handlers = list(observer._handlers.values())[0]
+    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
+
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(check_server_running(loop, live_reload=True))
+    finally:
+        code_event_handler._process.terminate()
+
+
+@if_boxed
+@slow
 def test_start_runserver_yml_no_checks(tmpworkdir, caplog):
     mktree(tmpworkdir, {
         'app.py': """\

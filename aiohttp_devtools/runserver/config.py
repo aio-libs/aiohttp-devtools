@@ -207,7 +207,14 @@ class Config:
             logger.debug('pre-check disabled, not checking app factory')
             return
         logger.info('pre-check enabled, checking app factory')
-        if callable(self.app_factory):
+        if not callable(self.app_factory):
+            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
+                                  'instance of aiohttp.web.Application'.format(self))
+
+        if isinstance(self.app_factory, Application):
+            app = self.app_factory
+        else:
+            # app_factory should be a proper factory with signature (loop): -> Application
             try:
                 app = self.app_factory(loop)
             except ConfigError as e:
@@ -215,9 +222,6 @@ class Config:
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))
-        elif not isinstance(self.app_factory, Application):
-            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
-                                  'instance of aiohttp.web.Application'.format(self))
 
         logger.debug('app "%s" successfully created', app)
         loop.run_until_complete(self._startup_cleanup(app))
