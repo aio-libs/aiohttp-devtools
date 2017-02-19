@@ -1,3 +1,4 @@
+import asyncio
 from click.testing import CliRunner
 
 from aiohttp_devtools.cli import cli
@@ -13,7 +14,8 @@ def test_cli_help():
     assert 'Create a new aiohttp app.' in result.output
 
 
-def test_serve(mocker):
+def test_serve(mocker, loop):
+    asyncio.set_event_loop(loop)
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     runner = CliRunner()
     result = runner.invoke(cli, ['serve', '.'])
