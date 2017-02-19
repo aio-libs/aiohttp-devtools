@@ -1,5 +1,9 @@
 def pytest_addoption(parser):
-    parser.addoption('--fast', action='store_true', help="don't run slow tests")
+    try:
+        parser.addoption('--fast', action='store_true', help="don't run slow tests")
+    except ValueError:
+        # --fast is already defined by aiohttp
+        pass
 
 
 SIMPLE_APP = {
