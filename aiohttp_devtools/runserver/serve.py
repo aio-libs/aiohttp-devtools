@@ -6,6 +6,7 @@ from pathlib import Path
 import aiohttp_debugtoolbar
 from aiohttp import FileSender, WSMsgType, web
 from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
+from aiohttp.web import Application
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import unquote
@@ -23,6 +24,12 @@ HOST = '0.0.0.0'
 
 
 def modify_main_app(app, config: Config):
+    """
+    Modify the app we're serving to make development easier, eg.
+    * modify responses to add the livereload snippet
+    * set ``static_root_url`` on the app
+    * setup the debug toolbar
+    """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
     if config.livereload:
@@ -60,18 +67,21 @@ async def check_port_open(port, loop, delay=1):
     raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
-def create_main_app(config, loop):
-    app = config.app_factory(loop=loop)
-    modify_main_app(app, config)
-    return app
-
-
 def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
     setup_logging(config.verbose)
 
-    loop = loop or asyncio.new_event_loop()
+    if isinstance(config.app_factory, Application):
+        assert loop is None, ('serve_main_app can\'t be called with a loop instance if the "app_factory" '
+                              'is actually an application instance')
+        app = config.app_factory
+        loop = app.loop
+    else:
+        loop = loop or asyncio.get_event_loop()
+        app = config.app_factory(loop=loop)
+
+    modify_main_app(app, config)
+
     loop.run_until_complete(check_port_open(config.main_port, loop))
-    app = create_main_app(config, loop=loop)
     handler = app.make_handler(
         logger=dft_logger,
         access_log_format='%r %s %b'

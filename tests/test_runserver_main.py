@@ -13,7 +13,7 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
+from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
 from .conftest import SIMPLE_APP, get_if_boxed, get_slow
@@ -147,7 +147,9 @@ def test_run_app(loop, unused_port):
 
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
-    app = create_main_app(Config(app_path='app.py'), loop=loop)
+    config = Config(app_path='app.py')
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
     cli = await test_client(app)
     r = await cli.get('/')
