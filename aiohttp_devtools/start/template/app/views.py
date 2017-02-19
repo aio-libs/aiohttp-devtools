@@ -8,8 +8,8 @@ from aiohttp import web
 
 # {% if example.is_message_board %}
 from aiohttp.hdrs import METH_POST
+from aiohttp.web import json_response
 from aiohttp.web_exceptions import HTTPFound
-from aiohttp.web_reqrep import json_response
 
 # {% if database.is_pg_sqlalchemy %}
 from .models import sa_messages

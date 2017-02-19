@@ -93,7 +93,7 @@ def create_app(loop):
 
 @if_boxed
 @slow
-def test_start_runserver_app_instance(tmpworkdir, caplog):
+def test_start_runserver_app_instance(tmpworkdir, loop, caplog):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -105,12 +105,12 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
+    asyncio.set_event_loop(loop)
     aux_app, observer, aux_port = runserver(app_path='app.py')
     assert len(observer._handlers) == 1
     event_handlers = list(observer._handlers.values())[0]
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
 
-    loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(check_server_running(loop, live_reload=True))
     finally:
@@ -119,7 +119,7 @@ app.router.add_get('/', hello)
 
 @if_boxed
 @slow
-def test_start_runserver_yml_no_checks(tmpworkdir, caplog):
+def test_start_runserver_yml_no_checks(tmpworkdir, caplog, loop):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -138,7 +138,6 @@ dev:
   livereload: false
         """
     })
-    loop = asyncio.new_event_loop()
     aux_app, observer, aux_port = runserver(app_path='settings.yml', loop=loop)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
@@ -214,7 +213,7 @@ def test_serve_main_app(tmpworkdir, loop, mocker):
 
 @if_boxed
 @slow
-def test_serve_main_app_app_instance(tmpworkdir, mocker):
+def test_serve_main_app_app_instance(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -226,7 +225,7 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    loop = asyncio.get_event_loop()
+    asyncio.set_event_loop(loop)
     mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
