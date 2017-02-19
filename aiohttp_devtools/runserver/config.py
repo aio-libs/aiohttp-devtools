@@ -68,7 +68,8 @@ class Config:
         self.app_factory_name = config['app_factory_name']
         self.main_port = config['main_port']
         self.aux_port = config['aux_port']
-        self.app_factory, self.code_directory = self._import_app_factory()
+        self.code_directory = None
+        self._import_app_factory()
 
     @property
     def static_path_str(self):
@@ -77,6 +78,10 @@ class Config:
     @property
     def code_directory_str(self):
         return self.code_directory and str(self.code_directory)
+
+    @property
+    def app_factory(self):
+        return self._import_app_factory()
 
     def _find_app_path(self, app_path: str) -> Path:
         path = Path(app_path).resolve()
@@ -195,8 +200,8 @@ class Config:
             raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
-        directory = Path(module.__file__).parent
-        return attr, directory
+        self.code_directory = Path(module.__file__).parent
+        return attr
 
     def check(self, loop):
         """
@@ -208,14 +213,21 @@ class Config:
             return
         logger.info('pre-check enabled, checking app factory')
         if not callable(self.app_factory):
-            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable'.format(self))
-        try:
-            app = self.app_factory(loop)
-        except ConfigError as e:
-            raise AdevConfigError('app factory "{.app_factory_name}" caused ConfigError: {}'.format(self, e)) from e
-        if not isinstance(app, Application):
-            raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
-                                  'aiohttp.web.Application'.format(self, app))
+            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
+                                  'instance of aiohttp.web.Application'.format(self))
+
+        if isinstance(self.app_factory, Application):
+            app = self.app_factory
+        else:
+            # app_factory should be a proper factory with signature (loop): -> Application
+            try:
+                app = self.app_factory(loop)
+            except ConfigError as e:
+                raise AdevConfigError('app factory "{.app_factory_name}" caused ConfigError: {}'.format(self, e)) from e
+            if not isinstance(app, Application):
+                raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
+                                      'aiohttp.web.Application'.format(self, app))
+
         logger.debug('app "%s" successfully created', app)
         loop.run_until_complete(self._startup_cleanup(app))
 

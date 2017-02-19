@@ -55,7 +55,7 @@ def not_a_default_name(loop):
         {
             'app.py': 'create_app = 4',
         },
-        'app_factory "create_app" is not callable'
+        'app_factory "create_app" is not callable or an instance of aiohttp.web.Application'
     ),
     (
         {
@@ -79,7 +79,7 @@ def app_factory(loop):
 
 @if_boxed
 @pytest.mark.parametrize('files,exc', invalid_apps, ids=['%s...' % v[1][:40] for v in invalid_apps])
-def test_all_options(tmpworkdir, files, exc, loop):
+def test_invalid_options(tmpworkdir, files, exc, loop):
     mktree(tmpworkdir, files)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
         Config(app_path='.').check(loop)

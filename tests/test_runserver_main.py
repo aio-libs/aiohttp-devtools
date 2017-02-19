@@ -13,7 +13,7 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, serve_main_app
+from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, serve_main_app
 from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
 from .conftest import SIMPLE_APP, get_if_boxed, get_slow
@@ -93,6 +93,32 @@ def create_app(loop):
 
 @if_boxed
 @slow
+def test_start_runserver_app_instance(tmpworkdir, caplog):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+app = web.Application()
+app.router.add_get('/', hello)
+"""
+    })
+    aux_app, observer, aux_port = runserver(app_path='app.py')
+    assert len(observer._handlers) == 1
+    event_handlers = list(observer._handlers.values())[0]
+    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
+
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(check_server_running(loop, live_reload=True))
+    finally:
+        code_event_handler._process.terminate()
+
+
+@if_boxed
+@slow
 def test_start_runserver_yml_no_checks(tmpworkdir, caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -147,7 +173,9 @@ def test_run_app(loop, unused_port):
 
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
-    app = create_main_app(Config(app_path='app.py'), loop=loop)
+    config = Config(app_path='app.py')
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
     cli = await test_client(app)
     r = await cli.get('/')
@@ -170,7 +198,7 @@ async def test_aux_app(loop, tmpworkdir, test_client):
 
 @if_boxed
 @slow
-def test_run_app_http(tmpworkdir, loop, mocker):
+def test_serve_main_app(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, SIMPLE_APP)
     mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
@@ -178,6 +206,33 @@ def test_run_app_http(tmpworkdir, loop, mocker):
 
     config = Config(app_path='app.py')
     serve_main_app(config, loop=loop)
+
+    assert loop.is_closed()
+    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
+    mock_modify_main_app.assert_called_with(mock.ANY, config)
+
+
+@if_boxed
+@slow
+def test_serve_main_app_app_instance(tmpworkdir, mocker):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+app = web.Application()
+app.router.add_get('/', hello)
+"""
+    })
+    loop = asyncio.get_event_loop()
+    mocker.spy(loop, 'create_server')
+    mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
+    loop.call_later(0.5, loop.stop)
+
+    config = Config(app_path='app.py')
+    serve_main_app(config)
 
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)

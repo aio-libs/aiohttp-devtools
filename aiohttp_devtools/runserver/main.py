@@ -34,6 +34,7 @@ def run_app(app, observer, port):
 def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEventLoop=None, **kwargs):
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
+
     config = Config(app_path, verbose, **kwargs)
     logger.debug('config as loaded from key word arguments and (possibly) yaml file:\n%s', config)
 

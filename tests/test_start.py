@@ -7,7 +7,7 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_main_app
+from aiohttp_devtools.runserver.serve import modify_main_app
 from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 from aiohttp_devtools.start.main import enum_choices
 
@@ -61,7 +61,9 @@ adev.main INFO: config:
     database: none
     example: message-board
 adev.main INFO: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    app = create_main_app(Config(str(tmpdir.join('the-path'))), loop=loop)
+    config = Config(str(tmpdir.join('the-path')))
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
 
     cli = await test_client(app)
@@ -108,7 +110,8 @@ async def test_all_options(tmpdir, template_engine, session, database, example):
         return
     Config(str(tmpdir))
 
-    # app = create_main_app(config, loop=loop)
+    # app = config.app_factory(loop=loop)
+    # modify_main_app(app, config)
     # cli = await test_client(app)
     # r = await cli.get('/')
     # assert r.status == 200

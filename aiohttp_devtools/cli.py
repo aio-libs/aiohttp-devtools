@@ -46,7 +46,8 @@ static_url_help = 'URL path to serve static files from, default "/static/".'
 debugtoolbar_help = 'Whether to enable debug toolbar.'
 precheck_help = "Whether to start and stop the app before creating it in a subprocess to check it's working."
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, '
-                    'if missing default app-factory names are tried.')
+                    'if missing default app-factory names are tried. This can be either a function with signature '
+                    '"def create_app(loop): -> Application" or just an instance of aiohttp.Application')
 port_help = 'Port to serve app from, default 8000.'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default 8001.'
 

@@ -20,6 +20,7 @@ matrix:
 install:
 - make install
 - pip install -U "${AIOHTTP_VERSION}"
+- pip freeze
 
 script:
 - make lint

@@ -3,12 +3,16 @@
 History
 -------
 
+0.2.0 (TBD)
+------------------
+* allow "app_factory" to be just a plain ``aiohttp.Application`` (or a function creating an application as before)
+
 0.1.4 (2017-02-11)
 ------------------
 * resolve conflicts with aiohttp 1.3.0
 * test build matrix to test with all recent version of aiohttp and master
 * dependency updates
-* fix for `fmt_size` with size is ``None``
+* fix for ``fmt_size`` with size ``None``
 
 0.1.3 (2017-01-18)
 ------------------

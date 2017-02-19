@@ -42,7 +42,7 @@ If a yaml file is found the "dev" dictionary in that file is used to populate se
 if a python file is found it's run directly, the ``--app-factory`` option can be used to define which method is called,
 if not supplied some default method names are tried.
 
-``runserver`` has a couple of useful features:
+``runserver`` has a few of useful features:
 
 * **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload`_ for more details.
 * **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally

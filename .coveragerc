@@ -4,6 +4,7 @@ branch = True
 concurrency = multiprocessing
 
 [report]
+precision = 2
 exclude_lines =
     pragma: no cover
 
