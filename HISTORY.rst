@@ -3,6 +3,10 @@
 History
 -------
 
+0.2.0 (TBD)
+------------------
+* allow "app_factory" to be just a plain ``aiohttp.Application`` (or a function creating an application as before)
+
 0.1.4 (2017-02-11)
 ------------------
 * resolve conflicts with aiohttp 1.3.0
