@@ -295,3 +295,39 @@ async def test_websocket_reload(aux_cli, loop):
         assert aux_cli.server.app.src_reload('foobar') == 1
     finally:
         await ws.close()
+
+
+async def test_sub_apps(loop, tmpworkdir, test_client):
+    mktree(tmpworkdir, {
+    'app.py': """\
+from aiohttp import web
+HTML = '<head><title>{title}</title></head><body><h1>{title}</h1></body>'
+
+async def main(request):
+    return web.Response(text=HTML.format(title='main app'), content_type='text/html')
+
+async def sub_app(request):
+    return web.Response(text=HTML.format(title='nested sub app'), content_type='text/html')
+
+def create_app(loop):
+    app = web.Application(loop=loop)
+    app.router.add_get('/', main)
+    sub_app = web.Application(loop=loop)
+    sub_app.router.add_get('/', sub_app)
+    app.add_subapp('/sub_app', sub_app)
+    return app"""
+})
+    config = Config(app_path='app.py')
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
+    assert isinstance(app, aiohttp.web.Application)
+    cli = await test_client(app)
+    r = await cli.get('/')
+    assert r.status == 200
+    body = await r.text()
+    assert '<h1>main app</h1>' in body
+    assert 'href="/_debugtoolbar/' in body
+    assert '<script src="http://localhost:8001/livereload.js"></script>' in body
+    r = await cli.get('/sub_app/')
+    assert r.status == 200
+    assert '<h1>nested sub app</h1>' in await r.text()
