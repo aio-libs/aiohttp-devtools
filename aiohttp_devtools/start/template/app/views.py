@@ -46,7 +46,9 @@ async def index(request):
 # the <body> tag is required to activate aiohttp-debugtoolbar.
 BASE_PAGE = """\
 <title>{title}</title>
+<head>
 <link href="{styles_css_url}" rel="stylesheet">
+</head>
 <body>
 <main>
   <h1>{title}</h1>
@@ -70,7 +72,7 @@ async def index(request):
     message_url = request.app.router['messages'].url()
     ctx = dict(
         title=request.app['name'],
-        styles_css_url=request.app['static_url'] + '/styles.css',
+        styles_css_url=request.app['static_root_url'] + '/styles.css',
         content="""\
   <p>Success! you've setup a basic aiohttp app.</p>
   <p>To demonstrate a little of the functionality of aiohttp this app implements a very simple message board.</p>
@@ -81,7 +83,7 @@ async def index(request):
     # {% else %}
     ctx = dict(
         title=request.app['name'],
-        styles_css_url=request.app['static_url'] + '/styles.css',
+        styles_css_url=request.app['static_root_url'] + '/styles.css',
         content="<p>Success! you've setup a basic aiohttp app.</p>",
     )
     # {% endif %}
@@ -158,7 +160,7 @@ async def messages(request):
     # {% else %}
     ctx = dict(
         title='Message board',
-        styles_css_url=request.app['static_url'] + '/styles.css',
+        styles_css_url=request.app['static_root_url'] + '/styles.css',
         content="""\
   <h2>Add a new message:</h2>
   <form method="post" action="{message_url}">
@@ -179,7 +181,7 @@ async def messages(request):
   <script src="{message_display_js_url}"></script>""".format(
             message_url=request.app.router['messages'].url(),
             message_data_url=request.app.router['message-data'].url(),
-            message_display_js_url=request.app['static_url'] + '/message_display.js',
+            message_display_js_url=request.app['static_root_url'] + '/message_display.js',
             form_errors=form_errors and '<div class="form-errors">{}</div>'.format(form_errors),
             username=username,
         )

@@ -27,7 +27,10 @@ def run_app(app, observer, port):
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
         loop.run_until_complete(app.cleanup())
-        loop.run_until_complete(handler.finish_connections(0.001))
+        try:
+            loop.run_until_complete(handler.finish_connections(0.1))
+        except asyncio.TimeoutError:
+            pass
     loop.close()
 
 

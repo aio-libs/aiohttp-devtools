@@ -102,7 +102,10 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
         loop.run_until_complete(app.cleanup())
-        loop.run_until_complete(handler.finish_connections(0.01))
+        try:
+            loop.run_until_complete(handler.finish_connections(0.1))
+        except asyncio.TimeoutError:
+            pass
     loop.close()
 
 
