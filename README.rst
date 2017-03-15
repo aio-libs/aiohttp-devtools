@@ -34,13 +34,12 @@ Usage is simply
 
     adev runserver <app-path>
 
-``app-path`` can be a path to either a directory containing a recognized default file (``settings.y(a)ml``, ``app.py``
-or ``main.py``) or to a specific file.
+``app-path`` can be a path to either a directory containing a recognized default file (``app.py``
+or ``main.py``) or to a specific file. The ``--app-factory`` option can be used to define which method is called
+from the app path file, if not supplied some default method names are tried.
 
-If a yaml file is found the "dev" dictionary in that file is used to populate settings for runserver
-(the `start`_ command creates such a file),
-if a python file is found it's run directly, the ``--app-factory`` option can be used to define which method is called,
-if not supplied some default method names are tried.
+All ``runserver`` arguments can be set via environment variables, the `start`_ command creates a script
+suitable for setting up your environment such that you can run the dev server with just ``adev runserver``.
 
 ``runserver`` has a few of useful features:
 
@@ -90,11 +89,13 @@ You're then asked a bunch of questions about the the application you're about to
 * **Database**, options are:
 
   - **pg-sqlalchemy** will use postgresql via `aiopg`_ and the `SqlAlchemy`_ ORM.
-  - **none** will use no database, persistence in examples is achieved by simply writing to file. This is a quick way to get started but is obviously not suitable for production use!
+  - **none** will use no database, persistence in examples is achieved by simply writing to file.
+    This is a quick way to get started but is obviously not suitable for production use!
 
 * **Example**, the newly created app can include some basic functionality
 
-  - **message board**: which demonstrates a little of aiohttp's usage. Messages can be added via posting to a form, are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
+  - **message board**: which demonstrates a little of aiohttp's usage. Messages can be added via posting to a form,
+    are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
   - **none**: no example, just a single simple view is created.
 
 For more options see ``adev start --help``, or just run ``adev start foobar`` and follow instructions.
@@ -139,33 +140,35 @@ Before you can run your app you'll need to install the other requirements, lucki
 
     pip install -r requirements.txt
 
-(If you went off-piste and choose to use a database you'll need to edit ``settings.yml`` to configure connection settings,
-then run ``make reset-database`` to create a database.)
+(If you went off-piste and choose to use a database you'll need to edit ``activate.settings.sh`` to configure
+connection settings, then run ``make reset-database`` to create a database.)
 
 You can then run your app with just:
 
 .. code:: shell
 
-    adev runserver .
+    source activate.settings.sh
+    adev runserver
 
-`runserver`_ notices the ``settings.yml`` files and uses that to decide how to serve your app.
+`runserver`_ uses the environment variables set in ``activate.settings.sh`` to decide how to serve your app.
 
 With that:
 
 * your app should be being served at ``localhost:8000`` (you can go and play with it in a browser).
 * Your static files are being served at ``localhost:8001``, adev has configured your app to know that so it should be rendering properly.
-* any changes to your app's code (``.py`` files) should cause the server to reload, changes to any files (``.py`` as well as ``.jinja``, ``.js``, ``.css`` etc.) will cause livereload to prompt your browser to reload the required pages.
+* any changes to your app's code (``.py`` files) should cause the server to reload, changes to any files
+  (``.py`` as well as ``.jinja``, ``.js``, ``.css`` etc.) will cause livereload to prompt your browser to reload the required pages.
 
 **That's it, go develop.**
 
-.. |Build Status| image:: https://travis-ci.org/samuelcolvin/aiohttp-devtools.svg?branch=master
-   :target: https://travis-ci.org/samuelcolvin/aiohttp-devtools
-.. |Coverage| image:: https://codecov.io/gh/samuelcolvin/aiohttp-devtools/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/samuelcolvin/aiohttp-devtools
+.. |Build Status| image:: https://travis-ci.org/aio-libs/aiohttp-devtools.svg?branch=master
+   :target: https://travis-ci.org/aio-libs/aiohttp-devtools
+.. |Coverage| image:: https://codecov.io/gh/aio-libs/aiohttp-devtools/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/aio-libs/aiohttp-devtools
 .. |pypi| image:: https://img.shields.io/pypi/v/aiohttp-devtools.svg
    :target: https://pypi.python.org/pypi/aiohttp-devtools
 .. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
-   :target: https://github.com/samuelcolvin/aiohttp-devtools
+   :target: https://github.com/aio-libs/aiohttp-devtools
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
 .. _aiohttp debugtoolbar: https://github.com/aio-libs/aiohttp_debugtoolbar

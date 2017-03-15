@@ -24,7 +24,7 @@ def test_start_simple(tmpdir, caplog):
         'Makefile',
         'requirements.txt',
         'README.md',
-        'settings.yml',
+        'activate.settings.sh',
         'setup.cfg',
         'static',
         'tests',
@@ -36,7 +36,7 @@ adev.main INFO: config:
     session: secure
     database: pg-sqlalchemy
     example: message-board
-adev.main INFO: project created, 17 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main INFO: project created, 18 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 @if_boxed
@@ -48,7 +48,7 @@ async def test_start_other_dir(tmpdir, loop, test_client, caplog):
         'Makefile',
         'requirements.txt',
         'README.md',
-        'settings.yml',
+        'activate.settings.sh',
         'setup.cfg',
         'static',
         'tests',
@@ -60,8 +60,8 @@ adev.main INFO: config:
     session: secure
     database: none
     example: message-board
-adev.main INFO: project created, 15 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    config = Config(str(tmpdir.join('the-path')))
+adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
+    config = Config('the-path/app/', root_path=str(tmpdir))
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -108,7 +108,7 @@ async def test_all_options(tmpdir, template_engine, session, database, example):
     if database != 'none':
         # TODO currently fails on postgres connection
         return
-    Config(str(tmpdir))
+    Config('app/main.py', root_path=str(tmpdir))
 
     # app = config.app_factory(loop=loop)
     # modify_main_app(app, config)

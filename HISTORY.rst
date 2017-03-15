@@ -3,6 +3,11 @@
 History
 -------
 
+0.3.0 (TBD)
+------------------
+* **breaking change**: ``runserver`` not longer works with ``settings.yml`` config files, environment variables
+  are now used in it's place.
+
 0.2.0 (2017-02-19)
 ------------------
 * allow "app_factory" to be just a plain ``aiohttp.Application`` (or a function creating an application as before)

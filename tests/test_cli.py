@@ -71,7 +71,7 @@ def test_runserver_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2
-    assert 'Missing argument "app-path"' in result.output
+    assert result.output.startswith('Error: unable to find a recognised default file')
 
 
 def test_start(mocker):

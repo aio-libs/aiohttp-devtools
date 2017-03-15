@@ -4,9 +4,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Dict
 
-import trafaret as t
 from aiohttp.web import Application
-from trafaret_config import ConfigError, read_and_validate
 
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
@@ -18,23 +16,6 @@ STD_FILE_NAMES = [
 ]
 
 
-DEV_DICT = t.Dict({
-    'py_file': t.String,
-    t.Key('static_path', default=None): t.Or(t.String | t.Null),
-    t.Key('python_path', default=None): t.Or(t.String | t.Null),
-    t.Key('static_url', default='/static/'): t.String,
-    t.Key('livereload', default=True): t.Bool,
-    t.Key('debug_toolbar', default=True): t.Bool,
-    t.Key('pre_check', default=True): t.Bool,
-    t.Key('app_factory', default=None) >> 'app_factory_name': t.Or(t.String | t.Null),
-    t.Key('main_port', default=8000): t.Int(gte=0),
-    t.Key('aux_port', default=8001): t.Int(gte=0),
-})
-
-SETTINGS = t.Dict({'dev': DEV_DICT})
-SETTINGS.allow_extra('*')
-
-
 APP_FACTORY_NAMES = [
     'app',
     'app_factory',
@@ -44,30 +25,32 @@ APP_FACTORY_NAMES = [
 
 
 class Config:
-    def __init__(self, app_path: str, verbose=False, **kwargs):
+    def __init__(self, app_path: str, root_path: str=None, verbose=False, **config):
+        if root_path:
+            self.root_path = Path(root_path).resolve()
+            logger.debug('Root path specified: %s', self.root_path)
+        else:
+            logger.debug('Root path not specified, using current workding directory')
+            self.root_path = Path('.').resolve()
+
         self.app_path = self._find_app_path(app_path)
+        if not self.app_path.name.endswith('.py'):
+            raise AdevConfigError('Unexpected extension for app_path: %s, should be .py' % self.app_path.name)
+        config['py_file'] = str(self.app_path)
         self.verbose = verbose
         self.settings_found = False
-        config = self._load_settings_file(**kwargs)
-
-        if self.settings_found:
-            logger.debug('Loaded settings file, using it directory as root')
-            self.root_dir = self.app_path.parent.resolve()
-        else:
-            logger.debug('Loaded python file, using working directory as root')
-            self.root_dir = Path('.').resolve()
 
         self.py_file = self._resolve_path(config, 'py_file', 'is_file')
-        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_dir
+        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_path
 
         self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
-        self.static_url = config['static_url']
-        self.livereload = config['livereload']
-        self.debug_toolbar = config['debug_toolbar']
-        self.pre_check = config['pre_check']
-        self.app_factory_name = config['app_factory_name']
-        self.main_port = config['main_port']
-        self.aux_port = config['aux_port']
+        self.static_url = config.get('static_url') or '/static/'
+        self.livereload = config.get('livereload', True)
+        self.debug_toolbar = config.get('debug_toolbar', True)
+        self.pre_check = config.get('pre_check', True)
+        self.app_factory_name = config.get('app_factory_name')
+        self.main_port = config.get('main_port') or 8000
+        self.aux_port = config.get('aux_port') or self.main_port + 1
         self.code_directory = None
         self._import_app_factory()
 
@@ -84,7 +67,7 @@ class Config:
         return self._import_app_factory()
 
     def _find_app_path(self, app_path: str) -> Path:
-        path = Path(app_path).resolve()
+        path = (self.root_path / app_path).resolve()
         if path.is_file():
             logger.debug('app_path is a file, returning it directly')
             return path
@@ -99,49 +82,11 @@ class Config:
             else:
                 logger.debug('app_path is a directory with a recognised file %s', file_path)
                 return file_path
-        raise AdevConfigError('unable to find a recognised default file ("settings.yml", "app.py" or "main.py") '
+        raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def _load_settings_file(self, **kwargs) -> Dict:
-        """
-        Load a settings file (or simple python file) and return settings after overwriting with any non null kwargs
-        :param path: path to load file from
-        :param kwargs: kwargs from cli or runserver direct all
-        :return: config dict compliant with DEV_DICT above
-        """
-        active_kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        try:
-            if re.search('\.ya?ml$', self.app_path.name):
-                logger.debug('setting file found, loading yaml and overwriting with kwargs')
-                self.settings_found = True
-                try:
-                    _data = read_and_validate(str(self.app_path), SETTINGS)
-                except ConfigError as e:
-                    raise AdevConfigError('Invalid settings file, {}'.format(e)) from e
-
-                _kwargs = {'py_file': 'void.py'}  # to avoid trafaret failing
-                _kwargs.update(active_kwargs)
-                validated_kwargs = DEV_DICT.check(_kwargs)
-
-                config = _data['dev']
-
-                # we only overwrite config with validated_kwargs where the original key existed to avoid overwriting
-                # settings values with defaults from DEV_DICT
-                for k in active_kwargs.keys():
-                    config[k] = validated_kwargs[k]
-
-                return config
-            elif re.search('\.py$', self.app_path.name):
-                logger.debug('python file found, using it directly together with kwargs config')
-                active_kwargs['py_file'] = str(self.app_path)
-                return DEV_DICT.check(active_kwargs)
-        except t.DataError as e:
-            raise AdevConfigError('Invalid key word arguments {}'.format(e)) from e
-
-        raise AdevConfigError('Unknown extension for app_path: %s, should be .py or .yml' % self.app_path.name)
-
     def _resolve_path(self, config: Dict, attr: str, check: str):
-        _path = config[attr]
+        _path = config.get(attr)
         if _path is None:
             return
 
@@ -149,13 +94,13 @@ class Config:
             path = Path(_path)
             error_msg = '{attr} "{path}" is not a valid path'
         else:
-            path = Path(self.root_dir / _path)
+            path = Path(self.root_path / _path)
             error_msg = '{attr} "{path}" is not a valid path relative to {root}'
 
         try:
             path = path.resolve()
         except OSError as e:
-            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_dir)) from e
+            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_path)) from e
 
         if check == 'is_file':
             if not path.is_file():
@@ -220,10 +165,7 @@ class Config:
             app = self.app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
-            try:
-                app = self.app_factory(loop)
-            except ConfigError as e:
-                raise AdevConfigError('app factory "{.app_factory_name}" caused ConfigError: {}'.format(self, e)) from e
+            app = self.app_factory(loop)
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))

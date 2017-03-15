@@ -34,11 +34,37 @@ def run_app(app, observer, port):
     loop.close()
 
 
-def runserver(*, app_path: str, verbose: bool=False, loop: asyncio.AbstractEventLoop=None, **kwargs):
+def runserver(*,
+              app_path: str='.',
+              root_path: str='.',
+              static_path: str=None,
+              python_path: str=None,
+              static_url: str=None,
+              livereload: bool=True,
+              debug_toolbar: bool=True,
+              pre_check: bool=True,
+              app_factory_name: str=None,
+              main_port: int=None,
+              aux_port: int=None,
+              verbose: bool=False,
+              loop: asyncio.AbstractEventLoop=None):
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
 
-    config = Config(app_path, verbose, **kwargs)
+    config = Config(
+        app_path=app_path,
+        root_path=root_path,
+        static_path=static_path,
+        python_path=python_path,
+        static_url=static_url,
+        livereload=livereload,
+        debug_toolbar=debug_toolbar,
+        pre_check=pre_check,
+        app_factory_name=app_factory_name,
+        main_port=main_port,
+        aux_port=aux_port,
+        verbose=verbose,
+    )
     logger.debug('config as loaded from key word arguments and (possibly) yaml file:\n%s', config)
 
     loop = loop or asyncio.get_event_loop()
