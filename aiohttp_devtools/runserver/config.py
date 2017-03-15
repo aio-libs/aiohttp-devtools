@@ -120,7 +120,6 @@ class Config:
 
         sys.path.append(str(self.python_path))
 
-        print('python_path', self.python_path)
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = str(rel_py_file).replace('.py', '').replace('/', '.')
 
