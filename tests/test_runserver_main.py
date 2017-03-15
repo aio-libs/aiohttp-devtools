@@ -210,7 +210,7 @@ async def test_websocket_hello(aux_cli, caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         ws.send_json({'command': 'hello', 'protocols': ['http://livereload.com/protocols/official-7']})
         async for msg in ws:
-            assert msg.tp == aiohttp.MsgType.text
+            assert msg.tp == aiohttp.WSMsgType.text
             data = json.loads(msg.data)
             assert data == {
                 'serverName': 'livereload-aiohttp',
