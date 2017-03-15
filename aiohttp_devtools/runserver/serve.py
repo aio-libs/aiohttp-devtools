@@ -3,10 +3,10 @@ import json
 import mimetypes
 from pathlib import Path
 
-import aiohttp_debugtoolbar
 import aiohttp
+import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
-from aiohttp.hdrs import LAST_MODIFIED
+from aiohttp.hdrs import CONTENT_ENCODING, LAST_MODIFIED
 from aiohttp.web import Application, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
@@ -267,7 +267,6 @@ if aiohttp.__version__.startswith('1'):
     # given the amount of changes this the easiest approach
     from aiohttp import FileSender
 
-
     class CustomFileSender(FileSender):
         def __init__(self, *args, **kwargs):
             self.tail_snippet = kwargs.pop('tail_snippet')
@@ -309,7 +308,6 @@ if aiohttp.__version__.startswith('1'):
                 resp.set_tcp_nodelay(True)
 
             return resp
-
 
     class CustomStaticResource(StaticResource):
         def __init__(self, *args, **kwargs):
@@ -373,7 +371,6 @@ if aiohttp.__version__.startswith('1'):
 
 else:
     from aiohttp.web import FileResponse
-
 
     class CustomStaticResource(StaticResource):
         def __init__(self, *args, **kwargs):
