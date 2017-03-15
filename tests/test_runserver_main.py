@@ -117,44 +117,6 @@ app.router.add_get('/', hello)
         code_event_handler._process.terminate()
 
 
-@if_boxed
-@slow
-def test_start_runserver_yml_no_checks(tmpworkdir, caplog, loop):
-    mktree(tmpworkdir, {
-        'app.py': """\
-from aiohttp import web
-
-async def hello(request):
-    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
-
-def create_app(loop):
-    app = web.Application(loop=loop)
-    app.router.add_get('/', hello)
-    return app""",
-        'settings.yml': """\
-dev:
-  py_file: app.py
-  pre_check: false
-  livereload: false
-        """
-    })
-    aux_app, observer, aux_port = runserver(app_path='settings.yml', loop=loop)
-    assert isinstance(aux_app, aiohttp.web.Application)
-    assert aux_port == 8001
-    assert len(observer._handlers) == 1
-    event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
-    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
-
-    try:
-        loop.run_until_complete(check_server_running(loop, live_reload=False))
-    finally:
-        code_event_handler._process.terminate()
-    assert (
-        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
-        'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
-    ) == caplog
-
-
 def kill_parent_soon():
     time.sleep(0.2)
     os.kill(os.getppid(), signal.SIGINT)

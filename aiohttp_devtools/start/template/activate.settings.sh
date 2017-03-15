@@ -2,7 +2,7 @@
 # App settings go here, they're validated in app.settings
 
 # the AIO_ env variables are used by `adev runserver` when serving your app for development
-export AIO_APP_PATH="app/main.py"
+export AIO_APP_PATH="app/"
 export AIO_STATIC_STATIC="static/"
 
 # {% if database.is_pg_sqlalchemy %}

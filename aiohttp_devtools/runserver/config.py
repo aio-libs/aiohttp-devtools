@@ -44,13 +44,13 @@ class Config:
         self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_dir
 
         self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
-        self.static_url = config['static_url']
-        self.livereload = config['livereload']
-        self.debug_toolbar = config['debug_toolbar']
-        self.pre_check = config['pre_check']
-        self.app_factory_name = config['app_factory_name']
-        self.main_port = config['main_port']
-        self.aux_port = config['aux_port']
+        self.static_url = config.get('static_url') or '/static/'
+        self.livereload = config.get('livereload', True)
+        self.debug_toolbar = config.get('debug_toolbar', True)
+        self.pre_check = config.get('pre_check', True)
+        self.app_factory_name = config.get('app_factory_name')
+        self.main_port = config.get('main_port') or 8000
+        self.aux_port = config.get('aux_port') or self.main_port + 1
         self.code_directory = None
         self._import_app_factory()
 
@@ -86,7 +86,7 @@ class Config:
                               'in the directory "%s"' % app_path)
 
     def _resolve_path(self, config: Dict, attr: str, check: str):
-        _path = config[attr]
+        _path = config.get(attr)
         if _path is None:
             return
 
@@ -165,10 +165,7 @@ class Config:
             app = self.app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
-            try:
-                app = self.app_factory(loop)
-            except ConfigError as e:
-                raise AdevConfigError('app factory "{.app_factory_name}" caused ConfigError: {}'.format(self, e)) from e
+            app = self.app_factory(loop)
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))
