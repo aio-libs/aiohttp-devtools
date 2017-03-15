@@ -4,9 +4,10 @@ import mimetypes
 from pathlib import Path
 
 import aiohttp_debugtoolbar
+import aiohttp
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
-from aiohttp.web import Application, FileResponse, Response
+from aiohttp.web import Application, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import unquote
@@ -261,73 +262,186 @@ async def websocket_handler(request):
     return ws
 
 
-class CustomStaticResource(StaticResource):
-    def __init__(self, *args, **kwargs):
-        self.tail_snippet = kwargs.pop('tail_snippet')
-        super().__init__(*args, **kwargs)
-        self._show_index = True
+if aiohttp.__version__.startswith('1'):
+    # very ugly hack to support old aiohttp as well as 2.0
+    # given the amount of changes this the easiest approach
+    from aiohttp import FileSender
 
-    def modify_request(self, request):
-        """
-        Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
-        """
-        filename = unquote(request.match_info['filename'])
-        raw_path = self._directory.joinpath(filename)
-        try:
-            filepath = raw_path.resolve()
-            if not filepath.exists():
-                # simulate strict=True for python 3.6 which is not permitted with 3.5
-                raise FileNotFoundError()
-        except FileNotFoundError:
+
+    class CustomFileSender(FileSender):
+        def __init__(self, *args, **kwargs):
+            self.tail_snippet = kwargs.pop('tail_snippet')
+            self.tail_snippet_len = len(self.tail_snippet)
+            super().__init__(*args, **kwargs)
+
+        async def send(self, request, filepath):
+            """
+            Send filepath to client using request.
+            As with super except:
+            * adds tail_snippet_length to content_length and writes tail_snippet to the tail of the response.
+            """
+
+            ct, encoding = mimetypes.guess_type(str(filepath))
+            if not ct:
+                ct = 'application/octet-stream'
+            is_html = ct == 'text/html'
+
+            st = filepath.stat()
+            modsince = request.if_modified_since
+            if not is_html and modsince is not None and st.st_mtime <= modsince.timestamp():
+                raise HTTPNotModified()
+
+            resp = self._response_factory()
+            resp.content_type = ct
+            if encoding:
+                resp.headers[CONTENT_ENCODING] = encoding
+            resp.last_modified = st.st_mtime
+
+            file_size = st.st_size
+            resp.content_length = file_size + self.tail_snippet_len if is_html else file_size
             try:
-                html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
-            except (FileNotFoundError, ValueError):
-                pass
+                with filepath.open('rb') as f:
+                    await self._sendfile_fallback(request, resp, f, file_size)
+                if is_html:
+                    resp.write(self.tail_snippet)
+                    await resp.drain()
+            finally:
+                resp.set_tcp_nodelay(True)
+
+            return resp
+
+
+    class CustomStaticResource(StaticResource):
+        def __init__(self, *args, **kwargs):
+            tail_snippet = kwargs.pop('tail_snippet')
+            super().__init__(*args, **kwargs)
+            self._show_index = True
+            if tail_snippet:
+                self._file_sender = CustomFileSender(
+                    resp_factory=self._file_sender._response_factory,
+                    chunk_size=self._file_sender._chunk_size,
+                    tail_snippet=tail_snippet
+                )
+
+        def modify_request(self, request):
+            """
+            Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
+            """
+            filename = unquote(request.match_info['filename'])
+            raw_path = self._directory.joinpath(filename)
+            try:
+                filepath = raw_path.resolve()
+                if not filepath.exists():
+                    # simulate strict=True for python 3.6 which is not permitted with 3.5
+                    raise FileNotFoundError()
+            except FileNotFoundError:
+                try:
+                    html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
+                except (FileNotFoundError, ValueError):
+                    pass
+                else:
+                    request.match_info['filename'] = str(html_file)
             else:
-                request.match_info['filename'] = str(html_file)
-        else:
-            if filepath.is_dir():
-                index_file = filepath / 'index.html'
-                if index_file.exists():
-                    try:
-                        request.match_info['filename'] = str(index_file.relative_to(self._directory))
-                    except ValueError:
-                        # path is not not relative to self._directory
-                        pass
+                if filepath.is_dir():
+                    index_file = filepath / 'index.html'
+                    if index_file.exists():
+                        try:
+                            request.match_info['filename'] = str(index_file.relative_to(self._directory))
+                        except ValueError:
+                            # path is not not relative to self._directory
+                            pass
 
-    def _insert_footer(self, response):
-        if not isinstance(response, FileResponse) or not self.tail_snippet:
+        async def _handle(self, request):
+            self.modify_request(request)
+            status, length = 'unknown', ''
+            try:
+                response = await super()._handle(request)
+            except HTTPNotModified:
+                status, length = 304, 0
+                raise
+            except HTTPNotFound:
+                # TODO include list of files in 404 body
+                _404_msg = '404: Not Found\n'
+                response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
+                status, length = response.status, response.content_length
+            else:
+                status, length = response.status, response.content_length
+            finally:
+                l = aux_logger.info if status in {200, 304} else aux_logger.warning
+                l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
             return response
 
-        filepath = response._path
-        ct, encoding = mimetypes.guess_type(str(response._path))
-        if ct != 'text/html':
+else:
+    from aiohttp.web import FileResponse
+
+
+    class CustomStaticResource(StaticResource):
+        def __init__(self, *args, **kwargs):
+            self.tail_snippet = kwargs.pop('tail_snippet')
+            super().__init__(*args, **kwargs)
+            self._show_index = True
+
+        def modify_request(self, request):
+            """
+            Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
+            """
+            filename = unquote(request.match_info['filename'])
+            raw_path = self._directory.joinpath(filename)
+            try:
+                filepath = raw_path.resolve()
+                if not filepath.exists():
+                    # simulate strict=True for python 3.6 which is not permitted with 3.5
+                    raise FileNotFoundError()
+            except FileNotFoundError:
+                try:
+                    html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
+                except (FileNotFoundError, ValueError):
+                    pass
+                else:
+                    request.match_info['filename'] = str(html_file)
+            else:
+                if filepath.is_dir():
+                    index_file = filepath / 'index.html'
+                    if index_file.exists():
+                        try:
+                            request.match_info['filename'] = str(index_file.relative_to(self._directory))
+                        except ValueError:
+                            # path is not not relative to self._directory
+                            pass
+
+        def _insert_footer(self, response):
+            if not isinstance(response, FileResponse) or not self.tail_snippet:
+                return response
+
+            filepath = response._path
+            ct, encoding = mimetypes.guess_type(str(response._path))
+            if ct != 'text/html':
+                return response
+
+            with filepath.open('rb') as f:
+                body = f.read() + self.tail_snippet
+
+            resp = Response(body=body, content_type='text/html')
+            resp.last_modified = filepath.stat().st_mtime
+            return resp
+
+        async def _handle(self, request):
+            self.modify_request(request)
+            status, length = 'unknown', ''
+            try:
+                response = await super()._handle(request)
+                response = self._insert_footer(response)
+            except HTTPNotModified:
+                status, length = 304, 0
+                raise
+            except HTTPNotFound:
+                # TODO include list of files in 404 body
+                _404_msg = '404: Not Found\n'
+                response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
+                status, length = response.status, response.content_length
+            else:
+                status, length = response.status, response.content_length
+            finally:
+                l = aux_logger.info if status in {200, 304} else aux_logger.warning
+                l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
             return response
-
-        with filepath.open('rb') as f:
-            body = f.read() + self.tail_snippet
-
-        resp = Response(body=body, content_type='text/html')
-        resp.last_modified = filepath.stat().st_mtime
-        return resp
-
-    async def _handle(self, request):
-        self.modify_request(request)
-        status, length = 'unknown', ''
-        try:
-            response = await super()._handle(request)
-            response = self._insert_footer(response)
-        except HTTPNotModified:
-            status, length = 304, 0
-            raise
-        except HTTPNotFound:
-            # TODO include list of files in 404 body
-            _404_msg = '404: Not Found\n'
-            response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
-            status, length = response.status, response.content_length
-        else:
-            status, length = response.status, response.content_length
-        finally:
-            l = aux_logger.info if status in {200, 304} else aux_logger.warning
-            l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
-        return response
