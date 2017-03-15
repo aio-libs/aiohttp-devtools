@@ -43,6 +43,7 @@ def serve(path, livereload, port, verbose):
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
+root_help = 'Root directory project used to qualify other paths. env variable: AIO_ROOT'
 static_url_help = 'URL path to serve static files from, default "/static/". env variable: AIO_STATIC_URL'
 debugtoolbar_help = 'Whether to enable debug toolbar. env variable: AIO_DEBUG_TOOLBAR'
 precheck_help = ("Whether to start and stop the app before creating it in a subprocess to check it's working. "
@@ -57,7 +58,8 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 # defaults are all None here so default settings are defined in one place: DEV_DICT validation
 @cli.command()
 @click.argument('app-path', envvar='AIO_APP_PATH', type=_file_dir_existing, required=False)
-@click.option('-s', '--static', 'static_path', envvar='AIO_STATIC_STATIC', type=_dir_existing, help=static_help)
+@click.option('-s', '--static', 'static_path', envvar='AIO_STATIC_PATH', type=_dir_existing, help=static_help)
+@click.option('--root', 'root_path', envvar='AIO_ROOT', type=_dir_existing, help=root_help)
 @click.option('--static-url', envvar='AIO_STATIC_URL', help=static_url_help)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--debug-toolbar/--no-debug-toolbar', envvar='AIO_DEBUG_TOOLBAR', default=None, help=debugtoolbar_help)

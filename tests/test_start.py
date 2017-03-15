@@ -39,7 +39,7 @@ adev.main INFO: config:
 adev.main INFO: project created, 18 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
-@if_boxed
+# @if_boxed
 async def test_start_other_dir(tmpdir, loop, test_client, caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
@@ -61,8 +61,7 @@ adev.main INFO: config:
     database: none
     example: message-board
 adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    path = str(tmpdir.join('the-path/app/'))
-    config = Config(path)
+    config = Config('the-path/app/', root_path=str(tmpdir))
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -109,7 +108,7 @@ async def test_all_options(tmpdir, template_engine, session, database, example):
     if database != 'none':
         # TODO currently fails on postgres connection
         return
-    Config(str(tmpdir))
+    Config('app/main.py', root_path=str(tmpdir))
 
     # app = config.app_factory(loop=loop)
     # modify_main_app(app, config)

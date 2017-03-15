@@ -25,7 +25,14 @@ APP_FACTORY_NAMES = [
 
 
 class Config:
-    def __init__(self, app_path: str, verbose=False, **config):
+    def __init__(self, app_path: str, root_path: str=None, verbose=False, **config):
+        if root_path:
+            self.root_path = Path(root_path).resolve()
+            logger.debug('Root path specified: %s', self.root_path)
+        else:
+            logger.debug('Root path not specified, using current workding directory')
+            self.root_path = Path('.').resolve()
+
         self.app_path = self._find_app_path(app_path)
         if not self.app_path.name.endswith('.py'):
             raise AdevConfigError('Unexpected extension for app_path: %s, should be .py' % self.app_path.name)
@@ -33,15 +40,8 @@ class Config:
         self.verbose = verbose
         self.settings_found = False
 
-        if self.settings_found:
-            logger.debug('Loaded settings file, using it directory as root')
-            self.root_dir = self.app_path.parent.resolve()
-        else:
-            logger.debug('Loaded python file, using working directory as root')
-            self.root_dir = Path('.').resolve()
-
         self.py_file = self._resolve_path(config, 'py_file', 'is_file')
-        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_dir
+        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_path
 
         self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
         self.static_url = config.get('static_url') or '/static/'
@@ -67,7 +67,7 @@ class Config:
         return self._import_app_factory()
 
     def _find_app_path(self, app_path: str) -> Path:
-        path = Path(app_path).resolve()
+        path = (self.root_path / app_path).resolve()
         if path.is_file():
             logger.debug('app_path is a file, returning it directly')
             return path
@@ -94,13 +94,13 @@ class Config:
             path = Path(_path)
             error_msg = '{attr} "{path}" is not a valid path'
         else:
-            path = Path(self.root_dir / _path)
+            path = Path(self.root_path / _path)
             error_msg = '{attr} "{path}" is not a valid path relative to {root}'
 
         try:
             path = path.resolve()
         except OSError as e:
-            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_dir)) from e
+            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_path)) from e
 
         if check == 'is_file':
             if not path.is_file():
@@ -120,6 +120,7 @@ class Config:
 
         sys.path.append(str(self.python_path))
 
+        print('python_path', self.python_path)
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = str(rel_py_file).replace('.py', '').replace('/', '.')
 

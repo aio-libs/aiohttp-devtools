@@ -19,7 +19,6 @@ class Settings:
     Or, passing the custom setting as a keyword argument when initialising settings (useful when testing)
     """
     _ENV_PREFIX = 'APP_'
-
     # {% if database.is_none and example.is_message_board %}
     MESSAGE_FILE = Path('./messages.txt')
     # {% elif database.is_pg_sqlalchemy and example.is_message_board %}

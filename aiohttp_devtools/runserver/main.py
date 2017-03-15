@@ -36,15 +36,16 @@ def run_app(app, observer, port):
 
 def runserver(*,
               app_path: str='.',
-              static_path=None,
-              python_path=None,
-              static_url=None,
-              livereload=True,
-              debug_toolbar=True,
-              pre_check=True,
-              app_factory_name=None,
-              main_port=None,
-              aux_port=None,
+              root_path: str='.',
+              static_path: str=None,
+              python_path: str=None,
+              static_url: str=None,
+              livereload: bool=True,
+              debug_toolbar: bool=True,
+              pre_check: bool=True,
+              app_factory_name: str=None,
+              main_port: int=None,
+              aux_port: int=None,
               verbose: bool=False,
               loop: asyncio.AbstractEventLoop=None):
     # force a full reload to interpret an updated version of code, this must be called only once
@@ -52,6 +53,7 @@ def runserver(*,
 
     config = Config(
         app_path=app_path,
+        root_path=root_path,
         static_path=static_path,
         python_path=python_path,
         static_url=static_url,
