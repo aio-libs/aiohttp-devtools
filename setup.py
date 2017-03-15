@@ -66,8 +66,6 @@ setup(
         'click>=6.6',
         'isort>=4.2.5',
         'Jinja2>=2.8.1',
-        'trafaret>=0.7.5',
-        'trafaret_config>=1.0.1',
         'watchdog>=0.8.3',
     ],
 )

@@ -4,9 +4,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Dict
 
-import trafaret as t
 from aiohttp.web import Application
-from trafaret_config import ConfigError, read_and_validate
 
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
@@ -18,23 +16,6 @@ STD_FILE_NAMES = [
 ]
 
 
-DEV_DICT = t.Dict({
-    'py_file': t.String,
-    t.Key('static_path', default=None): t.Or(t.String | t.Null),
-    t.Key('python_path', default=None): t.Or(t.String | t.Null),
-    t.Key('static_url', default='/static/'): t.String,
-    t.Key('livereload', default=True): t.Bool,
-    t.Key('debug_toolbar', default=True): t.Bool,
-    t.Key('pre_check', default=True): t.Bool,
-    t.Key('app_factory', default=None) >> 'app_factory_name': t.Or(t.String | t.Null),
-    t.Key('main_port', default=8000): t.Int(gte=0),
-    t.Key('aux_port', default=8001): t.Int(gte=0),
-})
-
-SETTINGS = t.Dict({'dev': DEV_DICT})
-SETTINGS.allow_extra('*')
-
-
 APP_FACTORY_NAMES = [
     'app',
     'app_factory',
@@ -44,11 +25,13 @@ APP_FACTORY_NAMES = [
 
 
 class Config:
-    def __init__(self, app_path: str, verbose=False, **kwargs):
+    def __init__(self, app_path: str, verbose=False, **config):
         self.app_path = self._find_app_path(app_path)
+        if not self.app_path.name.endswith('.py'):
+            raise AdevConfigError('Unexpected extension for app_path: %s, should be .py' % self.app_path.name)
+        config['py_file'] = str(self.app_path)
         self.verbose = verbose
         self.settings_found = False
-        config = self._load_settings_file(**kwargs)
 
         if self.settings_found:
             logger.debug('Loaded settings file, using it directory as root')
@@ -99,46 +82,8 @@ class Config:
             else:
                 logger.debug('app_path is a directory with a recognised file %s', file_path)
                 return file_path
-        raise AdevConfigError('unable to find a recognised default file ("settings.yml", "app.py" or "main.py") '
+        raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
-
-    def _load_settings_file(self, **kwargs) -> Dict:
-        """
-        Load a settings file (or simple python file) and return settings after overwriting with any non null kwargs
-        :param path: path to load file from
-        :param kwargs: kwargs from cli or runserver direct all
-        :return: config dict compliant with DEV_DICT above
-        """
-        active_kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        try:
-            if re.search('\.ya?ml$', self.app_path.name):
-                logger.debug('setting file found, loading yaml and overwriting with kwargs')
-                self.settings_found = True
-                try:
-                    _data = read_and_validate(str(self.app_path), SETTINGS)
-                except ConfigError as e:
-                    raise AdevConfigError('Invalid settings file, {}'.format(e)) from e
-
-                _kwargs = {'py_file': 'void.py'}  # to avoid trafaret failing
-                _kwargs.update(active_kwargs)
-                validated_kwargs = DEV_DICT.check(_kwargs)
-
-                config = _data['dev']
-
-                # we only overwrite config with validated_kwargs where the original key existed to avoid overwriting
-                # settings values with defaults from DEV_DICT
-                for k in active_kwargs.keys():
-                    config[k] = validated_kwargs[k]
-
-                return config
-            elif re.search('\.py$', self.app_path.name):
-                logger.debug('python file found, using it directly together with kwargs config')
-                active_kwargs['py_file'] = str(self.app_path)
-                return DEV_DICT.check(active_kwargs)
-        except t.DataError as e:
-            raise AdevConfigError('Invalid key word arguments {}'.format(e)) from e
-
-        raise AdevConfigError('Unknown extension for app_path: %s, should be .py or .yml' % self.app_path.name)
 
     def _resolve_path(self, config: Dict, attr: str, check: str):
         _path = config[attr]
