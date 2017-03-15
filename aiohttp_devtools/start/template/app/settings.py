@@ -29,7 +29,9 @@ class Settings:
     DB_PORT = '5432'
     # {% endif %}
     # {% if session.is_secure %}
-    COOKIE_SECRET = Required(str)
+    # you should replace this with another value via the environment variable APP_COOKIE_SECRET
+    # which is not saved in code, you could also use Required(str) to force the env variable to be set.
+    COOKIE_SECRET = '{{ cookie_secret_key }}'
     # {% endif %}
 
     def __init__(self, **custom_settings):
