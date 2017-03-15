@@ -35,14 +35,15 @@ setup(
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Unix',  # FIXME: add all and test
+        'Operating System :: Unix',
         'Operating System :: POSIX :: Linux',
+        'Environment :: MacOS X',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet',
     ],
     author='Samuel Colvin',
     author_email='s@muelcolvin.com',
-    url='https://github.com/samuelcolvin/aiohttp-devtools',
+    url='https://github.com/aio-libs/aiohttp-devtools',
     license='MIT',
     package_data={
         'aiohttp_devtools.runserver': ['livereload.js'],

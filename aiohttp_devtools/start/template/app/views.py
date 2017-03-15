@@ -116,7 +116,7 @@ async def process_form(request):
     # Don't do this kind of thing in production!
     # This very simple storage uses "|" to split fields so we need to replace "|" in the username
     new_message['username'] = new_message['username'].replace('|', '')
-    with request.app['message_file'].open('a') as f:
+    with request.app['settings'].MESSAGE_FILE.open('a') as f:
         now = datetime.now().isoformat()
         f.write('{username}|{timestamp}|{message}\n'.format(timestamp=now, **new_message))
 
@@ -197,9 +197,9 @@ async def message_data(request):
     """
     messages = []
     # {% if database.is_none %}
-    if request.app['message_file'].exists():
+    if request.app['settings'].MESSAGE_FILE.exists():
         # read the message file, process it and populate the "messages" list
-        with request.app['message_file'].open() as msg_file:
+        with request.app['settings'].MESSAGE_FILE.open() as msg_file:
             for line in msg_file:
                 if not line:
                     # ignore blank lines eg. end of file

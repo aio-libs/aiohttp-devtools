@@ -20,7 +20,7 @@ FILES_REGEXES = {
         ('\n{4,}', '\n\n\n', 0),   # more than 2 empty lines
         ('^\s+', '', 0),           # leading new lines
     ],
-    '.yml': [
+    '.sh': [
         ('^ *# *\n', '', re.M),    # blank comments
         ('\n *# *$', '', 0),       # blank comment at end of fie
     ],
