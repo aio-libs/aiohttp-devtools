@@ -42,7 +42,7 @@ setup(
     ],
     author='Samuel Colvin',
     author_email='s@muelcolvin.com',
-    url='https://github.com/samuelcolvin/aiohttp-devtools',
+    url='https://github.com/aio-libs/aiohttp-devtools',
     license='MIT',
     package_data={
         'aiohttp_devtools.runserver': ['livereload.js'],
@@ -60,7 +60,7 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=1.2.0',
+        'aiohttp>=1.2.0,<2.0',
         'aiohttp_debugtoolbar>=0.3.0',
         'click>=6.6',
         'isort>=4.2.5',

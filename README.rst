@@ -158,14 +158,14 @@ With that:
 
 **That's it, go develop.**
 
-.. |Build Status| image:: https://travis-ci.org/samuelcolvin/aiohttp-devtools.svg?branch=master
-   :target: https://travis-ci.org/samuelcolvin/aiohttp-devtools
-.. |Coverage| image:: https://codecov.io/gh/samuelcolvin/aiohttp-devtools/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/samuelcolvin/aiohttp-devtools
+.. |Build Status| image:: https://travis-ci.org/aio-libs/aiohttp-devtools.svg?branch=master
+   :target: https://travis-ci.org/aio-libs/aiohttp-devtools
+.. |Coverage| image:: https://codecov.io/gh/aio-libs/aiohttp-devtools/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/aio-libs/aiohttp-devtools
 .. |pypi| image:: https://img.shields.io/pypi/v/aiohttp-devtools.svg
    :target: https://pypi.python.org/pypi/aiohttp-devtools
 .. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
-   :target: https://github.com/samuelcolvin/aiohttp-devtools
+   :target: https://github.com/aio-libs/aiohttp-devtools
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
 .. _aiohttp debugtoolbar: https://github.com/aio-libs/aiohttp_debugtoolbar
