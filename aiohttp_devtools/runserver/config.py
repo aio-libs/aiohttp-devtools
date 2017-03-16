@@ -46,7 +46,7 @@ class Config:
         self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
         self.static_url = config.get('static_url') or '/static/'
         self.livereload = config.get('livereload', True)
-        self.debug_toolbar = config.get('debug_toolbar', True)
+        self.debug_toolbar = config.get('debug_toolbar', False)  # TODO set debug_toolbar=True once it's fixed
         self.pre_check = config.get('pre_check', True)
         self.app_factory_name = config.get('app_factory_name')
         self.main_port = config.get('main_port') or 8000

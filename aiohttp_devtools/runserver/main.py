@@ -41,10 +41,10 @@ def runserver(*,
               python_path: str=None,
               static_url: str=None,
               livereload: bool=True,
-              debug_toolbar: bool=True,
+              debug_toolbar: bool=False,  # TODO set debug_toolbar=True once it's fixed
               pre_check: bool=True,
               app_factory_name: str=None,
-              main_port: int=None,
+              main_port: int=8000,
               aux_port: int=None,
               verbose: bool=False,
               loop: asyncio.AbstractEventLoop=None):
