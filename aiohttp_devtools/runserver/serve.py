@@ -45,7 +45,6 @@ def modify_main_app(app, config: Config):
     app['static_root_url'] = static_url
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
-    print('config.debug_toolbar', config.debug_toolbar)
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 

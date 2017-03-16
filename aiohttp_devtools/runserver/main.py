@@ -36,7 +36,7 @@ def run_app(app, observer, port):
 
 def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     """
-    Prepare add and observer ready to run development server.
+    Prepare app and observer ready to run development server.
 
     :param loop: asyncio loop to use
     :param config_kwargs: see config.Config for more details

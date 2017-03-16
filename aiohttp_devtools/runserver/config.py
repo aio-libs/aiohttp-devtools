@@ -23,11 +23,6 @@ APP_FACTORY_NAMES = [
 ]
 
 
-def _none_(dict, key, default):
-    v = dict.get(key)
-    return default if v is None else v
-
-
 class Config:
     def __init__(self,
                  app_path: str='.',
@@ -56,10 +51,10 @@ class Config:
         self.verbose = verbose
         self.settings_found = False
 
-        self.py_file = self._resolve_path('app-path', str(self.app_path), 'is_file')
-        self.python_path = self._resolve_path('python-path', python_path, 'is_dir') or self.root_path
+        self.py_file = self._resolve_path(str(self.app_path), 'is_file', 'app-path')
+        self.python_path = self._resolve_path(python_path, 'is_dir', 'python-path') or self.root_path
 
-        self.static_path = self._resolve_path('static-path', static_path, 'is_dir')
+        self.static_path = self._resolve_path(static_path, 'is_dir', 'static-path')
         self.static_url = static_url
         self.livereload = livereload
         self.debug_toolbar = debug_toolbar
@@ -101,7 +96,7 @@ class Config:
         raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def _resolve_path(self, arg_name, _path, check: str):
+    def _resolve_path(self, _path: str, check: str, arg_name: str):
         if _path is None:
             return
 
