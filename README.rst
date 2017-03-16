@@ -5,6 +5,9 @@ aiohttp-devtools
 
 Dev tools for `aiohttp`_.
 
+(Note: the latest ``aiohttp-devtools`` only supports ``aiohttp > 2.0``, if you're using older aiohttp, please
+see install version `_History.rst`_)
+
 **aiohttp-devtools** provides a number of tools useful when developing applications with aiohttp and associated
 libraries.
 
@@ -169,6 +172,7 @@ With that:
    :target: https://pypi.python.org/pypi/aiohttp-devtools
 .. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
    :target: https://github.com/aio-libs/aiohttp-devtools
+.. _History.rst: /HISTORY.rst
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
 .. _aiohttp debugtoolbar: https://github.com/aio-libs/aiohttp_debugtoolbar

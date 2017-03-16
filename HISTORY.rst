@@ -5,13 +5,22 @@ History
 
 0.3.0 (TBD)
 ------------------
+* **breaking change**: v0.3.0 only supports ``aiohttp>=2.0.0``.
 * **breaking change**: ``runserver`` not longer works with ``settings.yml`` config files, environment variables
   are now used in it's place.
+* clean up config arguments.
+
+0.2.1 (2017-03-16)
+------------------
+This will be the final version which supports ``aiohttp < 2``
+
+* correct setup and readme links
+* pin aiohttp version to ``<2.0``
 
 0.2.0 (2017-02-19)
 ------------------
 * allow "app_factory" to be just a plain ``aiohttp.Application`` (or a function creating an application as before)
-* fix compatibility with aiohttp 2.0.0a
+* fix compatibility with aiohttp 2.0.0a - still not working fully with latest aiohttp
 
 0.1.4 (2017-02-11)
 ------------------
