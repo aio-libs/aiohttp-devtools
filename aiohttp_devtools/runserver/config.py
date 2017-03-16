@@ -2,7 +2,6 @@ import re
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Dict
 
 from aiohttp.web import Application
 
@@ -25,7 +24,20 @@ APP_FACTORY_NAMES = [
 
 
 class Config:
-    def __init__(self, app_path: str, root_path: str=None, verbose=False, **config):
+    def __init__(self,
+                 app_path: str='.',
+                 root_path: str=None,
+                 verbose: bool=False,
+                 static_path: str=None,
+                 python_path: str=None,
+                 static_url: str='/static/',
+                 livereload: bool=True,
+                 debug_toolbar: bool=False,  # TODO set True once debug toolbar is fixed
+                 pre_check: bool=True,
+                 app_factory_name: str=None,
+                 main_port: int=8000,
+                 aux_port: int=None):
+
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
@@ -36,21 +48,20 @@ class Config:
         self.app_path = self._find_app_path(app_path)
         if not self.app_path.name.endswith('.py'):
             raise AdevConfigError('Unexpected extension for app_path: %s, should be .py' % self.app_path.name)
-        config['py_file'] = str(self.app_path)
         self.verbose = verbose
         self.settings_found = False
 
-        self.py_file = self._resolve_path(config, 'py_file', 'is_file')
-        self.python_path = self._resolve_path(config, 'python_path', 'is_dir') or self.root_path
+        self.py_file = self._resolve_path(str(self.app_path), 'is_file', 'app-path')
+        self.python_path = self._resolve_path(python_path, 'is_dir', 'python-path') or self.root_path
 
-        self.static_path = self._resolve_path(config, 'static_path', 'is_dir')
-        self.static_url = config.get('static_url') or '/static/'
-        self.livereload = config.get('livereload', True)
-        self.debug_toolbar = config.get('debug_toolbar', True)
-        self.pre_check = config.get('pre_check', True)
-        self.app_factory_name = config.get('app_factory_name')
-        self.main_port = config.get('main_port') or 8000
-        self.aux_port = config.get('aux_port') or self.main_port + 1
+        self.static_path = self._resolve_path(static_path, 'is_dir', 'static-path')
+        self.static_url = static_url
+        self.livereload = livereload
+        self.debug_toolbar = debug_toolbar
+        self.pre_check = pre_check
+        self.app_factory_name = app_factory_name
+        self.main_port = main_port
+        self.aux_port = aux_port or main_port + 1
         self.code_directory = None
         self._import_app_factory()
 
@@ -85,22 +96,21 @@ class Config:
         raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def _resolve_path(self, config: Dict, attr: str, check: str):
-        _path = config.get(attr)
+    def _resolve_path(self, _path: str, check: str, arg_name: str):
         if _path is None:
             return
 
         if _path.startswith('/'):
             path = Path(_path)
-            error_msg = '{attr} "{path}" is not a valid path'
+            error_msg = '{arg_name} "{path}" is not a valid path'
         else:
             path = Path(self.root_path / _path)
-            error_msg = '{attr} "{path}" is not a valid path relative to {root}'
+            error_msg = '{arg_name} "{path}" is not a valid path relative to {root}'
 
         try:
             path = path.resolve()
         except OSError as e:
-            raise AdevConfigError(error_msg.format(attr=attr, path=_path, root=self.root_path)) from e
+            raise AdevConfigError(error_msg.format(arg_name=arg_name, path=_path, root=self.root_path)) from e
 
         if check == 'is_file':
             if not path.is_file():
