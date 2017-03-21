@@ -3,12 +3,13 @@
 History
 -------
 
-0.3.0 (TBD)
+0.3.0 (2017-03-21)
 ------------------
-* **breaking change**: v0.3.0 only supports ``aiohttp>=2.0.0``.
+* **breaking change**: v0.3.0 only supports ``aiohttp>=2.0.0``
 * **breaking change**: ``runserver`` not longer works with ``settings.yml`` config files, environment variables
-  are now used in it's place.
-* clean up config arguments.
+  are now used in it's place
+* clean up config arguments
+* refactoring to support aiohttp 2
 
 0.2.1 (2017-03-16)
 ------------------
