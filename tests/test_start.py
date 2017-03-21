@@ -61,7 +61,7 @@ adev.main INFO: config:
     database: none
     example: message-board
 adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    config = Config('the-path/app/', root_path=str(tmpdir))
+    config = Config(app_path='the-path/app/', root_path=str(tmpdir), loop=loop)
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -90,7 +90,7 @@ def test_conflicting_file(tmpdir):
     enum_choices(DatabaseChoice),
     enum_choices(ExampleChoice),
 ))
-async def test_all_options(tmpdir, template_engine, session, database, example):
+async def test_all_options(tmpdir, test_client, template_engine, session, database, example, loop):
     StartProject(
         path=str(tmpdir),
         name='foobar',
@@ -108,12 +108,12 @@ async def test_all_options(tmpdir, template_engine, session, database, example):
     if database != 'none':
         # TODO currently fails on postgres connection
         return
-    Config('app/main.py', root_path=str(tmpdir))
+    config = Config(app_path='app/main.py', root_path=str(tmpdir), loop=loop)
 
-    # app = config.app_factory(loop=loop)
-    # modify_main_app(app, config)
-    # cli = await test_client(app)
-    # r = await cli.get('/')
-    # assert r.status == 200
-    # text = await r.text()
-    # # assert text == '???'
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
+    cli = await test_client(app)
+    r = await cli.get('/')
+    assert r.status == 200
+    text = await r.text()
+    assert '<title>foobar</title>' in text

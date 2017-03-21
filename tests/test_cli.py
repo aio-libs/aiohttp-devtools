@@ -67,7 +67,8 @@ def test_runserver_error_verbose(mocker):
     assert mock_runserver.call_count == 1
 
 
-def test_runserver_no_args():
+def test_runserver_no_args(loop):
+    asyncio.set_event_loop(loop)
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2

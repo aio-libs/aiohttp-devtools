@@ -1,3 +1,4 @@
+import asyncio
 import re
 import sys
 from importlib import import_module
@@ -24,7 +25,8 @@ APP_FACTORY_NAMES = [
 
 
 class Config:
-    def __init__(self,
+    def __init__(self, *,
+                 loop: asyncio.AbstractEventLoop,
                  app_path: str='.',
                  root_path: str=None,
                  verbose: bool=False,
@@ -37,7 +39,7 @@ class Config:
                  app_factory_name: str=None,
                  main_port: int=8000,
                  aux_port: int=None):
-
+        self.loop = loop
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
@@ -158,7 +160,7 @@ class Config:
         self.code_directory = Path(module.__file__).parent
         return attr
 
-    def check(self, loop):
+    def check(self):
         """
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
@@ -175,13 +177,13 @@ class Config:
             app = self.app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
-            app = self.app_factory(loop)
+            app = self.app_factory(self.loop)
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))
 
         logger.debug('app "%s" successfully created', app)
-        loop.run_until_complete(self._startup_cleanup(app))
+        self.loop.run_until_complete(self._startup_cleanup(app))
 
     async def _startup_cleanup(self, app):
         logger.debug('running app startup...')

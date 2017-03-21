@@ -65,14 +65,14 @@ async def has_error(request):
     raise ValueError()
 
 def create_app(loop):
-    app = web.Application(loop=loop)
+    app = web.Application()
     app.router.add_get('/', hello)
     app.router.add_get('/error', has_error)
     return app""",
         'static_dir/foo.js': 'var bar=1;',
     })
     loop = asyncio.new_event_loop()
-    aux_app, observer, aux_port = runserver(app_path='app.py', loop=loop, static_path='static_dir')
+    aux_app, observer, aux_port, _ = runserver(app_path='app.py', loop=loop, static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(observer._handlers) == 2
@@ -106,7 +106,7 @@ app.router.add_get('/', hello)
 """
     })
     asyncio.set_event_loop(loop)
-    aux_app, observer, aux_port = runserver(app_path='app.py')
+    aux_app, observer, aux_port, _ = runserver(app_path='app.py')
     assert len(observer._handlers) == 1
     event_handlers = list(observer._handlers.values())[0]
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
@@ -117,25 +117,25 @@ app.router.add_get('/', hello)
         code_event_handler._process.terminate()
 
 
-def kill_parent_soon():
+def kill_parent_soon(pid):
     time.sleep(0.2)
-    os.kill(os.getppid(), signal.SIGINT)
+    os.kill(pid, signal.SIGINT)
 
 
 @if_boxed
 @slow
 def test_run_app(loop, unused_port):
-    app = Application(loop=loop)
+    app = Application()
     obersver = mock.MagicMock()
     port = unused_port()
-    Process(target=kill_parent_soon).start()
-    run_app(app, obersver, port)
+    Process(target=kill_parent_soon, args=(os.getpid(),)).start()
+    run_app(app, obersver, port, loop)
 
 
 @if_boxed
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py')
+    config = Config(app_path='app.py', loop=loop)
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -146,11 +146,11 @@ async def test_run_app_test_client(loop, tmpworkdir, test_client):
     assert text == 'hello world'
 
 
-async def test_aux_app(loop, tmpworkdir, test_client):
+async def test_aux_app(tmpworkdir, test_client):
     mktree(tmpworkdir, {
         'test.txt': 'test value',
     })
-    app = create_auxiliary_app(static_path='.', port=8000, loop=loop)
+    app = create_auxiliary_app(static_path='.', port=8000)
     cli = await test_client(app)
     r = await cli.get('/test.txt')
     assert r.status == 200
@@ -166,7 +166,7 @@ def test_serve_main_app(tmpworkdir, loop, mocker):
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
-    config = Config(app_path='app.py')
+    config = Config(app_path='app.py', loop=loop)
     serve_main_app(config, loop=loop)
 
     assert loop.is_closed()
@@ -193,7 +193,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
-    config = Config(app_path='app.py')
+    config = Config(app_path='app.py', loop=loop)
     serve_main_app(config)
 
     assert loop.is_closed()
@@ -203,7 +203,7 @@ app.router.add_get('/', hello)
 
 @pytest.fixture
 def aux_cli(test_client, loop):
-    app = create_auxiliary_app(static_path='.', port=8000, loop=loop)
+    app = create_auxiliary_app(static_path='.', port=8000)
     return loop.run_until_complete(test_client(app))
 
 

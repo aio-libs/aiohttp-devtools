@@ -125,7 +125,7 @@ def setup_routes(app):
 
 
 def create_app(loop):
-    app = web.Application(loop=loop)
+    app = web.Application()
     settings = Settings()
     app.update(
         name='{{ name }}',

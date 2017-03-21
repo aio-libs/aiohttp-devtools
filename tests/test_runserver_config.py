@@ -9,15 +9,15 @@ from .conftest import SIMPLE_APP, get_if_boxed
 if_boxed = get_if_boxed(pytest)
 
 
-async def test_load_simple_app(tmpworkdir):
+async def test_load_simple_app(tmpworkdir, loop):
     mktree(tmpworkdir, SIMPLE_APP)
-    Config(app_path='app.py')
+    Config(app_path='app.py', loop=loop)
 
 
-async def test_create_app_wrong_name(tmpworkdir):
+async def test_create_app_wrong_name(tmpworkdir, loop):
     mktree(tmpworkdir, SIMPLE_APP)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='app.py', app_factory_name='missing')
+        Config(app_path='app.py', app_factory_name='missing', loop=loop)
     assert excinfo.value.args[0] == 'Module "app.py" does not define a "missing" attribute/class'
 
 
@@ -58,5 +58,5 @@ def app_factory(loop):
 def test_invalid_options(tmpworkdir, files, exc, loop):
     mktree(tmpworkdir, files)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='.').check(loop)
+        Config(app_path='.', loop=loop).check()
     assert exc.format(tmpworkdir=tmpworkdir) == excinfo.value.args[0]

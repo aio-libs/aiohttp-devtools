@@ -24,7 +24,7 @@ async def test_check_port_not_open(unused_port, loop):
 
 
 def test_aux_reload(loop, caplog):
-    aux_app = AuxiliaryApplication(loop=loop)
+    aux_app = AuxiliaryApplication()
     ws = MagicMock()
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
@@ -44,7 +44,7 @@ def test_aux_reload(loop, caplog):
 
 
 def test_aux_reload_no_path(loop):
-    aux_app = AuxiliaryApplication(loop=loop)
+    aux_app = AuxiliaryApplication()
     ws = MagicMock()
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
@@ -63,7 +63,7 @@ def test_aux_reload_no_path(loop):
 
 
 def test_aux_reload_html_different(loop):
-    aux_app = AuxiliaryApplication(loop=loop)
+    aux_app = AuxiliaryApplication()
     ws = MagicMock()
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
@@ -75,7 +75,7 @@ def test_aux_reload_html_different(loop):
 
 
 def test_aux_reload_runtime_error(loop, caplog):
-    aux_app = AuxiliaryApplication(loop=loop)
+    aux_app = AuxiliaryApplication()
     ws = MagicMock()
     ws.send_str = MagicMock(side_effect=RuntimeError('foobar'))
     aux_app.update(
@@ -89,7 +89,7 @@ def test_aux_reload_runtime_error(loop, caplog):
 
 
 async def test_aux_cleanup(loop):
-    aux_app = AuxiliaryApplication(loop=loop)
+    aux_app = AuxiliaryApplication()
     ws = MagicMock()
     f = asyncio.Future(loop=loop)
     f.set_result(1)

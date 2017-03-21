@@ -10,8 +10,7 @@ from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
 
 
-def run_app(app, observer, port):
-    loop = app.loop
+def run_app(app, observer, port, loop):
     handler = app.make_handler(access_log=None, loop=loop)
     server = loop.run_until_complete(loop.create_server(handler, HOST, port))
 
@@ -40,17 +39,17 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
 
     :param loop: asyncio loop to use
     :param config_kwargs: see config.Config for more details
-    :return: tuple (auxiliary app, observer, auxiliary app port)
+    :return: tuple (auxiliary app, observer, auxiliary app port, event loop)
     """
 
     # force a full reload to interpret an updated version of code, this must be called only once
     set_start_method('spawn')
+    loop = loop or asyncio.get_event_loop()
 
-    config = Config(**config_kwargs)
+    config = Config(loop=loop, **config_kwargs)
     logger.debug('config as loaded from key word arguments and (possibly) yaml file:\n%s', config)
 
-    loop = loop or asyncio.get_event_loop()
-    config.check(loop)
+    config.check()
     loop.run_until_complete(check_port_open(config.main_port, loop))
 
     aux_app = create_auxiliary_app(
@@ -58,7 +57,6 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         port=config.aux_port,
         static_url=config.static_url,
         livereload=config.livereload,
-        loop=loop,
     )
 
     observer = Observer()
@@ -84,13 +82,14 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return aux_app, observer, config.aux_port
+    return aux_app, observer, config.aux_port, loop
 
 
 def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loop: asyncio.AbstractEventLoop=None):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload, loop=loop)
+    loop = loop or asyncio.get_event_loop()
+    app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload)
 
     observer = Observer()
     if livereload:
@@ -101,4 +100,4 @@ def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loo
     observer.start()
 
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, 'ON' if livereload else 'OFF')
-    return app, observer, port
+    return app, observer, port, loop

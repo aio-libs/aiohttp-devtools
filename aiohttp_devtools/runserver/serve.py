@@ -162,8 +162,8 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path: str, port: int, static_url='/', livereload=True, loop=None):
-    app = AuxiliaryApplication(loop=loop)
+def create_auxiliary_app(*, static_path: str, port: int, static_url='/', livereload=True):
+    app = AuxiliaryApplication()
     app[WS] = []
     app.update(
         static_path=static_path,
@@ -186,11 +186,7 @@ def create_auxiliary_app(*, static_path: str, port: int, static_url='/', liverel
             tail_snippet=livereload_snippet,
             follow_symlinks=True
         )
-        try:
-            app.router.register_resource(route)
-        except AttributeError:
-            # aiohttp < 1.3
-            app.router._reg_resource(route)
+        app.router.register_resource(route)
 
     return app
 

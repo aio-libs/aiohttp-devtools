@@ -5,9 +5,11 @@ from datetime import datetime
 from multiprocessing import Process
 
 from aiohttp import ClientSession
+from aiohttp.web import Application
 from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
 
 from ..logs import rs_dft_logger as logger
+from .config import Config
 from .serve import WS, serve_main_app
 
 # specific to jetbrains I think, very annoying if not completely ignored
@@ -72,9 +74,10 @@ class BaseEventHandler(PatternMatchingEventHandler):
 class PyCodeEventHandler(BaseEventHandler):
     patterns = ['*.py']
 
-    def __init__(self, app, config):
+    def __init__(self, app: Application, config: Config):
         self._app = app
         self._config = config
+        self._loop = config.loop
         super().__init__()
         self._start_process()
 
@@ -82,7 +85,7 @@ class PyCodeEventHandler(BaseEventHandler):
         logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
         self.stop_process()
         self._start_process()
-        self._app.loop.create_task(self.src_reload_when_live())
+        self._loop.create_task(self.src_reload_when_live())
 
     async def src_reload_when_live(self, checks=20):
         if not self._app[WS]:

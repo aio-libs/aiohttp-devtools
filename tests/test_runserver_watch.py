@@ -200,7 +200,7 @@ async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_cl
     process.exitcode = None
     mock_process.return_value = process
 
-    app = Application(loop=loop)
+    app = Application()
     app['websockets'] = [None]
     app.src_reload = MagicMock(return_value=0)
     cli = await test_client(app)
@@ -221,7 +221,7 @@ async def test_pycode_src_reload_when_live_no_webs(caplog, loop, mocker, test_cl
     process.exitcode = None
     mock_process.return_value = process
 
-    app = Application(loop=loop)
+    app = Application()
     app['websockets'] = []
     app.src_reload = MagicMock()
     cli = await test_client(app)
