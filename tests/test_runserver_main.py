@@ -135,7 +135,7 @@ def test_run_app(loop, unused_port):
 @if_boxed
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', loop=loop)
+    config = Config(app_path='app.py')
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -166,7 +166,7 @@ def test_serve_main_app(tmpworkdir, loop, mocker):
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
-    config = Config(app_path='app.py', loop=loop)
+    config = Config(app_path='app.py')
     serve_main_app(config, loop=loop)
 
     assert loop.is_closed()
@@ -193,7 +193,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
-    config = Config(app_path='app.py', loop=loop)
+    config = Config(app_path='app.py')
     serve_main_app(config)
 
     assert loop.is_closed()

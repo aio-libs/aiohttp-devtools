@@ -74,10 +74,10 @@ class BaseEventHandler(PatternMatchingEventHandler):
 class PyCodeEventHandler(BaseEventHandler):
     patterns = ['*.py']
 
-    def __init__(self, app: Application, config: Config):
+    def __init__(self, app: Application, config: Config, loop: asyncio.AbstractEventLoop):
         self._app = app
         self._config = config
-        self._loop = config.loop
+        self._loop = loop
         super().__init__()
         self._start_process()
 

@@ -108,25 +108,25 @@ def test_livereload():
     app.src_reload.assert_called_once_with('foo.jinja')
 
 
-def test_pycode(mocker, caplog):
+def test_pycode(mocker, caplog, loop):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
     mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     app = MagicMock()
     config = MagicMock()
-    PyCodeEventHandler(app, config)
+    PyCodeEventHandler(app, config, loop)
     mock_process.assert_called_once_with(target=serve_main_app, args=(config,))
     assert mock_os_kill.call_count == 0
     assert 'adev.server.dft INFO: Starting dev server at' in caplog
     assert 'adev.server.dft INFO: Restarting dev server at' not in caplog
 
 
-def test_pycode_event(mocker, caplog):
+def test_pycode_event(mocker, caplog, loop):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
     mock_os_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     app = MagicMock()
     config = MagicMock()
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     eh._change_dt = datetime(2017, 1, 1)
     eh.dispatch(Event(src_path='foo.py'))
     assert mock_process.call_count == 2
@@ -135,7 +135,7 @@ def test_pycode_event(mocker, caplog):
     assert 'adev.server.dft INFO: Restarting dev server at' in caplog
 
 
-def test_pycode_event_dead_process(mocker):
+def test_pycode_event_dead_process(mocker, loop):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
     process = MagicMock()
     process.is_alive = MagicMock(return_value=False)
@@ -144,14 +144,14 @@ def test_pycode_event_dead_process(mocker):
     app = MagicMock()
     config = MagicMock()
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     eh._change_dt = datetime(2017, 1, 1)
     eh.dispatch(Event(src_path='foo.py'))
     assert mock_process.call_count == 2
     assert mock_os_kill.call_count == 0
 
 
-def test_pycode_event_process_not_ending(mocker):
+def test_pycode_event_process_not_ending(mocker, loop):
     mock_process = mocker.patch('aiohttp_devtools.runserver.watch.Process')
     process = MagicMock()
     process.pid = 123
@@ -161,7 +161,7 @@ def test_pycode_event_process_not_ending(mocker):
     app = MagicMock()
     config = MagicMock()
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     eh._change_dt = datetime(2017, 1, 1)
     eh.dispatch(Event(src_path='foo.py'))
     assert mock_process.call_count == 2
@@ -185,7 +185,7 @@ async def test_pycode_src_reload_when_live_timeout(caplog, loop, mocker, unused_
     config = MagicMock()
     config.main_port = unused_port()
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     r = await eh.src_reload_when_live(2)
     assert r is None
     assert 'adev.server.dft DEBUG: try 1 | OSError 111 app not running' in caplog
@@ -207,7 +207,7 @@ async def test_pycode_src_reload_when_live_running(caplog, loop, mocker, test_cl
     config = MagicMock()
     config.main_port = cli.server.port
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     r = await eh.src_reload_when_live(2)
     assert r == 0
     assert app.src_reload.call_count == 1
@@ -228,7 +228,7 @@ async def test_pycode_src_reload_when_live_no_webs(caplog, loop, mocker, test_cl
     config = MagicMock()
     config.main_port = cli.server.port
 
-    eh = PyCodeEventHandler(app, config)
+    eh = PyCodeEventHandler(app, config, loop)
     r = await eh.src_reload_when_live(2)
     assert r is None
     assert not app.src_reload.called

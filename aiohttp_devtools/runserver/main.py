@@ -46,10 +46,10 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     set_start_method('spawn')
     loop = loop or asyncio.get_event_loop()
 
-    config = Config(loop=loop, **config_kwargs)
+    config = Config(**config_kwargs)
     logger.debug('config as loaded from key word arguments and (possibly) yaml file:\n%s', config)
 
-    config.check()
+    config.check(loop)
     loop.run_until_complete(check_port_open(config.main_port, loop))
 
     aux_app = create_auxiliary_app(
@@ -62,7 +62,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     observer = Observer()
 
     # PyCodeEventHandler takes care of running and restarting the main app
-    code_event_handler = PyCodeEventHandler(aux_app, config)
+    code_event_handler = PyCodeEventHandler(aux_app, config, loop)
     logger.debug('starting PyCodeEventHandler to watch %s', config.code_directory)
     observer.schedule(code_event_handler, config.code_directory_str, recursive=True)
 

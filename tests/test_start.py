@@ -61,7 +61,7 @@ adev.main INFO: config:
     database: none
     example: message-board
 adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    config = Config(app_path='the-path/app/', root_path=str(tmpdir), loop=loop)
+    config = Config(app_path='the-path/app/', root_path=str(tmpdir))
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -108,7 +108,7 @@ async def test_all_options(tmpdir, test_client, template_engine, session, databa
     if database != 'none':
         # TODO currently fails on postgres connection
         return
-    config = Config(app_path='app/main.py', root_path=str(tmpdir), loop=loop)
+    config = Config(app_path='app/main.py', root_path=str(tmpdir))
 
     app = config.app_factory(loop=loop)
     modify_main_app(app, config)
