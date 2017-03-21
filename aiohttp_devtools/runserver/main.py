@@ -12,7 +12,7 @@ from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandl
 
 def run_app(app, observer, port):
     loop = app.loop
-    handler = app.make_handler(access_log=None)
+    handler = app.make_handler(access_log=None, loop=loop)
     server = loop.run_until_complete(loop.create_server(handler, HOST, port))
 
     try:

@@ -70,13 +70,11 @@ async def check_port_open(port, loop, delay=1):
 def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
     setup_logging(config.verbose)
 
+    loop = loop or asyncio.get_event_loop()
+
     if isinstance(config.app_factory, Application):
-        assert loop is None, ('serve_main_app can\'t be called with a loop instance if the "app_factory" '
-                              'is actually an application instance')
         app = config.app_factory
-        loop = app.loop
     else:
-        loop = loop or asyncio.get_event_loop()
         app = config.app_factory(loop=loop)
 
     modify_main_app(app, config)
@@ -84,7 +82,8 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
     loop.run_until_complete(check_port_open(config.main_port, loop))
     handler = app.make_handler(
         logger=dft_logger,
-        access_log_format='%r %s %b'
+        access_log_format='%r %s %b',
+        loop=loop,
     )
     co = asyncio.gather(
         loop.create_server(handler, HOST, config.main_port, backlog=128),

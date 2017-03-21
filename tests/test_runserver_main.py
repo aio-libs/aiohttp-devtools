@@ -132,6 +132,7 @@ def test_run_app(loop, unused_port):
     run_app(app, obersver, port)
 
 
+@if_boxed
 async def test_run_app_test_client(loop, tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')

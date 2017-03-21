@@ -5,8 +5,8 @@ aiohttp-devtools
 
 Dev tools for `aiohttp`_.
 
-(Note: the latest ``aiohttp-devtools`` only supports ``aiohttp > 2.0``, if you're using older aiohttp, please
-see install version `History.rst`_)
+(Note: ``aiohttp-devtools>=0.3`` only supports ``aiohttp>=2.0``, if you're using older aiohttp, please use
+``aiohtt-devtools==0.21``, see `History.rst`_ for details.)
 
 **aiohttp-devtools** provides a number of tools useful when developing applications with aiohttp and associated
 libraries.
