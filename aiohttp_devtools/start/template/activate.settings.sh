@@ -3,7 +3,7 @@
 
 # the AIO_ env variables are used by `adev runserver` when serving your app for development
 export AIO_APP_PATH="app/"
-export AIO_STATIC_STATIC="static/"
+export AIO_STATIC_PATH="static/"
 
 # {% if database.is_pg_sqlalchemy %}
 export APP_DB_PASSWORD="You need to set this!"
@@ -14,5 +14,5 @@ export APP_DB_PASSWORD="You need to set this!"
 export APP_COOKIE_SECRET="{{ cookie_secret_key }}"
 # {% endif %}
 
-# also activate the python virtualenv for convenience
+# also activate the python virtualenv for convenience, you can remove this if you're python another way
 . env/bin/activate

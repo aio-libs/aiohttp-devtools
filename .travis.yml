@@ -9,6 +9,7 @@ python:
 
 env:
 - 'AIOHTTP_VERSION=aiohttp==2.0.0'
+- 'AIOHTTP_VERSION=aiohttp'  # latest release
 - 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
 
 matrix:

@@ -12,8 +12,17 @@ main {
 }
 
 {% if example.is_message_board %}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .error {
-  background-color: #f2dede;
+  animation: fadein 1s;
   padding: 5px 10px;
   border: 1px solid red;
   border-radius: 3px;
