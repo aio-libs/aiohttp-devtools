@@ -8,7 +8,7 @@ python:
 - 'nightly'  # currently 3.7
 
 env:
-- 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/2.0.0rc1.tar.gz#egg=aiohttp-2.0.0rc1'
+- 'AIOHTTP_VERSION=aiohttp==2.0.0'
 - 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
 
 matrix:
