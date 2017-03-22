@@ -118,7 +118,7 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
     assert '<title>foobar</title>' in text
 
 
-# @if_boxed
+@if_boxed
 @slow
 async def test_db_creation(tmpdir, test_client, loop):
     StartProject(
