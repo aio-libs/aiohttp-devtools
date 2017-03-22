@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.1 (2017-03-22)
+------------------
+* correct aiohttp version in ``start`` template
+
 0.3.0 (2017-03-21)
 ------------------
 * **breaking change**: v0.3.0 only supports ``aiohttp>=2.0.0``
