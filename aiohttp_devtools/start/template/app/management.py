@@ -1,7 +1,7 @@
 # {% if database.is_pg_sqlalchemy %}
 import psycopg2
 
-from .main import load_settings
+from .settings import Settings
 
 from sqlalchemy import create_engine
 from .main import pg_dsn
@@ -15,35 +15,36 @@ def prepare_database(delete_existing: bool) -> bool:
     :param delete_existing: whether or not to drop an existing database if it exists
     :return: whether or not a database has been (re)created
     """
-    db = load_settings()['database']
+    settings = Settings()
 
     conn = psycopg2.connect(
-        password=db['password'],
-        host=db['host'],
-        port=db['port'],
-        user=db['user'],
+        password=settings.DB_PASSWORD,
+        host=settings.DB_HOST,
+        port=settings.DB_PORT,
+        user=settings.DB_USER,
     )
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute('SELECT EXISTS (SELECT datname FROM pg_catalog.pg_database WHERE datname=%s)', (db['name'],))
+    db_name = settings.DB_NAME
+    cur.execute('SELECT EXISTS (SELECT datname FROM pg_catalog.pg_database WHERE datname=%s)', (db_name,))
     already_exists = bool(cur.fetchone()[0])
     if already_exists:
         if not delete_existing:
-            print('database "{name}" already exists, skipping'.format(**db))
+            print('database "{}" already exists, skipping'.format(db_name))
             return False
         else:
-            print('dropping database "{name}" as it already exists...'.format(**db))
-            cur.execute('DROP DATABASE {name}'.format(**db))
+            print('dropping database "{}" as it already exists...'.format(db_name))
+            cur.execute('DROP DATABASE {}'.format(db_name))
     else:
-        print('database "{name}" does not yet exist'.format(**db))
+        print('database "{}" does not yet exist'.format(db_name))
 
-    print('creating database "{name}"...'.format(**db))
-    cur.execute('CREATE DATABASE {name}'.format(**db))
+    print('creating database "{}"...'.format(db_name))
+    cur.execute('CREATE DATABASE {}'.format(db_name))
     cur.close()
     conn.close()
 
     # {% if database.is_pg_sqlalchemy %}
-    engine = create_engine(pg_dsn(db))
+    engine = create_engine(pg_dsn(settings))
     print('creating tables from model definition...')
     Base.metadata.create_all(engine)
     engine.dispose()

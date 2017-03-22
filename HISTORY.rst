@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.2 (TBD)
+------------------
+* fix ``prepare_database`` for fresh ``start`` projects
+
 0.3.1 (2017-03-22)
 ------------------
 * correct aiohttp version in ``start`` template
