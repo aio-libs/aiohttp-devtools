@@ -2,6 +2,12 @@ language: python
 
 cache: pip
 
+addons:
+  postgresql: '9.6'
+
+services:
+- postgresql
+
 python:
 - '3.5'
 - '3.6'

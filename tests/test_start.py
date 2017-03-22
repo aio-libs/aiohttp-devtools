@@ -1,4 +1,6 @@
 import itertools
+import os
+import subprocess
 
 import aiohttp
 import pytest
@@ -90,7 +92,7 @@ def test_conflicting_file(tmpdir):
     enum_choices(DatabaseChoice),
     enum_choices(ExampleChoice),
 ))
-async def test_all_options(tmpdir, test_client, template_engine, session, database, example, loop):
+async def test_all_options(tmpdir, test_client, loop, template_engine, session, database, example):
     StartProject(
         path=str(tmpdir),
         name='foobar',
@@ -103,10 +105,7 @@ async def test_all_options(tmpdir, test_client, template_engine, session, databa
     style_guide = flake8.get_style_guide()
     report = style_guide.check_files([str(tmpdir)])
     assert report.total_errors == 0
-    # FIXME for some reason this conflicts with other tests and fails when run with all tests
-    # could be to do with messed up sys.path
     if database != 'none':
-        # TODO currently fails on postgres connection
         return
     config = Config(app_path='app/main.py', root_path=str(tmpdir))
 
@@ -117,3 +116,38 @@ async def test_all_options(tmpdir, test_client, template_engine, session, databa
     assert r.status == 200
     text = await r.text()
     assert '<title>foobar</title>' in text
+
+
+async def test_db_creation(tmpdir, test_client, loop):
+    StartProject(
+        path=str(tmpdir),
+        name='foobar postgres test',
+        template_engine=TemplateChoice.JINJA,
+        session=SessionChoices.NONE,
+        database=DatabaseChoice.PG_SA,
+        example=ExampleChoice.MESSAGE_BOARD,
+    )
+    assert 'app' in {p.basename for p in tmpdir.listdir()}
+    style_guide = flake8.get_style_guide()
+    report = style_guide.check_files([str(tmpdir)])
+    assert report.total_errors == 0
+    env = {
+        'APP_DB_PASSWORD': os.getenv('APP_DB_PASSWORD', ''),
+        'PATH': os.getenv('PATH', ''),
+    }
+    p = subprocess.run(['make', 'reset-database'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                       cwd=str(tmpdir), env=env, universal_newlines=True)
+    assert p.returncode == 0, p.stdout
+    assert 'creating database "foobar"...'
+    assert 'creating tables from model definition...'
+
+    config = Config(app_path='app/main.py', root_path=str(tmpdir))
+
+    app = config.app_factory(loop=loop)
+    modify_main_app(app, config)
+    cli = await test_client(app)
+    r = await cli.get('/')
+    assert r.status == 200
+    text = await r.text()
+    assert '<title>foobar postgres test</title>' in text
+

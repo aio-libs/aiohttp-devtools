@@ -1,10 +1,10 @@
 .PHONY: test
 test:
-	py.test --cov=app
+	pytest --cov=app
 
-.PHONY: test-buildcov
-test-buildcov:
-	py.test --cov=app && (echo "building coverage html, view at './htmlcov/index.html'"; coverage html)
+.PHONY: testcov
+testcov:
+	pytest --cov=app && (echo "building coverage html, view at './htmlcov/index.html'"; coverage html)
 
 {% if database.is_pg_sqlalchemy %}
 .PHONY: reset-database
