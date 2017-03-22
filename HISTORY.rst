@@ -3,7 +3,7 @@
 History
 -------
 
-0.3.2 (TBD)
+0.3.2 (2017-03-22)
 ------------------
 * fix ``prepare_database`` for fresh ``start`` projects
 
