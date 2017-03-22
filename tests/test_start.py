@@ -118,6 +118,8 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
     assert '<title>foobar</title>' in text
 
 
+# @if_boxed
+@slow
 async def test_db_creation(tmpdir, test_client, loop):
     StartProject(
         path=str(tmpdir),
@@ -131,8 +133,9 @@ async def test_db_creation(tmpdir, test_client, loop):
     style_guide = flake8.get_style_guide()
     report = style_guide.check_files([str(tmpdir)])
     assert report.total_errors == 0
+    db_password = os.getenv('APP_DB_PASSWORD', '')
     env = {
-        'APP_DB_PASSWORD': os.getenv('APP_DB_PASSWORD', ''),
+        'APP_DB_PASSWORD': db_password,
         'PATH': os.getenv('PATH', ''),
     }
     p = subprocess.run(['make', 'reset-database'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -141,6 +144,7 @@ async def test_db_creation(tmpdir, test_client, loop):
     assert 'creating database "foobar"...'
     assert 'creating tables from model definition...'
 
+    os.environ['APP_DB_PASSWORD'] = db_password
     config = Config(app_path='app/main.py', root_path=str(tmpdir))
 
     app = config.app_factory(loop=loop)
@@ -150,4 +154,3 @@ async def test_db_creation(tmpdir, test_client, loop):
     assert r.status == 200
     text = await r.text()
     assert '<title>foobar postgres test</title>' in text
-

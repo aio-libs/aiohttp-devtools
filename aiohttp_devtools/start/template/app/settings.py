@@ -58,7 +58,7 @@ class Settings:
             orig_type = orig_value.v_type if is_required else type(orig_value)
             env_var_name = self._ENV_PREFIX + attr_name
             env_var = os.getenv(env_var_name, None)
-            if env_var:
+            if env_var is not None:
                 if issubclass(orig_type, bool):
                     env_var = env_var.upper() in ('1', 'TRUE')
                 elif issubclass(orig_type, int):
