@@ -37,7 +37,7 @@ def modify_main_app(app, config: Config):
 
         async def on_prepare(request, response):
             if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
-                if hasattr(response, 'body'):
+                if getattr(response, 'body', None):
                     response.body += livereload_snippet
         app.on_response_prepare.append(on_prepare)
 
