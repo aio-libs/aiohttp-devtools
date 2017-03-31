@@ -21,7 +21,7 @@ class Settings:
     _ENV_PREFIX = 'APP_'
     # {% if database.is_none and example.is_message_board %}
     MESSAGE_FILE = Path('./messages.txt')
-    # {% elif database.is_pg_sqlalchemy and example.is_message_board %}
+    # {% elif database.is_pg_sqlalchemy %}
     DB_NAME = '{{ clean_name }}'
     DB_USER = 'postgres'
     DB_PASSWORD = Required(str)

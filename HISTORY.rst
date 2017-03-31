@@ -5,10 +5,11 @@ History
 
 0.3.3 (2017-03-31)
 ------------------
-* fix type for port and aux-port #59
-* allow empty response body, fix #56
+* fix type for port and aux-port - #59
+* allow empty response body - #56
 * uprev numerous packages, nothing significant
 * improve runserver shutdown logic
+* db settings without message example - #53
 
 0.3.2 (2017-03-22)
 ------------------
