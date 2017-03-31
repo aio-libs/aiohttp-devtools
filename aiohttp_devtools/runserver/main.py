@@ -41,15 +41,13 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, observer, auxiliary app port, event loop)
     """
-
-    # force a full reload to interpret an updated version of code, this must be called only once
+    # force a full reload in sub processes so they load an updated version of code, this must be called only once
     set_start_method('spawn')
     loop = loop or asyncio.get_event_loop()
 
     config = Config(**config_kwargs)
-    logger.debug('config as loaded from key word arguments and (possibly) yaml file:\n%s', config)
-
     config.check(loop)
+
     loop.run_until_complete(check_port_open(config.main_port, loop))
 
     aux_app = create_auxiliary_app(

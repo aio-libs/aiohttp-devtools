@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.3 (2017-03-31)
+------------------
+* fix type for port and aux-port #59
+
 0.3.2 (2017-03-22)
 ------------------
 * fix ``prepare_database`` for fresh ``start`` projects

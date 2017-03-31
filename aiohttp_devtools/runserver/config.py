@@ -60,9 +60,10 @@ class Config:
         self.pre_check = pre_check
         self.app_factory_name = app_factory_name
         self.main_port = main_port
-        self.aux_port = aux_port or main_port + 1
+        self.aux_port = aux_port or (main_port + 1)
         self.code_directory = None
         self._import_app_factory()
+        logger.debug('config loaded:\n%s', self)
 
     @property
     def static_path_str(self):
@@ -190,5 +191,5 @@ class Config:
 
     def __str__(self):
         fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar', 'pre_check',
-                  'app_factory_name', 'main_port', 'aux_port',)
+                  'app_factory_name', 'main_port', 'aux_port')
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
