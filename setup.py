@@ -40,6 +40,7 @@ setup(
         'Environment :: MacOS X',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet',
+        'Framework :: AsyncIO',
     ],
     author='Samuel Colvin',
     author_email='s@muelcolvin.com',
