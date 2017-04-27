@@ -98,5 +98,5 @@ def serve_static(*, static_path: str, livereload: bool=True, ip: str='localhost'
 
     observer.start()
 
-    logger.info('Serving "%s" at http://%s:%d, livereload %s', ip, static_path, port, 'ON' if livereload else 'OFF')
+    logger.info('Serving "%s" at http://%s:%d, livereload %s', static_path, ip, port, 'ON' if livereload else 'OFF')
     return app, observer, port, loop
