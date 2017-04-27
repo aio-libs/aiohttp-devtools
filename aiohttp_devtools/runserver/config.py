@@ -35,6 +35,7 @@ class Config:
                  debug_toolbar: bool=False,  # TODO set True once debug toolbar is fixed
                  pre_check: bool=True,
                  app_factory_name: str=None,
+                 ip: str='localhost',
                  main_port: int=8000,
                  aux_port: int=None):
         if root_path:
@@ -59,6 +60,7 @@ class Config:
         self.debug_toolbar = debug_toolbar
         self.pre_check = pre_check
         self.app_factory_name = app_factory_name
+        self.ip = ip
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.code_directory = None
@@ -191,5 +193,5 @@ class Config:
 
     def __str__(self):
         fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar', 'pre_check',
-                  'app_factory_name', 'main_port', 'aux_port')
+                  'app_factory_name', 'ip', 'main_port', 'aux_port')
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
