@@ -74,7 +74,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         observer.schedule(static_event_handler, config.static_path_str, recursive=True)
     observer.start()
 
-    url = 'http://{}:{}'.format(config.ip, config.aux_port)
+    url = 'http://{.ip}:{.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
 
     if config.static_path:
@@ -97,6 +97,6 @@ def serve_static(*, static_path: str, livereload: bool=True, ip: str='localhost'
         observer.schedule(livereload_event_handler, static_path, recursive=True)
 
     observer.start()
-
-    logger.info('Serving "%s" at http://%s:%d, livereload %s', static_path, ip, port, 'ON' if livereload else 'OFF')
+    livereload_status = 'ON' if livereload else 'OFF'
+    logger.info('Serving "{}" at http://{}:{}, livereload {}'.format(static_path, ip, port, livereload_status))
     return app, observer, port, loop
