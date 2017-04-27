@@ -74,7 +74,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         observer.schedule(static_event_handler, config.static_path_str, recursive=True)
     observer.start()
 
-    url = 'http://{.ip}:{.aux_port}'.format(config)
+    url = 'http://{}:{}'.format(config.ip, config.aux_port)
     logger.info('Starting aux server at %s ◆', url)
 
     if config.static_path:
