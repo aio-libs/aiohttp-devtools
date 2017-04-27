@@ -84,7 +84,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     return aux_app, observer, config.aux_port, loop
 
 
-def serve_static(*, static_path: str, livereload: bool=True, ip: str, port: int=8000, loop: asyncio.AbstractEventLoop=None):
+def serve_static(*, static_path: str, livereload: bool=True, ip: str='localhost', port: int=8000, loop: asyncio.AbstractEventLoop=None):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
     loop = loop or asyncio.get_event_loop()
