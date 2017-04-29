@@ -6,7 +6,6 @@ from pathlib import Path
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
-from aiohttp.helpers import FrozenList
 from aiohttp.web import Application, FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
@@ -63,7 +62,7 @@ def modify_main_app(app, config: Config):
                 return await handler(request)
             return _handler
 
-        app._middlewares = FrozenList([static_middleware] + list(app._middlewares))
+        app.middlewares.insert(0, static_middleware)
 
     static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
     dft_logger.debug('settings app static_root_url to "%s"', static_url)

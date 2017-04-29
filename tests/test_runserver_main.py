@@ -22,7 +22,7 @@ slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
 
-async def check_server_running(loop, *, live_reload, check_errors=False):
+async def check_server_running(loop, check_callback):
     port_open = False
     for i in range(50):
         try:
@@ -35,20 +35,7 @@ async def check_server_running(loop, *, live_reload, check_errors=False):
     assert port_open
 
     async with aiohttp.ClientSession(loop=loop) as session:
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            if live_reload:
-                assert '<script src="http://localhost:8001/livereload.js"></script>' in text
-            else:
-                assert '<script src="http://localhost:8001/livereload.js"></script>' not in text
-
-        if check_errors:
-            async with session.get('http://localhost:8000/error') as r:
-                assert r.status == 500
-                assert 'raise ValueError()' in (await r.text())
+        await check_callback(session)
 
 
 @if_boxed
@@ -79,8 +66,20 @@ def create_app(loop):
     event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
 
+    async def check_callback(session):
+        async with session.get('http://localhost:8000/') as r:
+            assert r.status == 200
+            assert r.headers['content-type'].startswith('text/html')
+            text = await r.text()
+            assert '<h1>hello world</h1>' in text
+            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
+
+        async with session.get('http://localhost:8000/error') as r:
+            assert r.status == 500
+            assert 'raise ValueError()' in (await r.text())
+
     try:
-        loop.run_until_complete(check_server_running(loop, live_reload=True, check_errors=True))
+        loop.run_until_complete(check_server_running(loop, check_callback))
     finally:
         code_event_handler._process.terminate()
     assert (
@@ -93,7 +92,7 @@ def create_app(loop):
 
 @if_boxed
 @slow
-def test_start_runserver_app_instance(tmpworkdir, loop, caplog):
+def test_start_runserver_app_instance(tmpworkdir, loop):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -106,13 +105,21 @@ app.router.add_get('/', hello)
 """
     })
     asyncio.set_event_loop(loop)
-    aux_app, observer, aux_port, _ = runserver(app_path='app.py')
+    aux_app, observer, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
     assert len(observer._handlers) == 1
     event_handlers = list(observer._handlers.values())[0]
     code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
 
+    async def check_callback(session):
+        async with session.get('http://localhost:8000/') as r:
+            assert r.status == 200
+            assert r.headers['content-type'].startswith('text/html')
+            text = await r.text()
+            assert '<h1>hello world</h1>' in text
+            assert '<script src="http://foobar.com:8001/livereload.js"></script>' in text
+
     try:
-        loop.run_until_complete(check_server_running(loop, live_reload=True))
+        loop.run_until_complete(check_server_running(loop, check_callback))
     finally:
         code_event_handler._process.terminate()
 

@@ -4,10 +4,13 @@ import socket
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
+from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.log_handlers import fmt_size
-from aiohttp_devtools.runserver.serve import AuxiliaryApplication, check_port_open
+from aiohttp_devtools.runserver.serve import AuxiliaryApplication, check_port_open, modify_main_app
+from tests.conftest import SIMPLE_APP
 
 
 async def test_check_port_open(unused_port, loop):
@@ -107,3 +110,47 @@ async def test_aux_cleanup(loop):
 ])
 def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
+
+
+class DummyApplication(dict):
+    def __init__(self):
+        self.on_response_prepare = []
+        self.middlewares = []
+        self.router = MagicMock()
+
+
+def test_modify_main_app_all_off(tmpworkdir):
+    mktree(tmpworkdir, SIMPLE_APP)
+    config = Config(app_path='app.py', livereload=False, host='foobar.com')
+    app = DummyApplication()
+    modify_main_app(app, config)
+    assert len(app.on_response_prepare) == 0
+    assert len(app.middlewares) == 0
+    assert app['static_root_url'] == 'http://foobar.com:8001/static'
+    assert app._debug is True
+
+
+def test_modify_main_app_all_on(tmpworkdir):
+    mktree(tmpworkdir, SIMPLE_APP)
+    config = Config(app_path='app.py', debug_toolbar=True)
+    app = DummyApplication()
+    modify_main_app(app, config)
+    assert len(app.on_response_prepare) == 1
+    assert len(app.middlewares) == 2
+    assert app['static_root_url'] == 'http://localhost:8001/static'
+    assert app._debug is True
+
+
+async def test_modify_main_app_on_prepare(tmpworkdir):
+    mktree(tmpworkdir, SIMPLE_APP)
+    config = Config(app_path='app.py', host='foobar.com')
+    app = DummyApplication()
+    modify_main_app(app, config)
+    on_prepare = app.on_response_prepare[0]
+    request = MagicMock()
+    request.path = '/'
+    response = MagicMock()
+    response.body = b'<h1>body</h1>'
+    response.content_type = 'text/html'
+    await on_prepare(request, response)
+    assert response.body == b'<h1>body</h1>\n<script src="http://foobar.com:8001/livereload.js"></script>\n'
