@@ -106,7 +106,7 @@ class PyCodeEventHandler(BaseEventHandler):
 
     def _start_process(self):
         act = 'Start' if self._change_count == 0 else 'Restart'
-        logger.info('%sing dev server at http://localhost:%s ●', act, self._config.main_port)
+        logger.info('%sing dev server at http://%s:%s ●', act, self._config.ip, self._config.main_port)
 
         self._process = Process(target=serve_main_app, args=(self._config,))
         self._process.start()

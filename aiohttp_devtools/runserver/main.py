@@ -52,6 +52,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
 
     aux_app = create_auxiliary_app(
         static_path=config.static_path_str,
+        ip=config.ip,
         port=config.aux_port,
         static_url=config.static_url,
         livereload=config.livereload,
@@ -73,7 +74,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         observer.schedule(static_event_handler, config.static_path_str, recursive=True)
     observer.start()
 
-    url = 'http://localhost:{.aux_port}'.format(config)
+    url = 'http://{}:{}'.format(config.ip, config.aux_port)
     logger.info('Starting aux server at %s ◆', url)
 
     if config.static_path:
@@ -83,11 +84,12 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     return aux_app, observer, config.aux_port, loop
 
 
-def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loop: asyncio.AbstractEventLoop=None):
+def serve_static(*, static_path: str, livereload: bool=True, ip: str='localhost', port: int=8000,
+                 loop: asyncio.AbstractEventLoop=None):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
     loop = loop or asyncio.get_event_loop()
-    app = create_auxiliary_app(static_path=static_path, port=port, livereload=livereload)
+    app = create_auxiliary_app(static_path=static_path, ip=ip, port=port, livereload=livereload)
 
     observer = Observer()
     if livereload:
@@ -96,6 +98,6 @@ def serve_static(*, static_path: str, livereload: bool=True, port: int=8000, loo
         observer.schedule(livereload_event_handler, static_path, recursive=True)
 
     observer.start()
-
-    logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, 'ON' if livereload else 'OFF')
+    livereload_status = 'ON' if livereload else 'OFF'
+    logger.info('Serving "{}" at http://{}:{}, livereload {}'.format(static_path, ip, port, livereload_status))
     return app, observer, port, loop
