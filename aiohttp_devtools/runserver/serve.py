@@ -33,15 +33,18 @@ def modify_main_app(app, config: Config):
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
     if config.livereload:
-        livereload_snippet = LIVE_RELOAD_SNIPPET.format(config.ip, config.aux_port)
-
         async def on_prepare(request, response):
-            if not request.path.startswith('/_debugtoolbar') and 'text/html' in response.content_type:
-                if getattr(response, 'body', None):
-                    response.body += livereload_snippet.encode()
+            if (not request.path.startswith('/_debugtoolbar') and
+                    'text/html' in response.content_type and
+                    getattr(response, 'body', None)):
+                if config.infer_host:
+                    host = request.headers.get('host', 'localhost').split(':', 1)[0]
+                else:
+                    host = config.host
+                response.body += LIVE_RELOAD_SNIPPET.format(host, config.aux_port).encode()
         app.on_response_prepare.append(on_prepare)
 
-    static_url = 'http://{}:{}/{}'.format(config.ip, config.aux_port, config.static_url.strip('/'))
+    static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, config.static_url.strip('/'))
     app['static_root_url'] = static_url
     dft_logger.debug('app attribute static_root_url="%s" set', static_url)
 
@@ -162,7 +165,7 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path: str, ip: str, port: int, static_url='/', livereload=True):
+def create_auxiliary_app(*, static_path: str, host: str, port: int, static_url='/', livereload=True):
     app = AuxiliaryApplication()
     app[WS] = []
     app.update(
@@ -173,7 +176,7 @@ def create_auxiliary_app(*, static_path: str, ip: str, port: int, static_url='/'
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
-        livereload_snippet = LIVE_RELOAD_SNIPPET.format(ip, port).encode()
+        livereload_snippet = LIVE_RELOAD_SNIPPET.format(host, port).encode()
         aux_logger.debug('enabling livereload on auxiliary app')
     else:
         livereload_snippet = None

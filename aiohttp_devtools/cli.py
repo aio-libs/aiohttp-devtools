@@ -8,7 +8,7 @@ import click
 from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
 from .runserver import runserver as _runserver
-from .runserver import run_app, serve_static
+from .runserver import INFER_HOST, run_app, serve_static
 from .start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 from .start.main import check_dir_clean, enum_choices, enum_default
 from .version import VERSION
@@ -27,19 +27,22 @@ def cli():
 verbose_help = 'Enable verbose output.'
 livereload_help = ('Whether to inject livereload.js into html page footers to autoreload on changes. '
                    'env variable AIO_LIVERELOAD')
+host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
+             'with default of localhost. env variable AIO_HOST')
 
 
 @cli.command()
 @click.argument('path', type=_dir_existing, required=True)
-@click.option('--livereload/--no-livereload', default=True, help=livereload_help)
+@click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=True, help=livereload_help)
+@click.option('--host', envvar='AIO_HOST', default=INFER_HOST, help=host_help)
 @click.option('-p', '--port', default=8000, type=int)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
-def serve(path, livereload, port, verbose):
+def serve(path, livereload, host, port, verbose):
     """
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    run_app(*serve_static(static_path=path, livereload=livereload, port=port))
+    run_app(*serve_static(static_path=path, livereload=livereload, host=host, port=port))
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
@@ -62,6 +65,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--root', 'root_path', envvar='AIO_ROOT', type=_dir_existing, help=root_help)
 @click.option('--static-url', envvar='AIO_STATIC_URL', help=static_url_help)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
+@click.option('--host', default=INFER_HOST, help=host_help)
 @click.option('--debug-toolbar/--no-debug-toolbar', envvar='AIO_DEBUG_TOOLBAR', default=None, help=debugtoolbar_help)
 @click.option('--pre-check/--no-pre-check', envvar='AIO_PRECHECK', default=None, help=debugtoolbar_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
