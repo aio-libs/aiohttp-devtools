@@ -19,7 +19,8 @@ from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
 
-LIVE_RELOAD_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
+LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
+LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
 HOST = '0.0.0.0'
 
@@ -45,22 +46,28 @@ def modify_main_app(app, config: Config):
             if (not request.path.startswith('/_debugtoolbar') and
                     'text/html' in response.content_type and
                     getattr(response, 'body', False)):
-                lr_snippet = LIVE_RELOAD_SNIPPET.format(get_host(request), config.aux_port)
+                lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
                 dft_logger.debug('appending live reload snippet "%" to body', lr_snippet)
                 response.body += lr_snippet.encode()
         app.on_response_prepare.append(on_prepare)
 
-    if config.static_path:
+    static_path = config.static_url.strip('/')
+    # we set the app key even in middleware to make the switch to production easier and for backwards compat.
+    if config.infer_host:
         async def static_middleware(app, handler):
 
             async def _handler(request):
-                static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, config.static_url.strip('/'))
+                static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
                 dft_logger.debug('settings app static_root_url to "%s"', static_url)
                 app['static_root_url'] = static_url
                 return await handler(request)
             return _handler
 
         app._middlewares = FrozenList([static_middleware] + list(app._middlewares))
+
+    static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
+    dft_logger.debug('settings app static_root_url to "%s"', static_url)
+    app['static_root_url'] = static_url
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
@@ -179,7 +186,7 @@ class AuxiliaryApplication(web.Application):
         return await super().cleanup()
 
 
-def create_auxiliary_app(*, static_path: str, host: str, port: int, static_url='/', livereload=True):
+def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     app = AuxiliaryApplication()
     app[WS] = []
     app.update(
@@ -190,17 +197,14 @@ def create_auxiliary_app(*, static_path: str, host: str, port: int, static_url='
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
-        livereload_snippet = LIVE_RELOAD_SNIPPET.format(host, port).encode()
         aux_logger.debug('enabling livereload on auxiliary app')
-    else:
-        livereload_snippet = None
 
     if static_path:
         route = CustomStaticResource(
             static_url.rstrip('/'),
             static_path + '/',
             name='static-router',
-            tail_snippet=livereload_snippet,
+            add_tail_snippet=livereload,
             follow_symlinks=True
         )
         app.router.register_resource(route)
@@ -274,8 +278,8 @@ async def websocket_handler(request):
 
 
 class CustomStaticResource(StaticResource):
-    def __init__(self, *args, **kwargs):
-        self.tail_snippet = kwargs.pop('tail_snippet')
+    def __init__(self, *args, add_tail_snippet=False, **kwargs):
+        self._add_tail_snippet = add_tail_snippet
         super().__init__(*args, **kwargs)
         self._show_index = True
 
@@ -308,7 +312,7 @@ class CustomStaticResource(StaticResource):
                         pass
 
     def _insert_footer(self, response):
-        if not isinstance(response, FileResponse) or not self.tail_snippet:
+        if not isinstance(response, FileResponse) or not self._add_tail_snippet:
             return response
 
         filepath = response._path
@@ -317,7 +321,7 @@ class CustomStaticResource(StaticResource):
             return response
 
         with filepath.open('rb') as f:
-            body = f.read() + self.tail_snippet
+            body = f.read() + LIVE_RELOAD_LOCAL_SNIPPET
 
         resp = Response(body=body, content_type='text/html')
         resp.last_modified = filepath.stat().st_mtime

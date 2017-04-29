@@ -150,7 +150,7 @@ async def test_aux_app(tmpworkdir, test_client):
     mktree(tmpworkdir, {
         'test.txt': 'test value',
     })
-    app = create_auxiliary_app(static_path='.', ip='localhost', port=8000)
+    app = create_auxiliary_app(static_path='.')
     cli = await test_client(app)
     r = await cli.get('/test.txt')
     assert r.status == 200
@@ -203,7 +203,7 @@ app.router.add_get('/', hello)
 
 @pytest.fixture
 def aux_cli(test_client, loop):
-    app = create_auxiliary_app(static_path='.', ip='localhost', port=8000)
+    app = create_auxiliary_app(static_path='.')
     return loop.run_until_complete(test_client(app))
 
 
