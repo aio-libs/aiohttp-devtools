@@ -6,6 +6,7 @@ from pathlib import Path
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
+from aiohttp.helpers import FrozenList
 from aiohttp.web import Application, FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
@@ -32,21 +33,34 @@ def modify_main_app(app, config: Config):
     """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
+
+    def get_host(request):
+        if config.infer_host:
+            return request.headers.get('host', 'localhost').split(':', 1)[0]
+        else:
+            return config.host
+
     if config.livereload:
         async def on_prepare(request, response):
             if (not request.path.startswith('/_debugtoolbar') and
                     'text/html' in response.content_type and
-                    getattr(response, 'body', None)):
-                if config.infer_host:
-                    host = request.headers.get('host', 'localhost').split(':', 1)[0]
-                else:
-                    host = config.host
-                response.body += LIVE_RELOAD_SNIPPET.format(host, config.aux_port).encode()
+                    getattr(response, 'body', False)):
+                lr_snippet = LIVE_RELOAD_SNIPPET.format(get_host(request), config.aux_port)
+                dft_logger.debug('appending live reload snippet "%" to body', lr_snippet)
+                response.body += lr_snippet.encode()
         app.on_response_prepare.append(on_prepare)
 
-    static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, config.static_url.strip('/'))
-    app['static_root_url'] = static_url
-    dft_logger.debug('app attribute static_root_url="%s" set', static_url)
+    if config.static_path:
+        async def static_middleware(app, handler):
+
+            async def _handler(request):
+                static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, config.static_url.strip('/'))
+                dft_logger.debug('settings app static_root_url to "%s"', static_url)
+                app['static_root_url'] = static_url
+                return await handler(request)
+            return _handler
+
+        app._middlewares = FrozenList([static_middleware] + list(app._middlewares))
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
