@@ -3,6 +3,11 @@
 History
 -------
 
+0.4.0 (2017-05-02)
+------------------
+* add support for remote host - #72
+* add asyncio trove classifiers - #68
+
 0.3.3 (2017-03-31)
 ------------------
 * fix type for port and aux-port - #59
