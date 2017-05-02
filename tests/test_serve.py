@@ -43,7 +43,7 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
     assert r.status == 200
     assert r.headers['content-type'] == 'text/html'
     text = await r.text()
-    assert text == '<h1>hi</h1>\n<script src="http://localhost:8000/livereload.js"></script>\n'
+    assert text == '<h1>hi</h1>\n<script src="/livereload.js"></script>\n'
     r = await cli.get('/livereload.js')
     assert r.status == 200
     assert r.headers['content-type'] == 'application/javascript'
