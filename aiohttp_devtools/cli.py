@@ -66,7 +66,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--host', default=INFER_HOST, help=host_help)
 @click.option('--debug-toolbar/--no-debug-toolbar', envvar='AIO_DEBUG_TOOLBAR', default=None, help=debugtoolbar_help)
-@click.option('--pre-check/--no-pre-check', envvar='AIO_PRECHECK', default=None, help=debugtoolbar_help)
+@click.option('--pre-check/--no-pre-check', envvar='AIO_PRECHECK', default=None, help=precheck_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
