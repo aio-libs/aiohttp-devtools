@@ -41,7 +41,7 @@ class Config:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
         else:
-            logger.debug('Root path not specified, using current workding directory')
+            logger.debug('Root path not specified, using current working directory')
             self.root_path = Path('.').resolve()
 
         self.app_path = self._find_app_path(app_path)
