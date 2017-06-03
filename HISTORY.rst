@@ -3,6 +3,12 @@
 History
 -------
 
+
+0.4.1 (2017-06-03)
+------------------
+* numerous package upgrades
+* fix typos
+
 0.4.0 (2017-05-02)
 ------------------
 * add support for remote host - #72
