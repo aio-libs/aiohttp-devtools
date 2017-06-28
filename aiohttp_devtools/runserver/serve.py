@@ -6,7 +6,7 @@ from pathlib import Path
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
-from aiohttp.web import Application, FileResponse, Response
+from aiohttp.web import FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import unquote

@@ -10,7 +10,7 @@ def test_cli_help():
     runner = CliRunner()
     result = runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
-    assert 'Run a development server for aiohttp apps.' in result.output
+    assert 'Run a development server for an aiohttp apps.' in result.output
     assert 'Serve static files from a directory.' in result.output
     assert 'Create a new aiohttp app.' in result.output
 
