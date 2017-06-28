@@ -51,8 +51,9 @@ debugtoolbar_help = 'Whether to enable debug toolbar. env variable: AIO_DEBUG_TO
 precheck_help = ("Whether to start and stop the app before creating it in a subprocess to check it's working. "
                  "env variable AIO_PRECHECK")
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, if missing default app-factory '
-                    'names are tried. This can be either a function with signature "def create_app(loop): -> '
-                    'Application" or just an instance of aiohttp.Application. env variable AIO_APP_FACTORY')
+                    'names are tried. This can be either a function with signature '
+                    '"def create_app(loop): -> Application" or "def create_app(): -> Application" '
+                    'or just an instance of aiohttp.Application. env variable AIO_APP_FACTORY')
 port_help = 'Port to serve app from, default 8000. env variable: AIO_PORT'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default port + 1. env variable: AIO_AUX_PORT'
 
@@ -73,7 +74,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 def runserver(**config):
     """
-    Run a development server for aiohttp apps.
+    Run a development server for an aiohttp apps.
 
     Takes one argument "app-path" which should be a path to either a directory containing a recognized default file
     ("app.py" or "main.py") or to a specific file. Defaults to the environment variable "AIO_APP_PATH" or ".".

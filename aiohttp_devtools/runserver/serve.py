@@ -95,10 +95,7 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
 
     loop = loop or asyncio.get_event_loop()
 
-    if isinstance(config.app_factory, Application):
-        app = config.app_factory
-    else:
-        app = config.app_factory(loop=loop)
+    app = config.load_app(loop)
 
     modify_main_app(app, config)
 
