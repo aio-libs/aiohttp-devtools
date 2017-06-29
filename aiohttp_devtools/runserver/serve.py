@@ -46,7 +46,7 @@ def modify_main_app(app, config: Config):
                     'text/html' in response.content_type and
                     getattr(response, 'body', False)):
                 lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
-                dft_logger.debug('appending live reload snippet "%" to body', lr_snippet)
+                dft_logger.debug('appending live reload snippet "%s" to body', lr_snippet)
                 response.body += lr_snippet.encode()
         app.on_response_prepare.append(on_prepare)
 
