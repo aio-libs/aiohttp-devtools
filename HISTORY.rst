@@ -8,6 +8,7 @@ History
 * set loop before running app check #96
 * allow app factory with simpler signature ``app_factory()`` #96
 * expose ``aiohttp_devtools.__version__`` #98
+* add ``__main__.py`` to allow ``python -m aiohttp_devtools ...`` #99
 
 0.4.1 (2017-06-03)
 ------------------

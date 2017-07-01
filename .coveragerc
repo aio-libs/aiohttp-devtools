@@ -2,6 +2,9 @@
 source = aiohttp_devtools
 branch = True
 concurrency = multiprocessing
+omit =
+    # __main__ is trivial and hard to test properly
+    */__main__.py
 
 [report]
 precision = 2
