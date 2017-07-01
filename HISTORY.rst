@@ -3,7 +3,7 @@
 History
 -------
 
-0.5.0 (2017-XX-XX)
+0.5.0 (2017-07-01)
 ------------------
 * set loop before running app check #96
 * allow app factory with simpler signature ``app_factory()`` #96

@@ -69,4 +69,5 @@ setup(
         'Jinja2>=2.8.1',
         'watchdog>=0.8.3',
     ],
+    python_requires='>=3.5',
 )
