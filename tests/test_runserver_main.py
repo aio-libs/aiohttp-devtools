@@ -124,6 +124,42 @@ app.router.add_get('/', hello)
         code_event_handler._process.terminate()
 
 
+@if_boxed
+@slow
+def test_start_runserver_no_loop_argument(tmpworkdir, loop):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+def app():
+    a = web.Application()
+    a.router.add_get('/', hello)
+    return a
+"""
+    })
+    asyncio.set_event_loop(loop)
+    aux_app, observer, aux_port, _ = runserver(app_path='app.py')
+    assert len(observer._handlers) == 1
+    event_handlers = list(observer._handlers.values())[0]
+    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
+
+    async def check_callback(session):
+        async with session.get('http://localhost:8000/') as r:
+            assert r.status == 200
+            assert r.headers['content-type'].startswith('text/html')
+            text = await r.text()
+            assert '<h1>hello world</h1>' in text
+            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
+
+    try:
+        loop.run_until_complete(check_server_running(loop, check_callback))
+    finally:
+        code_event_handler._process.terminate()
+
+
 def kill_parent_soon(pid):
     time.sleep(0.2)
     os.kill(pid, signal.SIGINT)

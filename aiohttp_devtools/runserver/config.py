@@ -1,3 +1,4 @@
+import inspect
 import re
 import sys
 from importlib import import_module
@@ -175,19 +176,30 @@ class Config:
             raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
                                   'instance of aiohttp.web.Application'.format(self))
 
+        loop.run_until_complete(self._startup_cleanup(loop))
+
+    def load_app(self, loop):
         if isinstance(self.app_factory, Application):
             app = self.app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
-            app = self.app_factory(loop)
+            signature = inspect.signature(self.app_factory)
+            if 'loop' in signature.parameters:
+                app = self.app_factory(loop=loop)
+            else:
+                # loop argument missing, assume no arguments
+                app = self.app_factory()
+
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))
 
-        logger.debug('app "%s" successfully created', app)
-        loop.run_until_complete(self._startup_cleanup(app))
+        return app
 
-    async def _startup_cleanup(self, app):
+    async def _startup_cleanup(self, loop):
+        app = self.load_app(loop)
+        app._set_loop(loop)
+        logger.debug('app "%s" successfully created', app)
         logger.debug('running app startup...')
         await app.startup()
         logger.debug('running app cleanup...')

@@ -6,7 +6,7 @@ from pathlib import Path
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
-from aiohttp.web import Application, FileResponse, Response
+from aiohttp.web import FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import unquote
@@ -95,10 +95,7 @@ def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
 
     loop = loop or asyncio.get_event_loop()
 
-    if isinstance(config.app_factory, Application):
-        app = config.app_factory
-    else:
-        app = config.app_factory(loop=loop)
+    app = config.load_app(loop)
 
     modify_main_app(app, config)
 
