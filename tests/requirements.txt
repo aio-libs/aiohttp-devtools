@@ -18,6 +18,6 @@ Sphinx==1.6.3
 # required to run "start" apps
 aiohttp-jinja2==0.13.0
 aiohttp-session[secure]==1.0.0
-aiohttp-session[aioredis]==0.8.0
+aiohttp-session[aioredis]==1.0.0
 aiopg==0.13.0
 SQLAlchemy==1.1.11
