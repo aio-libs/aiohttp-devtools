@@ -12,7 +12,7 @@ pytest-mock==1.6.0
 pytest-sugar==0.8.0
 pytest-timeout==1.2.0
 pytest-toolbox==0.2
-pytest-xdist==1.18.1
+pytest-xdist==1.19.0
 Sphinx==1.6.3
 
 # required to run "start" apps
