@@ -11,7 +11,7 @@ aiohttp-jinja2==0.13.0
 # {% endif %}
 
 # {% if session.is_secure %}
-aiohttp-session[secure]==0.8.0
+aiohttp-session[secure]==1.0.0
 # {% endif %}
 
 # {% if database.is_pg_sqlalchemy %}
