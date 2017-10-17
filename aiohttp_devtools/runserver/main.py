@@ -24,8 +24,6 @@ def run_app(app, port, loop):
         pass
     finally:
         logger.info('shutting down server...')
-        # observer.stop()
-        # observer.join()
         server.close()
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
@@ -65,7 +63,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     aux_app.on_cleanup.append(main_manager.close)
 
     if config.static_path:
-        static_manager = LiveReloadTask(config, loop)
+        static_manager = LiveReloadTask(config.static_path_str, loop)
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.on_startup.append(static_manager.start)
         aux_app.on_cleanup.append(static_manager.close)

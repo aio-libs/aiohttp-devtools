@@ -52,7 +52,7 @@ class AppTask(WatchTask):
             elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
                 self._app.src_reload()
             else:
-                self._app.src_reload(changes[0][1])
+                self._app.src_reload(changes.pop()[1])
 
     async def src_reload_when_live(self, checks=20):
         if self._app[WS]:
@@ -105,4 +105,4 @@ class LiveReloadTask(WatchTask):
             if len(changes) > 1:
                 self._app.src_reload()
             else:
-                self._app.src_reload(changes[0][1])
+                self._app.src_reload(changes.pop()[1])
