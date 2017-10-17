@@ -4,6 +4,7 @@ import signal
 from multiprocessing import Process
 
 from aiohttp import ClientSession
+
 from watchgod import awatch
 
 from ..logs import rs_dft_logger as logger
@@ -48,13 +49,13 @@ class AppTask(WatchTask):
                 logger.debug('%d changes, restarting server', len(changes))
                 await self._loop.run_in_executor(None, self.stop_process)
                 await self._loop.run_in_executor(None, self._start_process)
-                self._loop.create_task(self.src_reload_when_live())
+                await self._src_reload_when_live()
             elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
                 self._app.src_reload()
             else:
                 self._app.src_reload(changes.pop()[1])
 
-    async def src_reload_when_live(self, checks=20):
+    async def _src_reload_when_live(self, checks=20):
         if self._app[WS]:
             url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
@@ -68,6 +69,7 @@ class AppTask(WatchTask):
                 else:
                     logger.debug('try %d | app running, reloading...', i)
                     self._app.src_reload()
+                    return
 
     def _start_process(self):
         act = 'Start' if self._reloads == 0 else 'Restart'
@@ -91,6 +93,7 @@ class AppTask(WatchTask):
             logger.warning('server process already dead, exit code: %d', self._process.exitcode)
 
     async def close(self, *args):
+        await self._loop.run_in_executor(None, self.stop_process)
         await super().close()
         self._session.close()
 

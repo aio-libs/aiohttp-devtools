@@ -60,13 +60,13 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
 
     main_manager = AppTask(config, loop)
     aux_app.on_startup.append(main_manager.start)
-    aux_app.on_cleanup.append(main_manager.close)
+    aux_app.on_shutdown.append(main_manager.close)
 
     if config.static_path:
         static_manager = LiveReloadTask(config.static_path_str, loop)
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.on_startup.append(static_manager.start)
-        aux_app.on_cleanup.append(static_manager.close)
+        aux_app.on_shutdown.append(static_manager.close)
 
     url = 'http://{0.host}:{0.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
@@ -89,7 +89,7 @@ def serve_static(*, static_path: str, livereload: bool=True, port: int=8000,
         livereload_manager = LiveReloadTask(static_path, loop)
         logger.debug('starting livereload to watch %s', static_path)
         app.on_startup.append(livereload_manager.start)
-        app.on_cleanup.append(livereload_manager.close)
+        app.on_shutdown.append(livereload_manager.close)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)

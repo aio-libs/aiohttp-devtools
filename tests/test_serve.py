@@ -6,12 +6,8 @@ from aiohttp_devtools.runserver import serve_static
 
 @pytest.yield_fixture
 def cli(loop, tmpworkdir, test_client):
-    app, observer, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
+    app, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
     yield loop.run_until_complete(test_client(app))
-
-    # this doesn't seem necessary and slows down tests a lot
-    # observer.stop()
-    # observer.join()
 
 
 async def test_simple_serve(cli, tmpworkdir):
@@ -33,7 +29,7 @@ async def test_file_missing(cli):
 
 
 async def test_html_file_livereload(loop, test_client, tmpworkdir):
-    app, observer, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True, loop=loop)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True, loop=loop)
     assert port == 8000
     cli = await test_client(app)
     mktree(tmpworkdir, {
@@ -52,7 +48,7 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
 
 
 async def test_serve_index(loop, test_client, tmpworkdir):
-    app, observer, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
     assert port == 8000
     cli = await test_client(app)
     mktree(tmpworkdir, {
