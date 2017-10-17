@@ -13,12 +13,12 @@ python:
 env:
 - 'AIOHTTP_VERSION=aiohttp==2.0.0'
 - 'AIOHTTP_VERSION=aiohttp'  # latest release
-- 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
+- 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 matrix:
   allow_failures:
   - python: 'nightly'
-  - env: 'AIOHTTP_VERSION=https://github.com/KeepSafe/aiohttp/archive/master.zip'
+  - env: 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 install:
 - make install

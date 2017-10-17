@@ -29,7 +29,7 @@ def run_app(app, port, loop):
         loop.run_until_complete(app.shutdown())
         loop.run_until_complete(app.cleanup())
         try:
-            loop.run_until_complete(handler.finish_connections(0.1))
+            loop.run_until_complete(handler.shutdown(0.1))
         except asyncio.TimeoutError:
             pass
     loop.close()
@@ -37,11 +37,11 @@ def run_app(app, port, loop):
 
 def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     """
-    Prepare app and observer ready to run development server.
+    Prepare app ready to run development server.
 
     :param loop: asyncio loop to use
     :param config_kwargs: see config.Config for more details
-    :return: tuple (auxiliary app, observer, auxiliary app port, event loop)
+    :return: tuple (auxiliary app, auxiliary app port, event loop)
     """
     # force a full reload in sub processes so they load an updated version of code, this must be called only once
     set_start_method('spawn')

@@ -15,4 +15,4 @@ htmlcov/
 docs/_build/
 /aiohttp_devtools/runserver/livereload.js
 testapp/
-foobar/
+foobar
