@@ -2,17 +2,21 @@ import asyncio
 import os
 from multiprocessing import set_start_method
 
-from watchdog.observers import Observer
-
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import HOST, check_port_open, create_auxiliary_app
-from .watch import AllCodeEventHandler, LiveReloadEventHandler, PyCodeEventHandler
+from .watch import AppTask, LiveReloadTask
 
 
-def run_app(app, observer, port, loop):
+def run_app(app, port, loop):
     handler = app.make_handler(access_log=None, loop=loop)
-    server = loop.run_until_complete(loop.create_server(handler, HOST, port))
+
+    co = asyncio.gather(
+        loop.create_server(handler, HOST, port),
+        app.startup(),
+        loop=loop
+    )
+    server, _ = loop.run_until_complete(co)
 
     try:
         loop.run_forever()
@@ -20,8 +24,8 @@ def run_app(app, observer, port, loop):
         pass
     finally:
         logger.info('shutting down server...')
-        observer.stop()
-        observer.join()
+        # observer.stop()
+        # observer.join()
         server.close()
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
@@ -56,21 +60,15 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         livereload=config.livereload,
     )
 
-    observer = Observer()
-
-    # PyCodeEventHandler takes care of running and restarting the main app
-    code_event_handler = PyCodeEventHandler(aux_app, config, loop)
-    logger.debug('starting PyCodeEventHandler to watch %s', config.code_directory)
-    observer.schedule(code_event_handler, config.code_directory_str, recursive=True)
-
-    all_code_event_handler = AllCodeEventHandler(aux_app)
-    observer.schedule(all_code_event_handler, config.code_directory_str, recursive=True)
+    main_manager = AppTask(config, loop)
+    aux_app.on_startup.append(main_manager.start)
+    aux_app.on_cleanup.append(main_manager.close)
 
     if config.static_path:
-        static_event_handler = LiveReloadEventHandler(aux_app)
-        logger.debug('starting LiveReloadEventHandler to watch %s', config.static_path_str)
-        observer.schedule(static_event_handler, config.static_path_str, recursive=True)
-    observer.start()
+        static_manager = LiveReloadTask(config, loop)
+        logger.debug('starting livereload to watch %s', config.static_path_str)
+        aux_app.on_startup.append(static_manager.start)
+        aux_app.on_cleanup.append(static_manager.close)
 
     url = 'http://{0.host}:{0.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
@@ -79,7 +77,7 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return aux_app, observer, config.aux_port, loop
+    return aux_app, config.aux_port, loop
 
 
 def serve_static(*, static_path: str, livereload: bool=True, port: int=8000,
@@ -89,13 +87,12 @@ def serve_static(*, static_path: str, livereload: bool=True, port: int=8000,
     loop = loop or asyncio.get_event_loop()
     app = create_auxiliary_app(static_path=static_path, livereload=livereload)
 
-    observer = Observer()
     if livereload:
-        livereload_event_handler = LiveReloadEventHandler(app)
-        logger.debug('starting LiveReloadEventHandler to watch %s', static_path)
-        observer.schedule(livereload_event_handler, static_path, recursive=True)
+        livereload_manager = LiveReloadTask(static_path, loop)
+        logger.debug('starting livereload to watch %s', static_path)
+        app.on_startup.append(livereload_manager.start)
+        app.on_cleanup.append(livereload_manager.close)
 
-    observer.start()
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return app, observer, port, loop
+    return app, port, loop
