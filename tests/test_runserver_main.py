@@ -105,22 +105,10 @@ app.router.add_get('/', hello)
     })
     asyncio.set_event_loop(loop)
     aux_app, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
-    start_app = aux_app.on_startup[0]
-    stop_app = aux_app.on_shutdown[0]
-    loop.run_until_complete(start_app(aux_app))
-
-    async def check_callback(session):
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            assert '<script src="http://foobar.com:8001/livereload.js"></script>' in text
-
-    try:
-        loop.run_until_complete(check_server_running(loop, check_callback))
-    finally:
-        loop.run_until_complete(stop_app(aux_app))
+    assert isinstance(aux_app, aiohttp.web.Application)
+    assert aux_port == 8001
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
 
 
 @if_boxed
@@ -141,22 +129,10 @@ def app():
     })
     asyncio.set_event_loop(loop)
     aux_app, aux_port, _ = runserver(app_path='app.py')
-    start_app = aux_app.on_startup[0]
-    stop_app = aux_app.on_shutdown[0]
-    loop.run_until_complete(start_app(aux_app))
-
-    async def check_callback(session):
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
-
-    try:
-        loop.run_until_complete(check_server_running(loop, check_callback))
-    finally:
-        loop.run_until_complete(stop_app(aux_app))
+    assert isinstance(aux_app, aiohttp.web.Application)
+    assert aux_port == 8001
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
 
 
 def kill_parent_soon(pid):

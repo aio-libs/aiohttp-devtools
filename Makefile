@@ -18,7 +18,7 @@ lint:
 
 .PHONY: test
 test:
-	pytest --cov=aiohttp_devtools --boxed && coverage combine
+	pytest --cov=aiohttp_devtools --boxed --duration 5 && coverage combine
 
 .PHONY: testcov
 testfast:
@@ -26,7 +26,7 @@ testfast:
 
 .PHONY: testcov
 testcov:
-	pytest --cov=aiohttp_devtools --boxed --duration 3 && (echo "building coverage html"; coverage combine; coverage html)
+	pytest --cov=aiohttp_devtools --boxed && (echo "building coverage html"; coverage combine; coverage html)
 
 .PHONY: all
 all: testcov lint

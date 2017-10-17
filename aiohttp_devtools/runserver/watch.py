@@ -4,7 +4,6 @@ import signal
 from multiprocessing import Process
 
 from aiohttp import ClientSession
-
 from watchgod import awatch
 
 from ..logs import rs_dft_logger as logger

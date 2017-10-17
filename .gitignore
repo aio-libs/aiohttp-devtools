@@ -1,7 +1,8 @@
 diff-match-patch
-env
-env36
-.idea
+env/
+env35/
+env36/
+.idea/
 __pycache__/
 *.py[cod]
 *.cache
@@ -14,4 +15,4 @@ htmlcov/
 docs/_build/
 /aiohttp_devtools/runserver/livereload.js
 testapp/
-foobar
+foobar/
