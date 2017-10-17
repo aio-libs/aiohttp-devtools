@@ -1,6 +1,7 @@
 import asyncio
 import json
 import mimetypes
+import sys
 from pathlib import Path
 
 import aiohttp_debugtoolbar
@@ -90,42 +91,44 @@ async def check_port_open(port, loop, delay=1):
     raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
-def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
-    setup_logging(config.verbose)
+def serve_main_app(config: Config, tty_path: str, loop: asyncio.AbstractEventLoop=None):
+    with open(tty_path) as tty:
+        sys.stdin = tty
+        setup_logging(config.verbose)
 
-    loop = loop or asyncio.get_event_loop()
+        loop = loop or asyncio.get_event_loop()
 
-    app = config.load_app(loop)
+        app = config.load_app(loop)
 
-    modify_main_app(app, config)
+        modify_main_app(app, config)
 
-    loop.run_until_complete(check_port_open(config.main_port, loop))
-    handler = app.make_handler(
-        logger=dft_logger,
-        access_log_format='%r %s %b',
-        loop=loop,
-    )
-    co = asyncio.gather(
-        loop.create_server(handler, HOST, config.main_port, backlog=128),
-        app.startup(),
-        loop=loop
-    )
-    server, startup_res = loop.run_until_complete(co)
+        loop.run_until_complete(check_port_open(config.main_port, loop))
+        handler = app.make_handler(
+            logger=dft_logger,
+            access_log_format='%r %s %b',
+            loop=loop,
+        )
+        co = asyncio.gather(
+            loop.create_server(handler, HOST, config.main_port, backlog=128),
+            app.startup(),
+            loop=loop
+        )
+        server, startup_res = loop.run_until_complete(co)
 
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:  # pragma: no cover
-        pass
-    finally:
-        server.close()
-        loop.run_until_complete(server.wait_closed())
-        loop.run_until_complete(app.shutdown())
         try:
-            loop.run_until_complete(handler.shutdown(0.1))
-        except asyncio.TimeoutError:
+            loop.run_forever()
+        except KeyboardInterrupt:  # pragma: no cover
             pass
-        loop.run_until_complete(app.cleanup())
-    loop.close()
+        finally:
+            server.close()
+            loop.run_until_complete(server.wait_closed())
+            loop.run_until_complete(app.shutdown())
+            try:
+                loop.run_until_complete(handler.shutdown(0.1))
+            except asyncio.TimeoutError:
+                pass
+            loop.run_until_complete(app.cleanup())
+        loop.close()
 
 
 WS = 'websockets'
