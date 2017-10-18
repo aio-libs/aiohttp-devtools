@@ -1,8 +1,10 @@
 import asyncio
+import contextlib
 import json
 import mimetypes
 import sys
 from pathlib import Path
+from typing import Optional
 
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
@@ -91,9 +93,19 @@ async def check_port_open(port, loop, delay=1):
     raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
-def serve_main_app(config: Config, tty_path: str, loop: asyncio.AbstractEventLoop=None):
-    with open(tty_path) as tty:
-        sys.stdin = tty
+@contextlib.contextmanager
+def set_tty(tty_path):
+    if tty_path:
+        with open(tty_path) as tty:
+            sys.stdin = tty
+            yield
+    else:
+        # currently on windows tty_path is None and there's nothing we can do here
+        yield
+
+
+def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.AbstractEventLoop=None):
+    with set_tty(tty_path):
         setup_logging(config.verbose)
 
         loop = loop or asyncio.get_event_loop()
@@ -123,10 +135,8 @@ def serve_main_app(config: Config, tty_path: str, loop: asyncio.AbstractEventLoo
             server.close()
             loop.run_until_complete(server.wait_closed())
             loop.run_until_complete(app.shutdown())
-            try:
+            with contextlib.suppress(asyncio.TimeoutError):
                 loop.run_until_complete(handler.shutdown(0.1))
-            except asyncio.TimeoutError:
-                pass
             loop.run_until_complete(app.cleanup())
         loop.close()
 

@@ -82,6 +82,9 @@ class AppTask(WatchTask):
         except OSError:  # pragma: no branch
             # fileno() always fails with pytest
             tty_path = '/dev/tty'
+        except AttributeError:
+            # on windows, without a windows machine I've no idea what else to do here
+            tty_path = None
 
         self._process = Process(target=serve_main_app, args=(self._config, tty_path))
         self._process.start()
