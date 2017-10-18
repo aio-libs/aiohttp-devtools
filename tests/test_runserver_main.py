@@ -185,7 +185,7 @@ def test_serve_main_app(tmpworkdir, loop, mocker):
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    serve_main_app(config, loop=loop)
+    serve_main_app(config, '/dev/tty', loop=loop)
 
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
@@ -212,7 +212,7 @@ app.router.add_get('/', hello)
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    serve_main_app(config)
+    serve_main_app(config, '/dev/tty')
 
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)

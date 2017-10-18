@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 from multiprocessing import set_start_method
 
@@ -11,12 +12,8 @@ from .watch import AppTask, LiveReloadTask
 def run_app(app, port, loop):
     handler = app.make_handler(access_log=None, loop=loop)
 
-    co = asyncio.gather(
-        loop.create_server(handler, HOST, port),
-        app.startup(),
-        loop=loop
-    )
-    server, _ = loop.run_until_complete(co)
+    loop.run_until_complete(app.startup())
+    server = loop.run_until_complete(loop.create_server(handler, HOST, port))
 
     try:
         loop.run_forever()
@@ -28,10 +25,8 @@ def run_app(app, port, loop):
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
         loop.run_until_complete(app.cleanup())
-        try:
+        with contextlib.suppress(asyncio.TimeoutError):
             loop.run_until_complete(handler.shutdown(2))
-        except asyncio.TimeoutError:
-            pass
         loop.stop()
         loop.run_forever()
         loop.close()

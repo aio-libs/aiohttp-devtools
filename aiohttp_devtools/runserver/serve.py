@@ -1,7 +1,10 @@
 import asyncio
+import contextlib
 import json
 import mimetypes
+import sys
 from pathlib import Path
+from typing import Optional
 
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
@@ -90,42 +93,48 @@ async def check_port_open(port, loop, delay=1):
     raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
-def serve_main_app(config: Config, loop: asyncio.AbstractEventLoop=None):
-    setup_logging(config.verbose)
+@contextlib.contextmanager
+def set_tty(tty_path):
+    if tty_path:
+        with open(tty_path) as tty:
+            sys.stdin = tty
+            yield
+    else:
+        # currently on windows tty_path is None and there's nothing we can do here
+        yield
 
-    loop = loop or asyncio.get_event_loop()
 
-    app = config.load_app(loop)
+def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.AbstractEventLoop=None):
+    with set_tty(tty_path):
+        setup_logging(config.verbose)
 
-    modify_main_app(app, config)
+        loop = loop or asyncio.get_event_loop()
 
-    loop.run_until_complete(check_port_open(config.main_port, loop))
-    handler = app.make_handler(
-        logger=dft_logger,
-        access_log_format='%r %s %b',
-        loop=loop,
-    )
-    co = asyncio.gather(
-        loop.create_server(handler, HOST, config.main_port, backlog=128),
-        app.startup(),
-        loop=loop
-    )
-    server, startup_res = loop.run_until_complete(co)
+        app = config.load_app(loop)
 
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:  # pragma: no cover
-        pass
-    finally:
-        server.close()
-        loop.run_until_complete(server.wait_closed())
-        loop.run_until_complete(app.shutdown())
+        modify_main_app(app, config)
+
+        loop.run_until_complete(check_port_open(config.main_port, loop))
+        handler = app.make_handler(
+            logger=dft_logger,
+            access_log_format='%r %s %b',
+            loop=loop,
+        )
+        loop.run_until_complete(app.startup())
+        server = loop.run_until_complete(loop.create_server(handler, HOST, config.main_port, backlog=128))
+
         try:
-            loop.run_until_complete(handler.shutdown(0.1))
-        except asyncio.TimeoutError:
+            loop.run_forever()
+        except KeyboardInterrupt:  # pragma: no cover
             pass
-        loop.run_until_complete(app.cleanup())
-    loop.close()
+        finally:
+            server.close()
+            loop.run_until_complete(server.wait_closed())
+            loop.run_until_complete(app.shutdown())
+            with contextlib.suppress(asyncio.TimeoutError):
+                loop.run_until_complete(handler.shutdown(0.1))
+            loop.run_until_complete(app.cleanup())
+            loop.close()
 
 
 WS = 'websockets'
