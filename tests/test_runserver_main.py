@@ -14,7 +14,6 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, serve_main_app
-from aiohttp_devtools.runserver.watch import PyCodeEventHandler
 
 from .conftest import SIMPLE_APP, get_if_boxed, get_slow
 
@@ -59,12 +58,13 @@ def create_app(loop):
         'static_dir/foo.js': 'var bar=1;',
     })
     loop = asyncio.new_event_loop()
-    aux_app, observer, aux_port, _ = runserver(app_path='app.py', loop=loop, static_path='static_dir')
+    asyncio.set_event_loop(loop)
+    aux_app, aux_port, _ = runserver(app_path='app.py', static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert len(observer._handlers) == 2
-    event_handlers = next(eh for eh in observer._handlers.values() if len(eh) == 2)
-    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
+    start_app = aux_app.on_startup[0]
+    stop_app = aux_app.on_shutdown[0]
+    loop.run_until_complete(start_app(aux_app))
 
     async def check_callback(session):
         async with session.get('http://localhost:8000/') as r:
@@ -81,12 +81,12 @@ def create_app(loop):
     try:
         loop.run_until_complete(check_server_running(loop, check_callback))
     finally:
-        code_event_handler._process.terminate()
+        loop.run_until_complete(stop_app(aux_app))
     assert (
         'adev.server.dft INFO: pre-check enabled, checking app factory\n'
-        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
+        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
     ) == caplog
 
 
@@ -105,23 +105,11 @@ app.router.add_get('/', hello)
 """
     })
     asyncio.set_event_loop(loop)
-    aux_app, observer, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
-    assert len(observer._handlers) == 1
-    event_handlers = list(observer._handlers.values())[0]
-    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
-
-    async def check_callback(session):
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            assert '<script src="http://foobar.com:8001/livereload.js"></script>' in text
-
-    try:
-        loop.run_until_complete(check_server_running(loop, check_callback))
-    finally:
-        code_event_handler._process.terminate()
+    aux_app, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
+    assert isinstance(aux_app, aiohttp.web.Application)
+    assert aux_port == 8001
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
 
 
 @if_boxed
@@ -141,23 +129,11 @@ def app():
 """
     })
     asyncio.set_event_loop(loop)
-    aux_app, observer, aux_port, _ = runserver(app_path='app.py')
-    assert len(observer._handlers) == 1
-    event_handlers = list(observer._handlers.values())[0]
-    code_event_handler = next(eh for eh in event_handlers if isinstance(eh, PyCodeEventHandler))
-
-    async def check_callback(session):
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
-
-    try:
-        loop.run_until_complete(check_server_running(loop, check_callback))
-    finally:
-        code_event_handler._process.terminate()
+    aux_app, aux_port, _ = runserver(app_path='app.py')
+    assert isinstance(aux_app, aiohttp.web.Application)
+    assert aux_port == 8001
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
 
 
 def kill_parent_soon(pid):
@@ -169,10 +145,9 @@ def kill_parent_soon(pid):
 @slow
 def test_run_app(loop, unused_port):
     app = Application()
-    obersver = mock.MagicMock()
     port = unused_port()
     Process(target=kill_parent_soon, args=(os.getpid(),)).start()
-    run_app(app, obersver, port, loop)
+    run_app(app, port, loop)
 
 
 @if_boxed

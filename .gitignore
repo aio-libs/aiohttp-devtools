@@ -1,7 +1,8 @@
 diff-match-patch
-env
-env36
-.idea
+env/
+env35/
+env36/
+.idea/
 __pycache__/
 *.py[cod]
 *.cache

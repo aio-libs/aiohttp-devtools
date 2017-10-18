@@ -1,111 +1,79 @@
 import asyncio
 import os
 import signal
-from datetime import datetime
 from multiprocessing import Process
 
 from aiohttp import ClientSession
-from aiohttp.web import Application
-from watchdog.events import PatternMatchingEventHandler, match_any_paths, unicode_paths
+from watchgod import awatch
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import WS, serve_main_app
 
-# specific to jetbrains I think, very annoying if not completely ignored
-JB_BACKUP_FILE = '*___jb_???___'
 
+class WatchTask:
+    def __init__(self, path: str, loop: asyncio.AbstractEventLoop):
+        self._loop = loop
+        self._app = None
+        self._task = None
+        self._awatch = awatch(path)
 
-class BaseEventHandler(PatternMatchingEventHandler):
-    patterns = ['*.*']
-    ignore_directories = True
-    # ignore a few common directories some shouldn't be in watched directories anyway,
-    # but excluding them makes any mis-configured watch less painful
-    ignore_patterns = [
-        '*/.git/*',              # git
-        '*/.idea/*',             # pycharm / jetbrains
-        JB_BACKUP_FILE,          # pycharm / jetbrains
-        '*/include/python*',     # in virtualenv
-        '*/lib/python*',         # in virtualenv
-        '*/aiohttp_devtools/*',  # itself
-        '*~',                    # linux temporary file
-        '*.sw?',                 # vim temporary file
-    ]
-    skipped_event = False
+    async def start(self, app):
+        self._app = app
+        self._task = self._loop.create_task(self._run())
 
-    def __init__(self, *args, **kwargs):
-        self._change_dt = datetime.now()
-        self._since_change = None
-        self._change_count = 0
-        super().__init__(*args, **kwargs)
-
-    def dispatch(self, event):
-        if event.is_directory:
-            return
-
-        paths = []
-        if getattr(event, 'dest_path', None) is not None:
-            paths.append(unicode_paths.decode(event.dest_path))
-        if event.src_path:
-            paths.append(unicode_paths.decode(event.src_path))
-
-        if match_any_paths(paths, included_patterns=[JB_BACKUP_FILE]):
-            # special case for these fields if either path matches skip
-            return
-
-        if not match_any_paths(paths, included_patterns=self.patterns, excluded_patterns=self.ignore_patterns):
-            return
-
-        self._since_change = (datetime.now() - self._change_dt).total_seconds()
-        if self._since_change <= 1:
-            logger.debug('%s | %0.3f seconds since last build, skipping', event, self._since_change)
-            self.skipped_event = True
-            return
-
-        self._change_dt = datetime.now()
-        self._change_count += 1
-        self.on_event(event)
-        self.skipped_event = False
-
-    def on_event(self, event):
+    async def _run(self):
         raise NotImplementedError()
 
+    async def close(self, *args):
+        async with self._awatch.lock:
+            if self._task.done():
+                self._task.result()
+            self._task.cancel()
 
-class PyCodeEventHandler(BaseEventHandler):
-    patterns = ['*.py']
 
-    def __init__(self, app: Application, config: Config, loop: asyncio.AbstractEventLoop):
-        self._app = app
+class AppTask(WatchTask):
+    template_files = '.html', '.jinja', '.jinja2'
+
+    def __init__(self, config: Config, loop: asyncio.AbstractEventLoop):
         self._config = config
-        self._loop = loop
-        super().__init__()
-        self._start_process()
+        self._reloads = 0
+        self._session = ClientSession(loop=loop)
+        super().__init__(self._config.code_directory_str, loop)
 
-    def on_event(self, event):
-        logger.debug('%s | %0.3f seconds since last change, restarting server', event, self._since_change)
-        self.stop_process()
-        self._start_process()
-        self._loop.create_task(self.src_reload_when_live())
+    async def _run(self):
+        await self._loop.run_in_executor(None, self._start_process)
 
-    async def src_reload_when_live(self, checks=20):
-        if not self._app[WS]:
-            return
-        url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
-        logger.debug('checking app at "%s" is running before prompting reload...', url)
-        async with ClientSession(loop=self._app.loop) as session:
+        async for changes in self._awatch:
+            self._reloads += 1
+            if any(f.endswith('.py') for _, f in changes):
+                logger.debug('%d changes, restarting server', len(changes))
+                await self._loop.run_in_executor(None, self.stop_process)
+                await self._loop.run_in_executor(None, self._start_process)
+                await self._src_reload_when_live()
+            elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
+                self._app.src_reload()
+            else:
+                self._app.src_reload(changes.pop()[1])
+
+    async def _src_reload_when_live(self, checks=20):
+        if self._app[WS]:
+            url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
+            logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
                 await asyncio.sleep(0.1, loop=self._app.loop)
                 try:
-                    async with session.get(url):
+                    async with self._session.get(url):
                         pass
                 except OSError as e:
                     logger.debug('try %d | OSError %d app not running', i, e.errno)
                 else:
                     logger.debug('try %d | app running, reloading...', i)
-                    return self._app.src_reload()
+                    self._app.src_reload()
+                    return
 
     def _start_process(self):
-        act = 'Start' if self._change_count == 0 else 'Restart'
+        act = 'Start' if self._reloads == 0 else 'Restart'
         logger.info('%sing dev server at http://%s:%s ●', act, self._config.host, self._config.main_port)
 
         self._process = Process(target=serve_main_app, args=(self._config,))
@@ -125,28 +93,16 @@ class PyCodeEventHandler(BaseEventHandler):
         else:
             logger.warning('server process already dead, exit code: %d', self._process.exitcode)
 
-
-class AllCodeEventHandler(BaseEventHandler):
-    patterns = [
-        '*.html',
-        '*.jinja',
-        '*.jinja2',
-    ]
-
-    def __init__(self, app):
-        self._app = app
-        super().__init__()
-
-    def on_event(self, event):
-        self._app.src_reload()
+    async def close(self, *args):
+        await self._loop.run_in_executor(None, self.stop_process)
+        await super().close()
+        self._session.close()
 
 
-class LiveReloadEventHandler(BaseEventHandler):
-    ignore_directories = False
-
-    def __init__(self, app):
-        self._app = app
-        super().__init__()
-
-    def on_event(self, event):
-        self._app.src_reload(None if self.skipped_event else event.src_path)
+class LiveReloadTask(WatchTask):
+    async def _run(self):
+        async for changes in self._awatch:
+            if len(changes) > 1:
+                self._app.src_reload()
+            else:
+                self._app.src_reload(changes.pop()[1])
