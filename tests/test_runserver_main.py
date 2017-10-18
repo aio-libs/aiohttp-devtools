@@ -58,7 +58,8 @@ def create_app(loop):
         'static_dir/foo.js': 'var bar=1;',
     })
     loop = asyncio.new_event_loop()
-    aux_app, aux_port, _ = runserver(app_path='app.py', loop=loop, static_path='static_dir')
+    asyncio.set_event_loop(loop)
+    aux_app, aux_port, _ = runserver(app_path='app.py', static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     start_app = aux_app.on_startup[0]
