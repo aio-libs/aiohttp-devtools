@@ -25,7 +25,7 @@ setup(
     description='Dev tools for aiohttp',
     long_description=long_description,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
@@ -63,7 +63,7 @@ setup(
     """,
     install_requires=[
         'aiohttp>=2.0.0',
-        'aiohttp_debugtoolbar>=0.3.0',
+        'aiohttp_debugtoolbar>=0.4.0',
         'click>=6.6',
         'isort>=4.2.5',
         'Jinja2>=2.8.1',

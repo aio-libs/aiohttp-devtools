@@ -3,6 +3,12 @@
 History
 -------
 
+0.6.0 (2017-10-18)
+------------------
+* switch from watchdog to watchgod #144
+* allow use of ``pdb`` inside app #145
+* support aiohttp 2.3.0 #148
+
 0.5.0 (2017-07-01)
 ------------------
 * set loop before running app check #96
