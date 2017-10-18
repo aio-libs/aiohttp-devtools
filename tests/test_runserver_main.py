@@ -23,17 +23,17 @@ if_boxed = get_if_boxed(pytest)
 
 async def check_server_running(loop, check_callback):
     port_open = False
-    for i in range(50):
-        try:
-            await loop.create_connection(lambda: asyncio.Protocol(), host='localhost', port=8000)
-        except OSError:
-            await asyncio.sleep(0.1, loop=loop)
-        else:
-            port_open = True
-            break
-    assert port_open
-
-    async with aiohttp.ClientSession(loop=loop) as session:
+    async with aiohttp.ClientSession(loop=loop, conn_timeout=1) as session:
+        for i in range(50):
+            try:
+                async with session.get('http://localhost:8000/'):
+                    pass
+            except OSError:
+                await asyncio.sleep(0.05, loop=loop)
+            else:
+                port_open = True
+                break
+        assert port_open
         await check_callback(session)
 
 
