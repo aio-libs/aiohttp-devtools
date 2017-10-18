@@ -12,10 +12,11 @@ from .serve import WS, serve_main_app
 
 
 class WatchTask:
-    def __init__(self, loop: asyncio.AbstractEventLoop):
+    def __init__(self, path: str, loop: asyncio.AbstractEventLoop):
         self._loop = loop
         self._app = None
         self._task = None
+        self._awatch = awatch(path)
 
     async def start(self, app):
         self._app = app
@@ -25,9 +26,10 @@ class WatchTask:
         raise NotImplementedError()
 
     async def close(self, *args):
-        if self._task.done():
-            self._task.result()
-        self._task.cancel()
+        async with self._awatch.lock:
+            if self._task.done():
+                self._task.result()
+            self._task.cancel()
 
 
 class AppTask(WatchTask):
@@ -37,12 +39,12 @@ class AppTask(WatchTask):
         self._config = config
         self._reloads = 0
         self._session = ClientSession(loop=loop)
-        super().__init__(loop)
+        super().__init__(self._config.code_directory_str, loop)
 
     async def _run(self):
         await self._loop.run_in_executor(None, self._start_process)
 
-        async for changes in awatch(self._config.code_directory_str):
+        async for changes in self._awatch:
             self._reloads += 1
             if any(f.endswith('.py') for _, f in changes):
                 logger.debug('%d changes, restarting server', len(changes))
@@ -98,12 +100,8 @@ class AppTask(WatchTask):
 
 
 class LiveReloadTask(WatchTask):
-    def __init__(self, path: str, loop: asyncio.AbstractEventLoop):
-        self._path = path
-        super().__init__(loop)
-
     async def _run(self):
-        async for changes in awatch(self._path):
+        async for changes in self._awatch:
             if len(changes) > 1:
                 self._app.src_reload()
             else:

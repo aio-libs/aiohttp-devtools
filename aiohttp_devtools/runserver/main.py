@@ -29,10 +29,12 @@ def run_app(app, port, loop):
         loop.run_until_complete(app.shutdown())
         loop.run_until_complete(app.cleanup())
         try:
-            loop.run_until_complete(handler.shutdown(0.1))
+            loop.run_until_complete(handler.shutdown(2))
         except asyncio.TimeoutError:
             pass
-    loop.close()
+        loop.stop()
+        loop.run_forever()
+        loop.close()
 
 
 def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
