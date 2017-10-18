@@ -120,12 +120,8 @@ def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.Abstra
             access_log_format='%r %s %b',
             loop=loop,
         )
-        co = asyncio.gather(
-            loop.create_server(handler, HOST, config.main_port, backlog=128),
-            app.startup(),
-            loop=loop
-        )
-        server, startup_res = loop.run_until_complete(co)
+        loop.run_until_complete(app.startup())
+        server = loop.run_until_complete(loop.create_server(handler, HOST, config.main_port, backlog=128))
 
         try:
             loop.run_forever()
@@ -138,7 +134,7 @@ def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.Abstra
             with contextlib.suppress(asyncio.TimeoutError):
                 loop.run_until_complete(handler.shutdown(0.1))
             loop.run_until_complete(app.cleanup())
-        loop.close()
+            loop.close()
 
 
 WS = 'websockets'
