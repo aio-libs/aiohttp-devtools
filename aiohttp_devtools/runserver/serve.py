@@ -94,13 +94,14 @@ async def check_port_open(port, loop, delay=1):
 
 
 @contextlib.contextmanager
-def set_tty(tty_path):
-    if tty_path:
+def set_tty(tty_path):  # pragma: no cover
+    try:
+        assert tty_path
         with open(tty_path) as tty:
             sys.stdin = tty
             yield
-    else:
-        # currently on windows tty_path is None and there's nothing we can do here
+    except (AssertionError, OSError):
+        # either tty_path is None (windows) or opening it fails (eg. on pycharm)
         yield
 
 
