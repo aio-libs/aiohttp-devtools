@@ -101,7 +101,7 @@ class AppTask(WatchTask):
             else:
                 logger.debug('process stopped')
         else:
-            logger.warning('server process already dead, exit code: %d', self._process.exitcode)
+            logger.warning('server process already dead, exit code: %s', self._process.exitcode)
 
     async def close(self, *args):
         await self._loop.run_in_executor(None, self.stop_process)

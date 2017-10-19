@@ -122,6 +122,12 @@ class Config:
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
 
+    @property
+    def app_factory(self):
+        # can't store app_factory on Config because it's not picklable for transfer to the subprocess via
+        # multiprocessing.Process (especially with uvloop)
+        return self._import_app_factory()
+
     def _import_app_factory(self):
         """
         Import attribute/class from from a python module. Raise AdevConfigError if the import failed.
@@ -157,7 +163,7 @@ class Config:
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
         self.code_directory = Path(module.__file__).parent
-        self.app_factory = attr
+        return attr
 
     def check(self, loop):
         """
