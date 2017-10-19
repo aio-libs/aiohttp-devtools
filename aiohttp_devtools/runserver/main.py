@@ -42,9 +42,9 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     """
     # force a full reload in sub processes so they load an updated version of code, this must be called only once
     set_start_method('spawn')
-    loop = loop or asyncio.get_event_loop()
 
     config = Config(**config_kwargs)
+    loop = loop or asyncio.get_event_loop()
     config.check(loop)
 
     loop.run_until_complete(check_port_open(config.main_port, loop))

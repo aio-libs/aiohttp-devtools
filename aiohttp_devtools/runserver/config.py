@@ -78,10 +78,6 @@ class Config:
     def code_directory_str(self):
         return self.code_directory and str(self.code_directory)
 
-    @property
-    def app_factory(self):
-        return self._import_app_factory()
-
     def _find_app_path(self, app_path: str) -> Path:
         path = (self.root_path / app_path).resolve()
         if path.is_file():
@@ -161,7 +157,7 @@ class Config:
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
         self.code_directory = Path(module.__file__).parent
-        return attr
+        self.app_factory = attr
 
     def check(self, loop):
         """
@@ -176,7 +172,7 @@ class Config:
             raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
                                   'instance of aiohttp.web.Application'.format(self))
 
-        loop.run_until_complete(self._startup_cleanup(loop))
+        loop.run_until_complete(self._startup_and_clean(loop))
 
     def load_app(self, loop):
         if isinstance(self.app_factory, Application):
@@ -196,7 +192,7 @@ class Config:
 
         return app
 
-    async def _startup_cleanup(self, loop):
+    async def _startup_and_clean(self, loop):
         app = self.load_app(loop)
         app._set_loop(loop)
         logger.debug('app "%s" successfully created', app)
