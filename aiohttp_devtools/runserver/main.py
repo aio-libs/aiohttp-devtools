@@ -25,8 +25,8 @@ def run_app(app, port, loop):
         loop.run_until_complete(server.wait_closed())
         loop.run_until_complete(app.shutdown())
         with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-            loop.run_until_complete(handler.shutdown(0.1))
-            loop.run_until_complete(app.cleanup())
+            loop.run_until_complete(handler.shutdown(2))
+        loop.run_until_complete(app.cleanup())
         loop.close()
 
 
