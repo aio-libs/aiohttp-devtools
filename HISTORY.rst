@@ -3,6 +3,11 @@
 History
 -------
 
+0.6.1 (2017-10-19)
+------------------
+* switch config order to support uvloop #150
+* more lenient set_tty (to support pycharm) #152
+
 0.6.0 (2017-10-18)
 ------------------
 * switch from watchdog to watchgod #144
