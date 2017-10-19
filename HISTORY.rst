@@ -3,6 +3,11 @@
 History
 -------
 
+0.6.2 (2017-10-19)
+------------------
+* fix loop pickling regression in #150 #154
+* cleanup termination with uvloop #154
+
 0.6.1 (2017-10-19)
 ------------------
 * switch config order to support uvloop #150

@@ -29,7 +29,7 @@ async def check_server_running(loop, check_callback):
                 async with session.get('http://localhost:8000/'):
                     pass
             except OSError:
-                await asyncio.sleep(0.05, loop=loop)
+                await asyncio.sleep(0.1, loop=loop)
             else:
                 port_open = True
                 break
