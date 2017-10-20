@@ -11,8 +11,8 @@ python:
 - 'nightly'  # currently 3.7
 
 env:
-- 'AIOHTTP_VERSION=aiohttp==2.0.0'
-- 'AIOHTTP_VERSION=aiohttp==2.3.0'  # as per start template requirements
+- 'AIOHTTP_VERSION=aiohttp==2.0.0'  # WARNING: if you change this, change it in deploy too
+- 'AIOHTTP_VERSION=aiohttp==2.3.1'  # as per start template requirements
 - 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 matrix:
@@ -41,6 +41,9 @@ deploy:
   password:
     secure: yJDVcg12FVMF+nQDeu0HtXHD5Xy1zwn8fK+EBofrIPWp6yKCzl2DD0HexHVr8sVyNkaqRz3Y6Par4g8JQeifkC92dkT2wJjTOjGi1OYug72nflEH7VV+nM9H57N5wnu/sNDmKa3PvRyr/L57/ZsYfzCRkiWdxk5+nzE1blX3Hw+L/RQKEPNfSw/PigB1FWK5Cynppfb6Q7xQf9TE8/2ToGLeVDVkcrNYBklyg46dhqPCzn8OcuLMnm1mZs0kmFcPlH6BbhlEH10me30NdZ2Xi0VrjrLpi085Kb+s+YFuBODkDDyta1j2g2IPh9xknjFKKT2Q1D2elkAaUT1aRV0xd6BYoQpNBbnGAm6PU5k3tACmE3Ix4neHbbXWKY4hi+93M4UWupOMn+5lbjAqk3+NvyBt82G36xhw1ljNVGqQUgAeGAFhvSz36lLCBVbfucd8c93z0yX/EqwTzEjXqq/elQj1s2uX295mpU7uVQodqH2U+q+lEWX7Z1q29O52IMivOlX4U3WqITLcqUanZKNvm9J1NKnDTOnUbpsmsENeLz02dOBJxr9z+MbEAHXvVwdNlp2QK4xyAKFZT3v9mCViqmXJDp+B2887MHEnjIizeHswnMSnW8i1JDUJQLDWqpEeRCntfbym6hetznVCpwHoVXOA8l7aJOnPhJg0SBjzGk8=
   distributions: sdist bdist_wheel
+  # skip_cleanup: true is required to include livereload.js
+  skip_cleanup: true
   on:
     tags: true
-    python: 3.5
+    python: 3.6
+    condition: "$AIOHTTP_VERSION = aiohttp==2.0.0"

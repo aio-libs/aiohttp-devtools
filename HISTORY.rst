@@ -3,6 +3,10 @@
 History
 -------
 
+0.6.3 (2017-10-20)
+------------------
+* add ``livereload.js`` to release package
+
 0.6.2 (2017-10-19)
 ------------------
 * fix loop pickling regression in #150 #154
