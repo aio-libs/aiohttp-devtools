@@ -109,6 +109,9 @@ def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.Abstra
     with set_tty(tty_path):
         setup_logging(config.verbose)
 
+        # imports the factory. This gives users a chance to register alternative event loops
+        config.app_factory
+
         loop = loop or asyncio.get_event_loop()
 
         app = config.load_app(loop)
