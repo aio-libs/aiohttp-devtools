@@ -352,6 +352,6 @@ class CustomStaticResource(StaticResource):
         else:
             status, length = response.status, response.content_length
         finally:
-            l = aux_logger.info if status in {200, 304} else aux_logger.warning
-            l('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
+            logger = aux_logger.info if status in {200, 304} else aux_logger.warning
+            logger('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
         return response
