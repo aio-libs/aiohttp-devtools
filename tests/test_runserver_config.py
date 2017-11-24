@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from pytest_toolbox import mktree
 
@@ -16,8 +18,9 @@ async def test_load_simple_app(tmpworkdir):
 
 async def test_create_app_wrong_name(tmpworkdir, loop):
     mktree(tmpworkdir, SIMPLE_APP)
+    config = Config(app_path='app.py', app_factory_name='missing')
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='app.py', app_factory_name='missing')
+        config.import_app_factory()
     assert excinfo.value.args[0] == 'Module "app.py" does not define a "missing" attribute/class'
 
 
@@ -56,7 +59,8 @@ def app_factory(loop):
 @if_boxed
 @pytest.mark.parametrize('files,exc', invalid_apps, ids=['%s...' % v[1][:40] for v in invalid_apps])
 def test_invalid_options(tmpworkdir, files, exc, loop):
+    asyncio.set_event_loop(loop)
     mktree(tmpworkdir, files)
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='.').check(loop)
+        Config(app_path='.').check()
     assert exc.format(tmpworkdir=tmpworkdir) == excinfo.value.args[0]

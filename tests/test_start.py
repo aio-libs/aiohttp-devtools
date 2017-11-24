@@ -64,7 +64,8 @@ adev.main INFO: config:
     example: message-board
 adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
     config = Config(app_path='the-path/app/', root_path=str(tmpdir))
-    app = config.app_factory(loop=loop)
+    app_factory = config.import_app_factory()
+    app = app_factory()
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
 
@@ -109,7 +110,8 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
         return
     config = Config(app_path='app/main.py', root_path=str(tmpdir))
 
-    app = config.app_factory(loop=loop)
+    app_factory = config.import_app_factory()
+    app = app_factory()
     modify_main_app(app, config)
     cli = await test_client(app)
     r = await cli.get('/')
@@ -147,7 +149,8 @@ async def test_db_creation(tmpdir, test_client, loop):
     os.environ['APP_DB_PASSWORD'] = db_password
     config = Config(app_path='app/main.py', root_path=str(tmpdir))
 
-    app = config.app_factory(loop=loop)
+    app_factory = config.import_app_factory()
+    app = app_factory()
     modify_main_app(app, config)
     cli = await test_client(app)
     r = await cli.get('/')

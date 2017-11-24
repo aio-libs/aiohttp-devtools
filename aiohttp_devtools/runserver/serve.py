@@ -105,13 +105,13 @@ def set_tty(tty_path):  # pragma: no cover
         yield
 
 
-def serve_main_app(config: Config, tty_path: Optional[str], loop: asyncio.AbstractEventLoop=None):
+def serve_main_app(config: Config, tty_path: Optional[str]):
     with set_tty(tty_path):
         setup_logging(config.verbose)
 
-        loop = loop or asyncio.get_event_loop()
+        app = config.load_app()
 
-        app = config.load_app(loop)
+        loop = asyncio.get_event_loop()
 
         modify_main_app(app, config)
 

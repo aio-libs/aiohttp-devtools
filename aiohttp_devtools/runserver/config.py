@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import re
 import sys
@@ -67,7 +68,6 @@ class Config:
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.code_directory = None
-        self._import_app_factory()
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -122,13 +122,7 @@ class Config:
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
 
-    @property
-    def app_factory(self):
-        # can't store app_factory on Config because it's not picklable for transfer to the subprocess via
-        # multiprocessing.Process (especially with uvloop)
-        return self._import_app_factory()
-
-    def _import_app_factory(self):
+    def import_app_factory(self):
         """
         Import attribute/class from from a python module. Raise AdevConfigError if the import failed.
 
@@ -165,7 +159,7 @@ class Config:
         self.code_directory = Path(module.__file__).parent
         return attr
 
-    def check(self, loop):
+    def check(self):
         """
         run the app factory as a very basic check it's working and returns the right thing,
         this should catch config errors and database connection errors.
@@ -174,23 +168,27 @@ class Config:
             logger.debug('pre-check disabled, not checking app factory')
             return
         logger.info('pre-check enabled, checking app factory')
-        if not callable(self.app_factory):
+        app_factory = self.import_app_factory()
+        if not callable(app_factory):
             raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
                                   'instance of aiohttp.web.Application'.format(self))
 
-        loop.run_until_complete(self._startup_and_clean(loop))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self._startup_and_clean())
 
-    def load_app(self, loop):
-        if isinstance(self.app_factory, Application):
-            app = self.app_factory
+    def load_app(self):
+        app_factory = self.import_app_factory()
+        if isinstance(app_factory, Application):
+            app = app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
-            signature = inspect.signature(self.app_factory)
+            signature = inspect.signature(app_factory)
             if 'loop' in signature.parameters:
-                app = self.app_factory(loop=loop)
+                loop = asyncio.get_event_loop()
+                app = app_factory(loop=loop)
             else:
                 # loop argument missing, assume no arguments
-                app = self.app_factory()
+                app = app_factory()
 
             if not isinstance(app, Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
@@ -198,9 +196,8 @@ class Config:
 
         return app
 
-    async def _startup_and_clean(self, loop):
-        app = self.load_app(loop)
-        app._set_loop(loop)
+    async def _startup_and_clean(self):
+        app = self.load_app()
         logger.debug('app "%s" successfully created', app)
         logger.debug('running app startup...')
         await app.startup()
