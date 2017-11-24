@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from pytest_toolbox import mktree
 
@@ -6,7 +8,8 @@ from aiohttp_devtools.runserver import serve_static
 
 @pytest.yield_fixture
 def cli(loop, tmpworkdir, test_client):
-    app, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
+    asyncio.set_event_loop(loop)
+    app, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
     yield loop.run_until_complete(test_client(app))
 
 
@@ -29,7 +32,7 @@ async def test_file_missing(cli):
 
 
 async def test_html_file_livereload(loop, test_client, tmpworkdir):
-    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True, loop=loop)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True)
     assert port == 8000
     cli = await test_client(app)
     mktree(tmpworkdir, {
@@ -48,7 +51,7 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
 
 
 async def test_serve_index(loop, test_client, tmpworkdir):
-    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False, loop=loop)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
     assert port == 8000
     cli = await test_client(app)
     mktree(tmpworkdir, {

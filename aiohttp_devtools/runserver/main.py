@@ -32,11 +32,10 @@ def run_app(app, port, loop):
             loop.close()
 
 
-def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
+def runserver(**config_kwargs):
     """
     Prepare app ready to run development server.
 
-    :param loop: asyncio loop to use
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)
     """
@@ -44,8 +43,8 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     set_start_method('spawn')
 
     config = Config(**config_kwargs)
-    loop = loop or asyncio.get_event_loop()
-    config.check(loop)
+    config.check()
+    loop = asyncio.get_event_loop()
 
     loop.run_until_complete(check_port_open(config.main_port, loop))
 
@@ -75,11 +74,10 @@ def runserver(*, loop: asyncio.AbstractEventLoop=None, **config_kwargs):
     return aux_app, config.aux_port, loop
 
 
-def serve_static(*, static_path: str, livereload: bool=True, port: int=8000,
-                 loop: asyncio.AbstractEventLoop=None):
+def serve_static(*, static_path: str, livereload: bool=True, port: int=8000):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    loop = loop or asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
     app = create_auxiliary_app(static_path=static_path, livereload=livereload)
 
     if livereload:

@@ -151,10 +151,11 @@ def test_run_app(loop, unused_port):
 
 
 @if_boxed
-async def test_run_app_test_client(loop, tmpworkdir, test_client):
+async def test_run_app_test_client(tmpworkdir, test_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
-    app = config.app_factory(loop=loop)
+    app_factory = config.import_app_factory()
+    app = app_factory()
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
     cli = await test_client(app)
@@ -179,13 +180,14 @@ async def test_aux_app(tmpworkdir, test_client):
 @if_boxed
 @slow
 def test_serve_main_app(tmpworkdir, loop, mocker):
+    asyncio.set_event_loop(loop)
     mktree(tmpworkdir, SIMPLE_APP)
     mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    serve_main_app(config, '/dev/tty', loop=loop)
+    serve_main_app(config, '/dev/tty')
 
     assert loop.is_closed()
     loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)

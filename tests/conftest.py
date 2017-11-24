@@ -13,7 +13,7 @@ from aiohttp import web
 async def hello(request):
     return web.Response(text='hello world')
 
-def create_app(loop):
+def create_app():
     app = web.Application()
     app.router.add_get('/', hello)
     return app"""
