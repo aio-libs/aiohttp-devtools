@@ -3,6 +3,10 @@
 History
 -------
 
+0.6.4 (2017-11-26)
+------------------
+* fix loop usage to work with uvloop, #158
+
 0.6.3 (2017-10-20)
 ------------------
 * add ``livereload.js`` to release package
