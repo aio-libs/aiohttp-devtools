@@ -20,4 +20,4 @@ aiohttp-jinja2==0.14.0
 aiohttp-session[secure]==2.1.0
 aiohttp-session[aioredis]==2.1.0
 aiopg==0.13.1
-SQLAlchemy==1.1.14
+SQLAlchemy==1.1.15
