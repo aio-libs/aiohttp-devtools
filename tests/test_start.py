@@ -63,7 +63,7 @@ adev.main INFO: config:
     database: none
     example: message-board
 adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
-    config = Config(app_path='the-path/app/', root_path=str(tmpdir))
+    config = Config(app_path='the-path/app/', root_path=str(tmpdir), static_path='.')
     app_factory = config.import_app_factory()
     app = app_factory()
     modify_main_app(app, config)
@@ -108,7 +108,7 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
     assert report.total_errors == 0
     if database != 'none':
         return
-    config = Config(app_path='app/main.py', root_path=str(tmpdir))
+    config = Config(app_path='app/main.py', root_path=str(tmpdir), static_path='.')
 
     app_factory = config.import_app_factory()
     app = app_factory()
@@ -147,7 +147,7 @@ async def test_db_creation(tmpdir, test_client, loop):
     assert 'creating tables from model definition...'
 
     os.environ['APP_DB_PASSWORD'] = db_password
-    config = Config(app_path='app/main.py', root_path=str(tmpdir))
+    config = Config(app_path='app/main.py', root_path=str(tmpdir), static_path='.')
 
     app_factory = config.import_app_factory()
     app = app_factory()

@@ -117,11 +117,12 @@ class DummyApplication(dict):
         self.on_response_prepare = []
         self.middlewares = []
         self.router = MagicMock()
+        self['static_root_url'] = '/static/'
 
 
 def test_modify_main_app_all_off(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', livereload=False, host='foobar.com')
+    config = Config(app_path='app.py', livereload=False, host='foobar.com', static_path='.')
     app = DummyApplication()
     modify_main_app(app, config)
     assert len(app.on_response_prepare) == 0
@@ -132,7 +133,7 @@ def test_modify_main_app_all_off(tmpworkdir):
 
 def test_modify_main_app_all_on(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', debug_toolbar=True)
+    config = Config(app_path='app.py', debug_toolbar=True, static_path='.')
     app = DummyApplication()
     modify_main_app(app, config)
     assert len(app.on_response_prepare) == 1
