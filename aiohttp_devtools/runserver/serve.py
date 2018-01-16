@@ -12,7 +12,7 @@ from aiohttp.hdrs import LAST_MODIFIED
 from aiohttp.web import FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
-from yarl import unquote
+from yarl import URL
 
 from ..exceptions import AiohttpDevException
 from ..logs import rs_aux_logger as aux_logger
@@ -295,7 +295,7 @@ class CustomStaticResource(StaticResource):
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
-        filename = unquote(request.match_info['filename'])
+        filename = URL.build(path=request.match_info['filename'], encoded=True).path
         raw_path = self._directory.joinpath(filename)
         try:
             filepath = raw_path.resolve()
