@@ -3,6 +3,10 @@
 History
 -------
 
+0.7.0 (2018-01-28)
+------------------
+* use ``static_root_url`` on with ``--static`` option #170
+
 0.6.4 (2017-11-26)
 ------------------
 * fix loop usage to work with uvloop, #158
