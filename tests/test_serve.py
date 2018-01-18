@@ -20,6 +20,7 @@ async def test_simple_serve(cli, tmpworkdir):
     r = await cli.get('/foo')
     assert r.status == 200
     assert r.headers['content-type'] == 'application/octet-stream'
+    assert r.headers['Access-Control-Allow-Origin'] == '*'
     text = await r.text()
     assert text == 'hello world'
 
