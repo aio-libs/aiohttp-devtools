@@ -33,6 +33,8 @@ def modify_main_app(app, config: Config):
     * modify responses to add the livereload snippet
     * set ``static_root_url`` on the app
     * setup the debug toolbar
+
+    Also modifies sub-apps.
     """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
@@ -72,6 +74,18 @@ def modify_main_app(app, config: Config):
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
+
+    for resource in app.router.resources():
+        # TODO this could be recursive but for now it doesn't work at all
+        try:
+            sub_app = resource.get_info()['app']
+        except KeyError:
+            continue
+        dft_logger.debug('modifying sub app: %s', sub_app)
+        sub_app['static_root_url'] = static_url
+
+        if config.debug_toolbar:
+            aiohttp_debugtoolbar.setup(sub_app, intercept_redirects=False)
 
 
 async def check_port_open(port, loop, delay=1):
