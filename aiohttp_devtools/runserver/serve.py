@@ -12,7 +12,7 @@ from aiohttp.hdrs import LAST_MODIFIED
 from aiohttp.web import FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
-from yarl import unquote
+from yarl import URL
 
 from ..exceptions import AiohttpDevException
 from ..logs import rs_aux_logger as aux_logger
@@ -54,22 +54,21 @@ def modify_main_app(app, config: Config):
         app.on_response_prepare.append(on_prepare)
 
     static_path = config.static_url.strip('/')
-    # we set the app key even in middleware to make the switch to production easier and for backwards compat.
-    if config.infer_host:
-        async def static_middleware(app, handler):
-
-            async def _handler(request):
-                static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
-                dft_logger.debug('settings app static_root_url to "%s"', static_url)
-                app['static_root_url'] = static_url
-                return await handler(request)
-            return _handler
+    if config.infer_host and config.static_path is not None:
+        # we set the app key even in middleware to make the switch to production easier and for backwards compat.
+        @web.middleware
+        async def static_middleware(request, handler):
+            static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
+            dft_logger.debug('settings app static_root_url to "%s"', static_url)
+            request.app['static_root_url'] = static_url
+            return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
 
-    static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
-    dft_logger.debug('settings app static_root_url to "%s"', static_url)
-    app['static_root_url'] = static_url
+    if config.static_path is not None:
+        static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
+        dft_logger.debug('settings app static_root_url to "%s"', static_url)
+        app['static_root_url'] = static_url
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
@@ -295,7 +294,7 @@ class CustomStaticResource(StaticResource):
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
-        filename = unquote(request.match_info['filename'])
+        filename = URL.build(path=request.match_info['filename'], encoded=True).path
         raw_path = self._directory.joinpath(filename)
         try:
             filepath = raw_path.resolve()
