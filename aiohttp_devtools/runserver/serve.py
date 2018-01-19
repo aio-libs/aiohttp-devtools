@@ -349,6 +349,9 @@ class CustomStaticResource(StaticResource):
             response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
             status, length = response.status, response.content_length
         else:
+            # Inject CORS headers to allow webfonts to load correctly
+            response.headers['Access-Control-Allow-Origin'] = '*'
+
             status, length = response.status, response.content_length
         finally:
             logger = aux_logger.info if status in {200, 304} else aux_logger.warning
