@@ -3,7 +3,11 @@
 History
 -------
 
-0.7.0 (2018-01-28)
+0.7.1 (2018-02-01)
+------------------
+* set ``Access-Control-Allow-Origin`` for static files, #169
+
+0.7.0 (2018-01-18)
 ------------------
 * use ``static_root_url`` on with ``--static`` option #170
 * fix ``unquote`` import #167

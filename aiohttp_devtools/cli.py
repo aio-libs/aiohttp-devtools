@@ -7,8 +7,9 @@ import click
 
 from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
+from .runserver import INFER_HOST, run_app
 from .runserver import runserver as _runserver
-from .runserver import INFER_HOST, run_app, serve_static
+from .runserver import serve_static
 from .start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 from .start.main import check_dir_clean, enum_choices, enum_default
 from .version import VERSION

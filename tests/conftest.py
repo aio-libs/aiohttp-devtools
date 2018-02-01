@@ -10,6 +10,7 @@ SIMPLE_APP = {
     'app.py': """\
 from aiohttp import web
 
+
 async def hello(request):
     return web.Response(text='hello world')
 
