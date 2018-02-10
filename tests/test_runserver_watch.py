@@ -35,7 +35,7 @@ async def test_single_file_change(loop, mocker):
     app_task._app.src_reload.assert_called_once_with('/path/to/file')
     assert app_task._start_process.call_count == 1
     assert app_task.stop_process.called is False
-    app_task._session.close()
+    await app_task._session.close()
 
 
 async def test_multiple_file_change(loop, mocker):
@@ -48,7 +48,7 @@ async def test_multiple_file_change(loop, mocker):
     app_task._app = MagicMock()
     await app_task._run()
     app_task._app.src_reload.assert_called_once_with()
-    app_task._session.close()
+    await app_task._session.close()
 
 
 async def test_python_no_server(loop, mocker):
@@ -65,7 +65,7 @@ async def test_python_no_server(loop, mocker):
     assert app_task._app.src_reload.called is False
     assert app_task._start_process.called
     assert app_task.stop_process.called
-    app_task._session.close()
+    await app_task._session.close()
 
 
 async def test_reload_server_running(loop, test_client):
@@ -80,7 +80,7 @@ async def test_reload_server_running(loop, test_client):
     app_task._app = app
     await app_task._src_reload_when_live(2)
     app.src_reload.assert_called_once_with()
-    app_task._session.close()
+    await app_task._session.close()
 
 
 async def test_livereload_task_single(loop, mocker):
