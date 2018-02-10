@@ -1,4 +1,3 @@
-diff-match-patch
 env/
 env35/
 env36/
@@ -6,11 +5,12 @@ env36/
 __pycache__/
 *.py[cod]
 *.cache
+.pytest_cache/
 .coverage.*
 .coverage
 htmlcov/
-/build
-/dist
+/build/
+/dist/
 *.egg-info
 docs/_build/
 /aiohttp_devtools/runserver/livereload.js
