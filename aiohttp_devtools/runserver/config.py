@@ -2,10 +2,10 @@ import asyncio
 import inspect
 import re
 import sys
-from importlib import import_module
+from importlib import import_module, reload
 from pathlib import Path
 
-from aiohttp.web import Application
+from aiohttp import web
 
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
@@ -68,6 +68,7 @@ class Config:
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.code_directory = None
+        self._imported_module = None
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -134,29 +135,35 @@ class Config:
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = str(rel_py_file).replace('.py', '').replace('/', '.')
 
-        try:
-            module = import_module(module_path)
-        except ImportError as e:
-            raise AdevConfigError('error importing "{}" from "{}": {}'.format(module_path, self.python_path, e)) from e
+        if self._imported_module:
+            reload(self._imported_module)
+            logger.debug('reloaded %s', self._imported_module)
+        else:
+            try:
+                self._imported_module = import_module(module_path)
+            except ImportError as e:
+                raise AdevConfigError('error importing "{}" '
+                                      'from "{}": {}'.format(module_path, self.python_path, e)) from e
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
         if self.app_factory_name is None:
             try:
-                self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))
+                self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(self._imported_module, an))
             except StopIteration as e:
                 raise AdevConfigError('No name supplied and no default app factory '
                                       'found in {s.py_file.name}'.format(s=self)) from e
             else:
-                logger.debug('found default attribute "%s" in module "%s"', self.app_factory_name, module)
+                logger.debug('found default attribute "%s" in module "%s"',
+                             self.app_factory_name, self._imported_module)
 
         try:
-            attr = getattr(module, self.app_factory_name)
+            attr = getattr(self._imported_module, self.app_factory_name)
         except AttributeError as e:
             raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
-        self.code_directory = Path(module.__file__).parent
+        self.code_directory = Path(self._imported_module.__file__).parent
         return attr
 
     def check(self):
@@ -178,7 +185,7 @@ class Config:
 
     def load_app(self):
         app_factory = self.import_app_factory()
-        if isinstance(app_factory, Application):
+        if isinstance(app_factory, web.Application):
             app = app_factory
         else:
             # app_factory should be a proper factory with signature (loop): -> Application
@@ -190,7 +197,7 @@ class Config:
                 # loop argument missing, assume no arguments
                 app = app_factory()
 
-            if not isinstance(app, Application):
+            if not isinstance(app, web.Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
                                       'aiohttp.web.Application'.format(self, app))
 
@@ -200,9 +207,13 @@ class Config:
         app = self.load_app()
         logger.debug('app "%s" successfully created', app)
         logger.debug('running app startup...')
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, host='localhost', port=8080, shutdown_timeout=0.1)
+        await site.start()
         await app.startup()
         logger.debug('running app cleanup...')
-        await app.cleanup()
+        await runner.cleanup()
 
     def __str__(self):
         fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar', 'pre_check',

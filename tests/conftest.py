@@ -1,3 +1,6 @@
+from asyncio import Future
+
+
 def pytest_addoption(parser):
     try:
         parser.addoption('--fast', action='store_true', help="don't run slow tests")
@@ -27,3 +30,9 @@ def get_slow(_pytest):
 
 def get_if_boxed(_pytest):
     return _pytest.mark.skipif(not _pytest.config.getoption('--boxed'), reason='only run with --boxed flag')
+
+
+def create_future(result=None):
+    f = Future()
+    f.set_result(result)
+    return f

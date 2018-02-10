@@ -69,7 +69,7 @@ async def index(request):
     # {% if database.is_none and example.is_message_board %}
     # app.router allows us to generate urls based on their names,
     # see http://aiohttp.readthedocs.io/en/stable/web.html#reverse-url-constructing-using-named-resources
-    message_url = request.app.router['messages'].url()
+    message_url = request.app.router['messages'].url_for()
     ctx = dict(
         title=request.app['name'],
         styles_css_url=request.app['static_root_url'] + '/styles.css',
@@ -129,7 +129,7 @@ async def process_form(request):
     # {% else %}
     # TODO
     # {% endif %}
-    raise HTTPFound(request.app.router['messages'].url())
+    raise HTTPFound(request.app.router['messages'].url_for())
 
 
 # {% if template_engine.is_jinja %}
@@ -179,8 +179,8 @@ async def messages(request):
     <span class="error">messages not loading, it's possible <code>message_display.js</code> is not being served.</span>
   </div>
   <script src="{message_display_js_url}"></script>""".format(
-            message_url=request.app.router['messages'].url(),
-            message_data_url=request.app.router['message-data'].url(),
+            message_url=request.app.router['messages'].url_for(),
+            message_data_url=request.app.router['message-data'].url_for(),
             message_display_js_url=request.app['static_root_url'] + '/message_display.js',
             form_errors=form_errors and '<div class="form-errors">{}</div>'.format(form_errors),
             username=username,

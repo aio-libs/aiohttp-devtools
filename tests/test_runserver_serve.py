@@ -1,16 +1,17 @@
-import asyncio
 import json
 import socket
 from unittest.mock import MagicMock
 
 import pytest
+from aiohttp.web_app import Application
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.log_handlers import fmt_size
-from aiohttp_devtools.runserver.serve import AuxiliaryApplication, check_port_open, modify_main_app
-from tests.conftest import SIMPLE_APP
+from aiohttp_devtools.runserver.serve import check_port_open, cleanup_aux_app, modify_main_app, src_reload
+
+from .conftest import SIMPLE_APP, create_future
 
 
 async def test_check_port_open(unused_port, loop):
@@ -26,15 +27,16 @@ async def test_check_port_not_open(unused_port, loop):
             await check_port_open(port, loop, 0.001)
 
 
-def test_aux_reload(loop, caplog):
-    aux_app = AuxiliaryApplication()
+async def test_aux_reload(caplog):
+    aux_app = Application()
     ws = MagicMock()
+    ws.send_str = MagicMock(return_value=create_future())
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
         static_url='/static/',
         static_path='/path/to/static_files/'
     )
-    assert aux_app.src_reload('/path/to/static_files/the_file.js') == 1
+    assert 1 == await src_reload(aux_app, '/path/to/static_files/the_file.js')
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
     assert send_obj == {
@@ -46,15 +48,16 @@ def test_aux_reload(loop, caplog):
     assert 'adev.server.aux INFO: prompted reload of /static/the_file.js on 1 client\n' == caplog
 
 
-def test_aux_reload_no_path(loop):
-    aux_app = AuxiliaryApplication()
+async def test_aux_reload_no_path():
+    aux_app = Application()
     ws = MagicMock()
+    ws.send_str = MagicMock(return_value=create_future())
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
         static_url='/static/',
         static_path='/path/to/static_files/'
     )
-    assert aux_app.src_reload() == 1
+    assert 1 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
     assert send_obj == {
@@ -65,39 +68,41 @@ def test_aux_reload_no_path(loop):
     }
 
 
-def test_aux_reload_html_different(loop):
-    aux_app = AuxiliaryApplication()
+async def test_aux_reload_html_different():
+    aux_app = Application()
     ws = MagicMock()
+    ws.send_str = MagicMock(return_value=create_future())
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
         static_url='/static/',
         static_path='/path/to/static_files/'
     )
-    assert aux_app.src_reload('/path/to/static_files/foo/bar.html') == 0
+    assert 0 == await src_reload(aux_app, '/path/to/static_files/foo/bar.html')
     assert ws.send_str.call_count == 0
 
 
-def test_aux_reload_runtime_error(loop, caplog):
-    aux_app = AuxiliaryApplication()
+async def test_aux_reload_runtime_error(caplog):
+    aux_app = Application()
     ws = MagicMock()
+    ws.send_str = MagicMock(return_value=create_future())
     ws.send_str = MagicMock(side_effect=RuntimeError('foobar'))
     aux_app.update(
         websockets=[(ws, '/foo/bar')],
         static_url='/static/',
         static_path='/path/to/static_files/'
     )
-    assert aux_app.src_reload() == 0
+    assert 0 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == caplog
 
 
 async def test_aux_cleanup(loop):
-    aux_app = AuxiliaryApplication()
+    aux_app = Application()
+    aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()
-    f = asyncio.Future(loop=loop)
-    f.set_result(1)
-    ws.close = MagicMock(return_value=f)
+    ws.close = MagicMock(return_value=create_future())
     aux_app['websockets'] = [(ws, '/foo/bar')]
+    aux_app.freeze()
     await aux_app.cleanup()
     assert ws.close.call_count == 1
 
