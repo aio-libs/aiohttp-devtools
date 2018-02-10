@@ -36,7 +36,6 @@ class Config:
                  static_url: str='/static/',
                  livereload: bool=True,
                  debug_toolbar: bool=False,  # TODO set True once debug toolbar is fixed
-                 pre_check: bool=True,
                  app_factory_name: str=None,
                  host: str=INFER_HOST,
                  main_port: int=8000,
@@ -61,7 +60,6 @@ class Config:
         self.static_url = static_url
         self.livereload = livereload
         self.debug_toolbar = debug_toolbar
-        self.pre_check = pre_check
         self.app_factory_name = app_factory_name
         self.infer_host = host == INFER_HOST
         self.host = 'localhost' if self.infer_host else host
@@ -74,10 +72,6 @@ class Config:
     @property
     def static_path_str(self):
         return self.static_path and str(self.static_path)
-
-    @property
-    def code_directory_str(self):
-        return self.code_directory and str(self.code_directory)
 
     def _find_app_path(self, app_path: str) -> Path:
         path = (self.root_path / app_path).resolve()
@@ -166,23 +160,6 @@ class Config:
         self.code_directory = Path(self._imported_module.__file__).parent
         return attr
 
-    def check(self):
-        """
-        run the app factory as a very basic check it's working and returns the right thing,
-        this should catch config errors and database connection errors.
-        """
-        if not self.pre_check:
-            logger.debug('pre-check disabled, not checking app factory')
-            return
-        logger.info('pre-check enabled, checking app factory')
-        app_factory = self.import_app_factory()
-        if not callable(app_factory):
-            raise AdevConfigError('app_factory "{.app_factory_name}" is not callable or an '
-                                  'instance of aiohttp.web.Application'.format(self))
-
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._startup_and_clean())
-
     def load_app(self):
         app_factory = self.import_app_factory()
         if isinstance(app_factory, web.Application):
@@ -203,19 +180,7 @@ class Config:
 
         return app
 
-    async def _startup_and_clean(self):
-        app = self.load_app()
-        logger.debug('app "%s" successfully created', app)
-        logger.debug('running app startup...')
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, host='localhost', port=8080, shutdown_timeout=0.1)
-        await site.start()
-        await app.startup()
-        logger.debug('running app cleanup...')
-        await runner.cleanup()
-
     def __str__(self):
-        fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar', 'pre_check',
+        fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar',
                   'app_factory_name', 'host', 'main_port', 'aux_port')
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)

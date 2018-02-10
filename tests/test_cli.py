@@ -37,7 +37,7 @@ def test_runserver(mocker):
     mock_runserver = mocker.patch('aiohttp_devtools.cli._runserver')
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver', '.'])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
     assert '' == result.output
     assert mock_run_app.call_count == 1
     assert mock_runserver.call_count == 1

@@ -83,7 +83,6 @@ def create_app(loop):
     finally:
         loop.run_until_complete(stop_app(aux_app))
     assert (
-        'adev.server.dft INFO: pre-check enabled, checking app factory\n'
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'

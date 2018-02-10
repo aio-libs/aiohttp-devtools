@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from pytest_toolbox import mktree
 
@@ -54,13 +52,3 @@ def app_factory(loop):
          'app factory "app_factory" returned "int" not an aiohttp.web.Application'
     )
 ]
-
-
-@if_boxed
-@pytest.mark.parametrize('files,exc', invalid_apps, ids=['%s...' % v[1][:40] for v in invalid_apps])
-def test_invalid_options(tmpworkdir, files, exc, loop):
-    asyncio.set_event_loop(loop)
-    mktree(tmpworkdir, files)
-    with pytest.raises(AiohttpDevConfigError) as excinfo:
-        Config(app_path='.').check()
-    assert exc.format(tmpworkdir=tmpworkdir) == excinfo.value.args[0]
