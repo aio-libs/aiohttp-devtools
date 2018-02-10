@@ -13,7 +13,7 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, serve_main_app
+from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, src_reload, start_main_app
 
 from .conftest import SIMPLE_APP, get_if_boxed, get_slow
 
@@ -83,7 +83,6 @@ def create_app(loop):
     finally:
         loop.run_until_complete(stop_app(aux_app))
     assert (
-        'adev.server.dft INFO: pre-check enabled, checking app factory\n'
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
@@ -179,24 +178,21 @@ async def test_aux_app(tmpworkdir, test_client):
 
 @if_boxed
 @slow
-def test_serve_main_app(tmpworkdir, loop, mocker):
+async def test_serve_main_app(tmpworkdir, loop, mocker):
     asyncio.set_event_loop(loop)
     mktree(tmpworkdir, SIMPLE_APP)
-    mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    serve_main_app(config, '/dev/tty')
+    await start_main_app(config)
 
-    assert loop.is_closed()
-    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
 @if_boxed
 @slow
-def test_serve_main_app_app_instance(tmpworkdir, loop, mocker):
+async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -208,30 +204,27 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    asyncio.set_event_loop(loop)
-    mocker.spy(loop, 'create_server')
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    serve_main_app(config, '/dev/tty')
+    await start_main_app(config)
 
-    assert loop.is_closed()
-    loop.create_server.assert_called_with(mock.ANY, '0.0.0.0', 8000, backlog=128)
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
-@pytest.fixture
+@pytest.yield_fixture
 def aux_cli(test_client, loop):
     app = create_auxiliary_app(static_path='.')
-    return loop.run_until_complete(test_client(app))
+    cli = loop.run_until_complete(test_client(app))
+    yield cli
+    loop.run_until_complete(cli.close())
 
 
 async def test_websocket_hello(aux_cli, caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
-        ws.send_json({'command': 'hello', 'protocols': ['http://livereload.com/protocols/official-7']})
+        await ws.send_json({'command': 'hello', 'protocols': ['http://livereload.com/protocols/official-7']})
         async for msg in ws:
-            assert msg.tp == aiohttp.WSMsgType.text
+            assert msg.type == aiohttp.WSMsgType.text
             data = json.loads(msg.data)
             assert data == {
                 'serverName': 'livereload-aiohttp',
@@ -246,7 +239,7 @@ async def test_websocket_info(aux_cli, loop):
     assert len(aux_cli.server.app['websockets']) == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
-        ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
+        await ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
         await asyncio.sleep(0.05, loop=loop)
         assert len(aux_cli.server.app['websockets']) == 1
     finally:
@@ -255,10 +248,13 @@ async def test_websocket_info(aux_cli, loop):
 
 async def test_websocket_bad(aux_cli, caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
-        ws.send_str('not json')
-        ws.send_json({'command': 'hello', 'protocols': ['not official-7']})
-        ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
-        ws.send_bytes(b'this is bytes')
+        await ws.send_str('not json')
+    async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
+        await ws.send_json({'command': 'hello', 'protocols': ['not official-7']})
+    async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
+        await ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
+    async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
+        await ws.send_bytes(b'this is bytes')
     assert 'adev.server.aux ERROR: live reload protocol 7 not supported' in caplog.log
     assert 'adev.server.aux ERROR: JSON decode error' in caplog.log
     assert 'adev.server.aux ERROR: Unknown ws message' in caplog.log
@@ -266,15 +262,17 @@ async def test_websocket_bad(aux_cli, caplog):
 
 
 async def test_websocket_reload(aux_cli, loop):
-    assert aux_cli.server.app.src_reload('foobar') == 0
+    reloads = await src_reload(aux_cli.server.app, 'foobar')
+    assert reloads == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
-        ws.send_json({
+        await ws.send_json({
             'command': 'info',
             'url': 'foobar',
             'plugins': 'bang',
         })
         await asyncio.sleep(0.05, loop=loop)
-        assert aux_cli.server.app.src_reload('foobar') == 1
+        reloads = await src_reload(aux_cli.server.app, 'foobar')
+        assert reloads == 1
     finally:
         await ws.close()

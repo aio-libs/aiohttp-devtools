@@ -4,7 +4,7 @@
 
 {% block content %}
   <h2>Add a new message:</h2>
-  <form method="post" action="{{ 'messages'|url }}">
+  <form method="post" action="{{ url('messages') }}">
     {% if form_errors %}
     <div class="error">
       {{ form_errors }}
@@ -20,10 +20,10 @@
   </form>
 
   <h2>Messages:</h2>
-  <div id="messages" data-url="{{ 'message-data'|url }}">
+  <div id="messages" data-url="{{ url('message-data') }}">
     <span class="error">messages not loading, it's possible <code>message_display.js</code> is not being served.</span>
   </div>
-  <script src="{{ 'message_display.js'|static }}"></script>
+  <script src="{{ static('message_display.js') }}"></script>
 {% endblock %}
 {% endraw %}
 {% endif %}

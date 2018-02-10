@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import os
-from multiprocessing import set_start_method
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
@@ -39,11 +38,9 @@ def runserver(**config_kwargs):
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)
     """
-    # force a full reload in sub processes so they load an updated version of code, this must be called only once
-    set_start_method('spawn')
 
     config = Config(**config_kwargs)
-    config.check()
+    config.import_app_factory()
     loop = asyncio.get_event_loop()
 
     loop.run_until_complete(check_port_open(config.main_port, loop))
@@ -59,7 +56,7 @@ def runserver(**config_kwargs):
     aux_app.on_shutdown.append(main_manager.close)
 
     if config.static_path:
-        static_manager = LiveReloadTask(config.static_path_str, loop)
+        static_manager = LiveReloadTask(config.static_path, loop)
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.on_startup.append(static_manager.start)
         aux_app.on_shutdown.append(static_manager.close)

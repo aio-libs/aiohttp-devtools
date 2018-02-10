@@ -1,10 +1,7 @@
 import asyncio
-import contextlib
 import json
 import mimetypes
-import sys
 from pathlib import Path
-from typing import Optional
 
 import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
@@ -17,7 +14,6 @@ from yarl import URL
 from ..exceptions import AiohttpDevException
 from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
-from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
 
@@ -92,114 +88,81 @@ async def check_port_open(port, loop, delay=1):
     raise AiohttpDevException('The port {} is already is use'.format(port))
 
 
-@contextlib.contextmanager
-def set_tty(tty_path):  # pragma: no cover
-    try:
-        assert tty_path
-        with open(tty_path) as tty:
-            sys.stdin = tty
-            yield
-    except (AssertionError, OSError):
-        # either tty_path is None (windows) or opening it fails (eg. on pycharm)
-        yield
+async def start_main_app(config: Config):
+    app = config.load_app()
 
+    loop = asyncio.get_event_loop()
+    modify_main_app(app, config)
 
-def serve_main_app(config: Config, tty_path: Optional[str]):
-    with set_tty(tty_path):
-        setup_logging(config.verbose)
-
-        app = config.load_app()
-
-        loop = asyncio.get_event_loop()
-
-        modify_main_app(app, config)
-
-        loop.run_until_complete(check_port_open(config.main_port, loop))
-        handler = app.make_handler(
-            logger=dft_logger,
-            access_log_format='%r %s %b',
-            loop=loop,
-        )
-        loop.run_until_complete(app.startup())
-        server = loop.run_until_complete(loop.create_server(handler, HOST, config.main_port, backlog=128))
-
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:  # pragma: no cover
-            pass
-        finally:
-            server.close()
-            loop.run_until_complete(server.wait_closed())
-            loop.run_until_complete(app.shutdown())
-            with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-                loop.run_until_complete(handler.shutdown(0.1))
-            with contextlib.suppress(KeyboardInterrupt):
-                loop.run_until_complete(app.cleanup())
-            with contextlib.suppress(KeyboardInterrupt):
-                loop.close()
+    await check_port_open(config.main_port, loop)
+    runner = web.AppRunner(app, access_log_format='%r %s %b')
+    await runner.setup()
+    site = web.TCPSite(runner, host=HOST, port=config.main_port, shutdown_timeout=0.1)
+    await site.start()
+    return runner
 
 
 WS = 'websockets'
 
 
-class AuxiliaryApplication(web.Application):
-    def src_reload(self, path: str=None):
-        """
-        prompt each connected browser to reload by sending websocket message.
+async def src_reload(app, path: str=None):
+    """
+    prompt each connected browser to reload by sending websocket message.
 
-        :param path: if supplied this must be a path relative to app['static_path'],
-            eg. reload of a single file is only supported for static resources.
-        :return: number of sources reloaded
-        """
-        cli_count = len(self[WS])
-        if cli_count == 0:
-            return 0
+    :param path: if supplied this must be a path relative to app['static_path'],
+        eg. reload of a single file is only supported for static resources.
+    :return: number of sources reloaded
+    """
+    cli_count = len(app[WS])
+    if cli_count == 0:
+        return 0
 
-        is_html = None
-        if path:
-            path = str(Path(self['static_url']) / Path(path).relative_to(self['static_path']))
-            is_html = mimetypes.guess_type(path)[0] == 'text/html'
+    is_html = None
+    if path:
+        path = str(Path(app['static_url']) / Path(path).relative_to(app['static_path']))
+        is_html = mimetypes.guess_type(path)[0] == 'text/html'
 
-        reloads = 0
-        aux_logger.debug('prompting source reload for %d clients', len(self[WS]))
-        for ws, url in self[WS]:
-            if path and is_html and path not in {url, url + '.html', url.rstrip('/') + '/index.html'}:
-                aux_logger.debug('skipping reload for client at %s', url)
-                continue
-            aux_logger.debug('reload client at %s', url)
-            data = {
-                'command': 'reload',
-                'path': path or url,
-                'liveCSS': True,
-                'liveImg': True,
-            }
-            try:
-                ws.send_str(json.dumps(data))
-            except RuntimeError as e:
-                # eg. "RuntimeError: websocket connection is closing"
-                aux_logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
-            else:
-                reloads += 1
+    reloads = 0
+    aux_logger.debug('prompting source reload for %d clients', len(app[WS]))
+    for ws, url in app[WS]:
+        if path and is_html and path not in {url, url + '.html', url.rstrip('/') + '/index.html'}:
+            aux_logger.debug('skipping reload for client at %s', url)
+            continue
+        aux_logger.debug('reload client at %s', url)
+        data = {
+            'command': 'reload',
+            'path': path or url,
+            'liveCSS': True,
+            'liveImg': True,
+        }
+        try:
+            await ws.send_str(json.dumps(data))
+        except RuntimeError as e:
+            # eg. "RuntimeError: websocket connection is closing"
+            aux_logger.error('Error broadcasting change to %s, RuntimeError: %s', path or url, e)
+        else:
+            reloads += 1
 
-        if reloads:
-            s = '' if reloads == 1 else 's'
-            aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
-        return reloads
+    if reloads:
+        s = '' if reloads == 1 else 's'
+        aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
+    return reloads
 
-    async def cleanup(self):
-        aux_logger.debug('closing %d websockets...', len(self[WS]))
-        coros = [ws.close() for ws, _ in self[WS]]
-        await asyncio.gather(*coros, loop=self._loop)
-        return await super().cleanup()
+
+async def cleanup_aux_app(app):
+    aux_logger.debug('closing %d websockets...', len(app[WS]))
+    coros = [ws.close() for ws, _ in app[WS]]
+    await asyncio.gather(*coros)
 
 
 def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
-    app = AuxiliaryApplication()
+    app = web.Application()
     app[WS] = []
     app.update(
         static_path=static_path,
         static_url=static_url,
     )
+    app.on_cleanup.append(cleanup_aux_app)
 
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)
@@ -245,17 +208,18 @@ async def websocket_handler(request):
     await ws.prepare(request)
 
     async for msg in ws:
-        if msg.tp == WSMsgType.TEXT:
+        if msg.type == WSMsgType.TEXT:
             try:
                 data = json.loads(msg.data)
             except json.JSONDecodeError as e:
                 aux_logger.error('JSON decode error: %s', str(e))
+                await ws.close()
             else:
                 command = data['command']
                 if command == 'hello':
                     if 'http://livereload.com/protocols/official-7' not in data['protocols']:
                         aux_logger.error('live reload protocol 7 not supported by client %s', msg.data)
-                        ws.close()
+                        await ws.close()
                     else:
                         handshake = {
                             'command': 'hello',
@@ -264,17 +228,19 @@ async def websocket_handler(request):
                             ],
                             'serverName': 'livereload-aiohttp',
                         }
-                        ws.send_str(json.dumps(handshake))
+                        await ws.send_str(json.dumps(handshake))
                 elif command == 'info':
                     aux_logger.debug('browser connected: %s', data)
                     url = '/' + data['url'].split('/', 3)[-1]
                     request.app[WS].append((ws, url))
                 else:
                     aux_logger.error('Unknown ws message %s', msg.data)
-        elif msg.tp == WSMsgType.ERROR:
+                    await ws.close()
+        elif msg.type == WSMsgType.ERROR:
             aux_logger.error('ws connection closed with exception %s', ws.exception())
         else:
-            aux_logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.tp], msg.data)
+            aux_logger.error('unknown websocket message type %s, data: %s', WS_TYPE_LOOKUP[msg.type], msg.data)
+            await ws.close()
 
     if url is None:
         aux_logger.warning('browser disconnected, appears no websocket connection was made')

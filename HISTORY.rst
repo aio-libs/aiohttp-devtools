@@ -3,6 +3,10 @@
 History
 -------
 
+0.8.0 (2018-02-XX)
+-----------------
+* rewrite for aiohttp >= 3 stop using multiprocessing, #173
+
 0.7.1 (2018-02-01)
 ------------------
 * set ``Access-Control-Allow-Origin`` for static files, #169
