@@ -151,13 +151,12 @@ async def src_reload(app, path: str=None):
 
 async def cleanup_aux_app(app):
     aux_logger.debug('closing %d websockets...', len(app[WS]))
-    coros = [ws.close() for ws, _ in app[WS]]
-    await asyncio.gather(*coros)
+    await asyncio.gather(*(ws.close() for ws, _ in app[WS]))
 
 
 def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     app = web.Application()
-    app[WS] = []
+    app[WS] = set()
     app.update(
         static_path=static_path,
         static_url=static_url,
@@ -232,7 +231,7 @@ async def websocket_handler(request):
                 elif command == 'info':
                     aux_logger.debug('browser connected: %s', data)
                     url = '/' + data['url'].split('/', 3)[-1]
-                    request.app[WS].append((ws, url))
+                    request.app[WS].add((ws, url))
                 else:
                     aux_logger.error('Unknown ws message %s', msg.data)
                     await ws.close()

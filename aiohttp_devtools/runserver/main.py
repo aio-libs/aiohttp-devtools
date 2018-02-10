@@ -2,6 +2,8 @@ import asyncio
 import contextlib
 import os
 
+from aiohttp.web_runner import AppRunner, TCPSite
+
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import HOST, check_port_open, create_auxiliary_app
@@ -9,10 +11,11 @@ from .watch import AppTask, LiveReloadTask
 
 
 def run_app(app, port, loop):
-    handler = app.make_handler(access_log=None, loop=loop)
+    runner = AppRunner(app, access_log=None)
+    loop.run_until_complete(runner.setup())
 
-    loop.run_until_complete(app.startup())
-    server = loop.run_until_complete(loop.create_server(handler, HOST, port))
+    site = TCPSite(runner, HOST, port, shutdown_timeout=0.01)
+    loop.run_until_complete(site.start())
 
     try:
         loop.run_forever()
@@ -20,15 +23,10 @@ def run_app(app, port, loop):
         pass
     finally:
         logger.info('shutting down server...')
-        server.close()
-        loop.run_until_complete(server.wait_closed())
-        loop.run_until_complete(app.shutdown())
+        start = loop.time()
         with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-            loop.run_until_complete(handler.shutdown(0.1))
-        with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-            loop.run_until_complete(app.cleanup())
-        with contextlib.suppress(KeyboardInterrupt):
-            loop.close()
+            loop.run_until_complete(runner.cleanup())
+        logger.debug('shutdown took %0.2fs', loop.time() - start)
 
 
 def runserver(**config_kwargs):
