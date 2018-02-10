@@ -73,7 +73,7 @@ adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(s
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
-    assert "Success! you've setup a basic aiohttp app." in text
+    assert "Success! you&#39;ve setup a basic aiohttp app." in text
 
 
 def test_conflicting_file(tmpdir):

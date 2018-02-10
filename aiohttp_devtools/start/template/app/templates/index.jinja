@@ -13,7 +13,7 @@ jinja2 tags as strings.
     To demonstrate a little of the functionality of aiohttp this app implements a very simple message board.
   </p>
   <b>
-    <a href="{{ "{{ 'messages'|url }}" }}">View and add messages</a>
+    <a href="{{ "{{ url('messages') }}" }}">View and add messages</a>
   </b>
 {% endif %}
 {{ '{% endblock %}' }}
