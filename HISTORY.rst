@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.0 (2018-02-XX)
+0.8.0 (2018-02-12)
 -----------------
 * complete rewrite for aiohttp >= 3 stop using multiprocessing #173
 * update required packages #171
