@@ -62,12 +62,12 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=2.3.9',
+        'aiohttp>=3.0.1',
         'aiohttp_debugtoolbar>=0.4.0',
         'click>=6.6',
-        'isort>=4.2.5',
-        'Jinja2>=2.8.1',
-        'watchgod>=0.0.2',
+        'isort>=4.3.3',
+        'Jinja2>=2.10',
+        'watchgod>=0.0.3',
     ],
     python_requires='>=3.5',
 )
