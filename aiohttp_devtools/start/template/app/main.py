@@ -71,6 +71,8 @@ def create_app():
     )
     # {% if template_engine.is_jinja %}
 
+    app['static_root_url'] = '/'
+
     jinja2_loader = jinja2.FileSystemLoader(str(THIS_DIR / 'templates'))
     aiohttp_jinja2.setup(app, loader=jinja2_loader)
     # {% endif %}
