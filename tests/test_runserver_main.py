@@ -108,7 +108,7 @@ app.router.add_get('/', hello)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 1
+    assert len(aux_app.on_shutdown) == 2
 
 
 @if_boxed
@@ -132,7 +132,7 @@ def app():
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 1
+    assert len(aux_app.on_shutdown) == 2
 
 
 def kill_parent_soon(pid):
@@ -185,7 +185,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    await start_main_app(config)
+    await start_main_app(config, loop)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
@@ -207,7 +207,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
     config = Config(app_path='app.py')
-    await start_main_app(config)
+    await start_main_app(config, loop)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 

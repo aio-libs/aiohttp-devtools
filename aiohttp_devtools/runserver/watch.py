@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import os
 import signal
 import sys
@@ -11,7 +10,7 @@ from watchgod import awatch
 from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import WS, src_reload, serve_main_app
+from .serve import WS, serve_main_app, src_reload
 
 
 class WatchTask:
