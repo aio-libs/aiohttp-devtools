@@ -2,9 +2,8 @@ import asyncio
 import inspect
 import re
 import sys
-from importlib import import_module, reload
+from importlib import import_module
 from pathlib import Path
-from types import ModuleType
 
 from aiohttp import web
 
@@ -25,30 +24,6 @@ APP_FACTORY_NAMES = [
 ]
 
 INFER_HOST = '<inference>'
-
-
-def deep_reload(module):
-    already_loaded = set()
-
-    def find_modules(_module):
-        m_file = getattr(_module, '__file__', None)
-
-        if not m_file or 'lib/python' in m_file or m_file in already_loaded:
-            return
-
-        already_loaded.add(m_file)
-        yield _module
-        for attribute_name in dir(_module):
-            attribute = getattr(_module, attribute_name)
-            if type(attribute) is ModuleType:
-                yield from find_modules(attribute)
-            else:
-                module_name = getattr(attribute, '__module__', None)
-                if module_name:
-                    yield from find_modules(import_module(module_name))
-
-    for m in reversed(list(find_modules(module))):
-        reload(m)
 
 
 class Config:
@@ -151,16 +126,12 @@ class Config:
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = str(rel_py_file).replace('.py', '').replace('/', '.')
 
-        if self._imported_module:
-            deep_reload(self._imported_module)
-            logger.debug('reloaded %s', self._imported_module)
-        else:
-            sys.path.append(str(self.python_path))
-            try:
-                self._imported_module = import_module(module_path)
-            except ImportError as e:
-                raise AdevConfigError('error importing "{}" '
-                                      'from "{}": {}'.format(module_path, self.python_path, e)) from e
+        sys.path.append(str(self.python_path))
+        try:
+            self._imported_module = import_module(module_path)
+        except ImportError as e:
+            raise AdevConfigError('error importing "{}" '
+                                  'from "{}": {}'.format(module_path, self.python_path, e)) from e
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 

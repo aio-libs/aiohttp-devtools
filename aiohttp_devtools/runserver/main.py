@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import os
+from multiprocessing import set_start_method
 
 from aiohttp.web_runner import AppRunner, TCPSite
 
@@ -36,6 +37,8 @@ def runserver(**config_kwargs):
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)
     """
+    # force a full reload in sub processes so they load an updated version of code, this must be called only once
+    set_start_method('spawn')
 
     config = Config(**config_kwargs)
     config.import_app_factory()
