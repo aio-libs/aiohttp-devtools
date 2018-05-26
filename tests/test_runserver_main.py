@@ -121,7 +121,7 @@ from aiohttp import web
 async def hello(request):
     return web.Response(text='<h1>hello world</h1>', content_type='text/html')
 
-def app():
+async def app_factory():
     a = web.Application()
     a.router.add_get('/', hello)
     return a
