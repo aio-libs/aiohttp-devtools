@@ -24,10 +24,11 @@ class WatchTask:
         raise NotImplementedError()
 
     async def close(self, *args):
-        async with self._awatch.lock:
-            if self._task.done():
-                self._task.result()
-            self._task.cancel()
+        if self._task:
+            async with self._awatch.lock:
+                if self._task.done():
+                    self._task.result()
+                self._task.cancel()
 
 
 class AppTask(WatchTask):

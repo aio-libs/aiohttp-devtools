@@ -12,7 +12,7 @@ python:
 
 env:
 # TODO change when 3 is released
-- 'AIOHTTP_VERSION=aiohttp==3.0.0b4'  # WARNING: if you change this, change it in deploy too
+- 'AIOHTTP_VERSION=aiohttp==3.2.1'  # WARNING: if you change this, change it in deploy too
 - 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 matrix:
@@ -47,4 +47,4 @@ deploy:
   on:
     tags: true
     python: 3.6
-    condition: "$AIOHTTP_VERSION = aiohttp==3.0.0b4"
+    condition: "$AIOHTTP_VERSION = aiohttp==3.2.1"
