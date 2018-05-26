@@ -65,8 +65,6 @@ class AppTask(WatchTask):
                 else:
                     # a single (non template) file has changed, reload a single file.
                     await src_reload(self._app, changes.pop()[1])
-        except asyncio.CancelledError:
-            pass
         except Exception as exc:
             logger.exception(exc)
             await self._session.close()
@@ -119,9 +117,9 @@ class AppTask(WatchTask):
             logger.warning('server process already dead, exit code: %s', self._process.exitcode)
 
     async def close(self, *args):
+        self.stopper.set()
         self._stop_dev_server()
-        await super().close()
-        await self._session.close()
+        await asyncio.gather(super().close(), self._session.close())
 
 
 class LiveReloadTask(WatchTask):
