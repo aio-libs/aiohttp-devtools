@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import signal
 import sys
@@ -7,9 +8,10 @@ from multiprocessing import Process
 from aiohttp import ClientSession
 from watchgod import awatch
 
+from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import WS, src_reload, start_main_app
+from .serve import WS, src_reload, serve_main_app
 
 
 class WatchTask:
@@ -18,7 +20,8 @@ class WatchTask:
         self._app = None
         self._task = None
         assert path
-        self._awatch = awatch(path)
+        self.stopper = asyncio.Event(loop=self._loop)
+        self._awatch = awatch(path, stop_event=self.stopper)
 
     async def start(self, app):
         self._app = app
@@ -29,6 +32,7 @@ class WatchTask:
 
     async def close(self, *args):
         if self._task:
+            self.stopper.set()
             async with self._awatch.lock:
                 if self._task.done():
                     self._task.result()
@@ -46,21 +50,28 @@ class AppTask(WatchTask):
         super().__init__(self._config.code_directory, loop)
 
     async def _run(self):
-        self._start_dev_server()
+        try:
+            self._start_dev_server()
 
-        async for changes in self._awatch:
-            self._reloads += 1
-            if any(f.endswith('.py') for _, f in changes):
-                logger.debug('%d changes, restarting server', len(changes))
-                self._stop_dev_server()
-                self._start_dev_server()
-                await self._src_reload_when_live()
-            elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
-                # reload all pages
-                await src_reload(self._app)
-            else:
-                # a single (non template) file has changed, reload a single file.
-                await src_reload(self._app, changes.pop()[1])
+            async for changes in self._awatch:
+                self._reloads += 1
+                if any(f.endswith('.py') for _, f in changes):
+                    logger.debug('%d changes, restarting server', len(changes))
+                    self._stop_dev_server()
+                    self._start_dev_server()
+                    await self._src_reload_when_live()
+                elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
+                    # reload all pages
+                    await src_reload(self._app)
+                else:
+                    # a single (non template) file has changed, reload a single file.
+                    await src_reload(self._app, changes.pop()[1])
+        except asyncio.CancelledError:
+            pass
+        except Exception as exc:
+            logger.exception(exc)
+            await self._session.close()
+            raise AiohttpDevException('error running dev server')
 
     async def _src_reload_when_live(self, checks=20):
         if self._app[WS]:

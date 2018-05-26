@@ -105,15 +105,8 @@ def set_tty(tty_path):  # pragma: no cover
 
 def serve_main_app(config: Config, tty_path: Optional[str]):
     with set_tty(tty_path):
-        # setup_logging(config.verbose)
-
-        app = config.load_app()
-
         loop = asyncio.get_event_loop()
-        modify_main_app(app, config)
-
         runner = loop.run_until_complete(start_main_app(config, loop))
-
         try:
             loop.run_forever()
         except KeyboardInterrupt:  # pragma: no cover
@@ -195,7 +188,7 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
         static_path=static_path,
         static_url=static_url,
     )
-    app.on_cleanup.append(cleanup_aux_app)
+    app.on_shutdown.append(cleanup_aux_app)
 
     if livereload:
         app.router.add_route('GET', '/livereload.js', livereload_js)

@@ -66,7 +66,6 @@ class Config:
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.code_directory = None
-        self._imported_module = None
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -128,7 +127,7 @@ class Config:
 
         sys.path.append(str(self.python_path))
         try:
-            self._imported_module = import_module(module_path)
+            module = import_module(module_path)
         except ImportError as e:
             raise AdevConfigError('error importing "{}" '
                                   'from "{}": {}'.format(module_path, self.python_path, e)) from e
@@ -137,21 +136,21 @@ class Config:
 
         if self.app_factory_name is None:
             try:
-                self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(self._imported_module, an))
+                self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))
             except StopIteration as e:
                 raise AdevConfigError('No name supplied and no default app factory '
                                       'found in {s.py_file.name}'.format(s=self)) from e
             else:
                 logger.debug('found default attribute "%s" in module "%s"',
-                             self.app_factory_name, self._imported_module)
+                             self.app_factory_name, module)
 
         try:
-            attr = getattr(self._imported_module, self.app_factory_name)
+            attr = getattr(module, self.app_factory_name)
         except AttributeError as e:
             raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
-        self.code_directory = Path(self._imported_module.__file__).parent
+        self.code_directory = Path(module.__file__).parent
         return attr
 
     def load_app(self):
