@@ -45,7 +45,10 @@ def deep_reload(module):
             else:
                 module_name = getattr(attribute, '__module__', None)
                 if module_name:
-                    yield from find_modules(import_module(module_name))
+                    try:
+                        yield from find_modules(import_module(module_name))
+                    except ModuleNotFoundError:
+                        pass
 
     for m in reversed(list(find_modules(module))):
         reload(m)
