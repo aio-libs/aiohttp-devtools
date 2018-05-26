@@ -3,6 +3,11 @@
 History
 -------
 
+0.10.0 (2018-05-XX)
+-----------------
+* allow async app factories #185
+* uprev to aiohttp 3.2.0 min #187
+
 0.9.0 (2018-03-20)
 -----------------
 * deep reload for for better auto-reloading #181

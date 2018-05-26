@@ -1,4 +1,5 @@
 import pytest
+from aiohttp import web
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
@@ -22,33 +23,34 @@ async def test_create_app_wrong_name(tmpworkdir, loop):
     assert excinfo.value.args[0] == 'Module "app.py" does not define a "missing" attribute/class'
 
 
-invalid_apps = [
-    (
-        {
-            'foo': 'bar',
-        },
-        'unable to find a recognised default file ("app.py" or "main.py") in the directory "."'
-    ),
-    (
-        {
-            'app.py': """\
-def not_a_default_name(loop):
-    pass"""
-         },
-        'No name supplied and no default app factory found in app.py'
-    ),
-    (
-        {
-            'app.py': 'create_app = 4',
-        },
-        'app_factory "create_app" is not callable or an instance of aiohttp.web.Application'
-    ),
-    (
-         {
-            'app.py': """\
-def app_factory(loop):
-    return 43""",
-         },
-         'app factory "app_factory" returned "int" not an aiohttp.web.Application'
-    )
-]
+@if_boxed
+async def test_no_loop_coroutine(tmpworkdir):
+    mktree(tmpworkdir, {
+        'app.py': """\
+from aiohttp import web
+
+async def hello(request):
+    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+
+async def app_factory():
+    a = web.Application()
+    a.router.add_get('/', hello)
+    return a
+"""
+    })
+    config = Config(app_path='app.py')
+    app = await config.load_app()
+    assert isinstance(app, web.Application)
+
+
+@if_boxed
+async def test_not_app(tmpworkdir):
+    mktree(tmpworkdir, {
+        'app.py': """\
+def app_factory():
+    return 123
+"""
+    })
+    config = Config(app_path='app.py')
+    with pytest.raises(AiohttpDevConfigError):
+        await config.load_app()

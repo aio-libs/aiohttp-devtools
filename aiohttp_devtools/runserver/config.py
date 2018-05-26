@@ -153,7 +153,7 @@ class Config:
         self.code_directory = Path(module.__file__).parent
         return attr
 
-    def load_app(self):
+    async def load_app(self):
         app_factory = self.import_app_factory()
         if isinstance(app_factory, web.Application):
             app = app_factory
@@ -166,6 +166,9 @@ class Config:
             else:
                 # loop argument missing, assume no arguments
                 app = app_factory()
+
+            if asyncio.iscoroutine(app):
+                app = await app
 
             if not isinstance(app, web.Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '

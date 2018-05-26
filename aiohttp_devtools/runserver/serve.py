@@ -117,7 +117,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
 
 
 async def start_main_app(config: Config, loop):
-    app = config.load_app()
+    app = await config.load_app()
 
     modify_main_app(app, config)
 

@@ -39,7 +39,7 @@ async def check_server_running(loop, check_callback):
 
 @if_boxed
 @slow
-def test_start_runserver(tmpworkdir, caplog):
+def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -86,7 +86,7 @@ def create_app(loop):
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
-    ) in caplog
+    ) in smart_caplog
 
 
 @if_boxed
@@ -105,30 +105,6 @@ app.router.add_get('/', hello)
     })
     asyncio.set_event_loop(loop)
     aux_app, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
-    assert isinstance(aux_app, aiohttp.web.Application)
-    assert aux_port == 8001
-    assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 2
-
-
-@if_boxed
-@slow
-def test_start_runserver_no_loop_argument(tmpworkdir, loop):
-    mktree(tmpworkdir, {
-        'app.py': """\
-from aiohttp import web
-
-async def hello(request):
-    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
-
-def app():
-    a = web.Application()
-    a.router.add_get('/', hello)
-    return a
-"""
-    })
-    asyncio.set_event_loop(loop)
-    aux_app, aux_port, _ = runserver(app_path='app.py')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 2
@@ -220,7 +196,7 @@ def aux_cli(test_client, loop):
     loop.run_until_complete(cli.close())
 
 
-async def test_websocket_hello(aux_cli, caplog):
+async def test_websocket_hello(aux_cli, smart_caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_json({'command': 'hello', 'protocols': ['http://livereload.com/protocols/official-7']})
         async for msg in ws:
@@ -232,7 +208,7 @@ async def test_websocket_hello(aux_cli, caplog):
                 'protocols': ['http://livereload.com/protocols/official-7']
             }
             break  # noqa
-    assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in caplog
+    assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in smart_caplog
 
 
 async def test_websocket_info(aux_cli, loop):
@@ -246,7 +222,7 @@ async def test_websocket_info(aux_cli, loop):
         await ws.close()
 
 
-async def test_websocket_bad(aux_cli, caplog):
+async def test_websocket_bad(aux_cli, smart_caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_str('not json')
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
@@ -255,10 +231,10 @@ async def test_websocket_bad(aux_cli, caplog):
         await ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_bytes(b'this is bytes')
-    assert 'adev.server.aux ERROR: live reload protocol 7 not supported' in caplog.log
-    assert 'adev.server.aux ERROR: JSON decode error' in caplog.log
-    assert 'adev.server.aux ERROR: Unknown ws message' in caplog.log
-    assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in caplog
+    assert 'adev.server.aux ERROR: live reload protocol 7 not supported' in smart_caplog.log
+    assert 'adev.server.aux ERROR: JSON decode error' in smart_caplog.log
+    assert 'adev.server.aux ERROR: Unknown ws message' in smart_caplog.log
+    assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in smart_caplog
 
 
 async def test_websocket_reload(aux_cli, loop):
