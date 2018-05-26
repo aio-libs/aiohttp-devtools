@@ -62,9 +62,8 @@ def create_app(loop):
     aux_app, aux_port, _ = runserver(app_path='app.py', static_path='static_dir')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    start_app = aux_app.on_startup[0]
-    stop_app = aux_app.on_shutdown[0]
-    loop.run_until_complete(start_app(aux_app))
+    for startup in aux_app.on_startup:
+        loop.run_until_complete(startup(aux_app))
 
     async def check_callback(session):
         async with session.get('http://localhost:8000/') as r:
@@ -81,7 +80,8 @@ def create_app(loop):
     try:
         loop.run_until_complete(check_server_running(loop, check_callback))
     finally:
-        loop.run_until_complete(stop_app(aux_app))
+        for shutdown in aux_app.on_shutdown:
+            loop.run_until_complete(shutdown(aux_app))
     assert (
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
@@ -107,7 +107,7 @@ app.router.add_get('/', hello)
     aux_app, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_startup) == 2
     assert len(aux_app.on_shutdown) == 1
 
 
@@ -131,7 +131,7 @@ def app():
     aux_app, aux_port, _ = runserver(app_path='app.py')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_startup) == 2
     assert len(aux_app.on_shutdown) == 1
 
 
