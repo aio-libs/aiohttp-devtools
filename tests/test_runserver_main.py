@@ -111,30 +111,6 @@ app.router.add_get('/', hello)
     assert len(aux_app.on_shutdown) == 1
 
 
-@if_boxed
-@slow
-def test_start_runserver_no_loop_argument(tmpworkdir, loop):
-    mktree(tmpworkdir, {
-        'app.py': """\
-from aiohttp import web
-
-async def hello(request):
-    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
-
-def app():
-    a = web.Application()
-    a.router.add_get('/', hello)
-    return a
-"""
-    })
-    asyncio.set_event_loop(loop)
-    aux_app, aux_port, _ = runserver(app_path='app.py')
-    assert isinstance(aux_app, aiohttp.web.Application)
-    assert aux_port == 8001
-    assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 1
-
-
 def kill_parent_soon(pid):
     time.sleep(0.2)
     os.kill(pid, signal.SIGINT)

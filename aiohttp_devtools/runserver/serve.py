@@ -89,7 +89,7 @@ async def check_port_open(port, loop, delay=1):
 
 
 async def start_main_app(config: Config):
-    app = config.load_app()
+    app = await config.load_app()
 
     loop = asyncio.get_event_loop()
     modify_main_app(app, config)

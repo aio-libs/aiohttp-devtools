@@ -62,7 +62,7 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=3.0.1',
+        'aiohttp>=3.2.0',
         'aiohttp_debugtoolbar>=0.4.0',
         'click>=6.6',
         'isort>=4.3.3',

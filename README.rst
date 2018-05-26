@@ -164,8 +164,8 @@ With that:
 
 **That's it, go develop.**
 
-.. |Build Status| image:: https://travis-ci.org/aio-libs/aiohttp-devtools.svg?branch=master
-   :target: https://travis-ci.org/aio-libs/aiohttp-devtools
+.. |Build Status| image:: https://travis-ci.com/aio-libs/aiohttp-devtools.svg?branch=master
+   :target: https://travis-ci.com/aio-libs/aiohttp-devtools
 .. |Coverage| image:: https://codecov.io/gh/aio-libs/aiohttp-devtools/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/aio-libs/aiohttp-devtools
 .. |pypi| image:: https://img.shields.io/pypi/v/aiohttp-devtools.svg
