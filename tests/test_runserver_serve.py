@@ -27,7 +27,7 @@ async def test_check_port_not_open(unused_port, loop):
             await check_port_open(port, loop, 0.001)
 
 
-async def test_aux_reload(caplog):
+async def test_aux_reload(smart_caplog):
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
@@ -45,7 +45,7 @@ async def test_aux_reload(caplog):
         'liveCSS': True,
         'liveImg': True,
     }
-    assert 'adev.server.aux INFO: prompted reload of /static/the_file.js on 1 client\n' == caplog
+    assert 'adev.server.aux INFO: prompted reload of /static/the_file.js on 1 client\n' == smart_caplog
 
 
 async def test_aux_reload_no_path():
@@ -81,7 +81,7 @@ async def test_aux_reload_html_different():
     assert ws.send_str.call_count == 0
 
 
-async def test_aux_reload_runtime_error(caplog):
+async def test_aux_reload_runtime_error(smart_caplog):
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
@@ -93,7 +93,7 @@ async def test_aux_reload_runtime_error(caplog):
     )
     assert 0 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
-    assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == caplog
+    assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == smart_caplog
 
 
 async def test_aux_cleanup(loop):

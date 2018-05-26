@@ -19,7 +19,7 @@ slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
 
-def test_start_simple(tmpdir, caplog):
+def test_start_simple(tmpdir, smart_caplog):
     StartProject(path=str(tmpdir), name='foobar')
     assert {p.basename for p in tmpdir.listdir()} == {
         'app',
@@ -38,11 +38,11 @@ adev.main INFO: config:
     session: secure
     database: pg-sqlalchemy
     example: message-board
-adev.main INFO: project created, 18 files generated\n""" == caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main INFO: project created, 18 files generated\n""" == smart_caplog(('"/tmp/.*?"', '"/tmp/..."'))
 
 
 @if_boxed
-async def test_start_other_dir(tmpdir, loop, test_client, caplog):
+async def test_start_other_dir(tmpdir, loop, test_client, smart_caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpdir.join('the-path').listdir()} == {
@@ -62,7 +62,7 @@ adev.main INFO: config:
     session: secure
     database: none
     example: message-board
-adev.main INFO: project created, 16 files generated\n""" == caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 16 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
     config = Config(app_path='the-path/app/', root_path=str(tmpdir), static_path='.')
     app_factory = config.import_app_factory()
     app = app_factory()
