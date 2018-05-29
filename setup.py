@@ -67,7 +67,7 @@ setup(
         'click>=6.6',
         'isort>=4.3.3',
         'Jinja2>=2.10',
-        'watchgod>=0.0.3',
+        'watchgod>=0.2',
     ],
     python_requires='>=3.5',
 )

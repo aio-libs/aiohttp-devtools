@@ -3,17 +3,18 @@
 History
 -------
 
-0.10.0 (2018-05-XX)
------------------
+0.10.0 (2018-05-29)
+-------------------
 * allow async app factories #185
 * uprev to aiohttp 3.2.0 min #187
+* revert runserver to use a separate process #188
 
 0.9.0 (2018-03-20)
------------------
+------------------
 * deep reload for for better auto-reloading #181
 
 0.8.0 (2018-02-12)
------------------
+------------------
 * complete rewrite for aiohttp >= 3 stop using multiprocessing #173
 * update required packages #171
 
