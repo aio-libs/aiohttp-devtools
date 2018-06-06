@@ -3,6 +3,10 @@
 History
 -------
 
+0.10.1 (2018-06-06)
+-------------------
+* fix logging with ``runserver`` #193
+
 0.10.0 (2018-05-29)
 -------------------
 * allow async app factories #185
