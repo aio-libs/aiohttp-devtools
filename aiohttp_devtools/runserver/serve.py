@@ -15,6 +15,7 @@ from aiohttp.web_urldispatcher import StaticResource
 from yarl import URL
 
 from ..exceptions import AiohttpDevException
+from ..logs import setup_logging
 from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from .config import Config
@@ -107,6 +108,7 @@ def set_tty(tty_path):  # pragma: no cover
 
 def serve_main_app(config: Config, tty_path: Optional[str]):
     with set_tty(tty_path):
+        setup_logging(config.verbose)
         loop = asyncio.get_event_loop()
         runner = loop.run_until_complete(start_main_app(config, loop))
         try:
