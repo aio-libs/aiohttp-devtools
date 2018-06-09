@@ -3,6 +3,10 @@
 History
 -------
 
+0.10.2 (2018-06-09)
+-------------------
+* fix path defining to work both for Unix and Windows
+
 0.10.1 (2018-06-06)
 -------------------
 * fix logging with ``runserver`` #193
