@@ -123,7 +123,7 @@ class Config:
         :return: (attribute, Path object for directory of file)
         """
         rel_py_file = self.py_file.relative_to(self.python_path)
-        module_path = '.'.join(rel_py_file.parts).rstrip('.py')
+        module_path = '.'.join(rel_py_file.with_suffix('').parts)
 
         sys.path.append(str(self.python_path))
         try:
