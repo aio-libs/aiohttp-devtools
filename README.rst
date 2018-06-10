@@ -1,7 +1,7 @@
 aiohttp-devtools
 ================
 
-|TravisBuildStatus| |AppVeyorBuildStatus| |Coverage| |pypi| |license|
+|Travis Build Status| |AppVeyor Build Status| |Coverage| |pypi| |license|
 
 Dev tools for `aiohttp`_.
 
@@ -164,12 +164,11 @@ With that:
 
 **That's it, go develop.**
 
-.. |TravisBuildStatus| image:: https://travis-ci.com/aio-libs/aiohttp-devtools.svg?branch=master
+.. |Travis Build Status| image:: https://travis-ci.com/aio-libs/aiohttp-devtools.svg?branch=master
    :target: https://travis-ci.com/aio-libs/aiohttp-devtools
    :alt: Travis status for master branch
-.. |AppVeyorBuildStatus| image:: https://ci.appveyor.com/api/projects/status/abklub4k2spyutw7/branch/master?svg=true
+.. |AppVeyor Build Status| image:: https://ci.appveyor.com/api/projects/status/abklub4k2spyutw7/branch/master?svg=true
    :target: https://ci.appveyor.com/project/aio-libs/aiohttp-devtools
-   :align: right
    :alt: AppVeyor status for master branch
 .. |Coverage| image:: https://codecov.io/gh/aio-libs/aiohttp-devtools/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/aio-libs/aiohttp-devtools
