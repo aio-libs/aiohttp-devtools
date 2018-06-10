@@ -1,4 +1,5 @@
 import json
+import pathlib
 from platform import system as get_os_family
 import socket
 from unittest.mock import MagicMock
@@ -46,13 +47,14 @@ async def test_aux_reload(smart_caplog):
     assert 1 == await src_reload(aux_app, '/path/to/static_files/the_file.js')
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
+    expected_path = str(pathlib.Path('/static/the_file.js'))
     assert send_obj == {
         'command': 'reload',
-        'path': '/static/the_file.js',
+        'path': expected_path,
         'liveCSS': True,
         'liveImg': True,
     }
-    assert 'adev.server.aux INFO: prompted reload of /static/the_file.js on 1 client\n' == smart_caplog
+    assert 'adev.server.aux INFO: prompted reload of {} on 1 client\n'.format(expected_path) == smart_caplog
 
 
 async def test_aux_reload_no_path():
