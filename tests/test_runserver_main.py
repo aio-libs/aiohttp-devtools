@@ -6,11 +6,11 @@ import time
 from multiprocessing import Process
 from unittest import mock
 
-import aiohttp
 import pytest
-from aiohttp.web import Application
 from pytest_toolbox import mktree
 
+import aiohttp
+from aiohttp.web import Application
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, src_reload, start_main_app

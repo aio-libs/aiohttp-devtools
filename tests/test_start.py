@@ -3,11 +3,11 @@ import os
 import platform
 import subprocess
 
-import aiohttp
 import pytest
 from flake8.api import legacy as flake8
 from pytest_toolbox import mktree
 
+import aiohttp
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import modify_main_app
