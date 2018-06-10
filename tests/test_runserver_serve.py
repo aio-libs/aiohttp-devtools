@@ -1,4 +1,5 @@
 import json
+from platform import system as get_os_family
 import socket
 from unittest.mock import MagicMock
 
@@ -14,11 +15,17 @@ from aiohttp_devtools.runserver.serve import check_port_open, cleanup_aux_app, m
 from .conftest import SIMPLE_APP, create_future
 
 
+non_windows_test = pytest.mark.skipif(
+    get_os_family() == 'Windows',
+    reason='This only works under UNIX-based OS and gets stuck under Windows',
+)
+
+
 async def test_check_port_open(unused_port, loop):
     port = unused_port()
     await check_port_open(port, loop, 0.001)
 
-
+@non_windows_test  # FIXME: probably needs some sock options
 async def test_check_port_not_open(unused_port, loop):
     port = unused_port()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
