@@ -28,5 +28,11 @@ test_script:
 - "%PYTHON%\\python.exe -m setup check -rms"
 - "%PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --duration 5 -m \"not isort\" -vv --fulltrace"
 
+after_test:
+- ps: |
+    $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+    Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+    bash codecov.sh -f "coverage.xml"
+
 artifacts:
 - path: dist\*
