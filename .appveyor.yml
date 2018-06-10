@@ -26,7 +26,7 @@ build_script:
 
 test_script:
 - "%PYTHON%\\python.exe -m setup check -rms"
-- "%PYTHON%\\python.exe -m pytest -m 'not isort' --cov=aiohttp_devtools --duration 5 -vv --fulltrace"
+- "%PYTHON%\\python.exe -m pytest -- -m 'not isort' --cov=aiohttp_devtools --duration 5 -vv --fulltrace"
 
 artifacts:
 - path: dist\*
