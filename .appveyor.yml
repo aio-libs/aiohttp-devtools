@@ -15,7 +15,7 @@ install:
 - "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r tests/requirements.txt"
 
 build_script:
-- grablib
+- "%PYTHON%\\Scripts\\grablib.exe"
 - "%PYTHON%\\python.exe -m setup sdist bdist_wheel"
 
 test_script:
