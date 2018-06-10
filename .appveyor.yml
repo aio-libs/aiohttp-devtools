@@ -12,15 +12,15 @@ install:
 # Ensure the Git Submoduldes have been pulled down too
 - git submodule update --init --recursive
 
-- %PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r test/requirements.txt
+- "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r test/requirements.txt"
 
 build_script:
 - grablib
-- %PYTHON%\\python.exe -m setup sdist bdist_wheel
+- "%PYTHON%\\python.exe -m setup sdist bdist_wheel"
 
 test_script:
-- %PYTHON%\\python.exe -m setup check -rms
-- %PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --boxed --duration 5
+- "%PYTHON%\\python.exe -m setup check -rms"
+- "%PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --boxed --duration 5"
 
 artifacts:
 - path: dist\*
