@@ -1,5 +1,6 @@
 import itertools
 import os
+import platform
 import subprocess
 
 import aiohttp
@@ -19,6 +20,9 @@ slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
 
+IS_WINDOWS = platform.system() == 'Windows'
+
+
 def test_start_simple(tmpdir, smart_caplog):
     StartProject(path=str(tmpdir), name='foobar')
     assert {p.basename for p in tmpdir.listdir()} == {
@@ -31,14 +35,20 @@ def test_start_simple(tmpdir, smart_caplog):
         'static',
         'tests',
     }
+    if IS_WINDOWS
+        log_path = r'"C:\Users\appveyor\AppData\Local\Temp\..."'
+        log_normalizers = (r'"C:\Users\appveyor\AppData\Local\Temp\.*?"', log_path)
+    else:
+        log_path = '"/tmp/..."'
+        log_normalizers = ('"/tmp/.*?"', log_path)
     assert """\
-adev.main INFO: Starting new aiohttp project "foobar" at "/tmp/..."
+adev.main INFO: Starting new aiohttp project "foobar" at {}
 adev.main INFO: config:
     template_engine: jinja
     session: secure
     database: pg-sqlalchemy
     example: message-board
-adev.main INFO: project created, 18 files generated\n""" == smart_caplog(('"/tmp/.*?"', '"/tmp/..."'))
+adev.main INFO: project created, 18 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
 @if_boxed
