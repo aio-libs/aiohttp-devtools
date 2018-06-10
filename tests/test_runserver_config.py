@@ -1,7 +1,7 @@
 import pytest
+from aiohttp import web
 from pytest_toolbox import mktree
 
-from aiohttp import web
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 

@@ -5,9 +5,9 @@ from platform import system as get_os_family
 from unittest.mock import MagicMock
 
 import pytest
+from aiohttp.web_app import Application
 from pytest_toolbox import mktree
 
-from aiohttp.web_app import Application
 from aiohttp_devtools.exceptions import AiohttpDevException
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.log_handlers import fmt_size
