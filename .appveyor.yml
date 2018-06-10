@@ -12,7 +12,7 @@ install:
 # Ensure the Git Submoduldes have been pulled down too
 - git submodule update --init --recursive
 
-- "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r test/requirements.txt"
+- "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r tests/requirements.txt"
 
 build_script:
 - grablib
