@@ -4,11 +4,9 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from aiohttp.web import Application
-
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
-
 
 non_windows_test = pytest.mark.skipif(
     get_os_family() == 'Windows',

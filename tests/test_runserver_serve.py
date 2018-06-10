@@ -1,20 +1,19 @@
 import json
 import pathlib
-from platform import system as get_os_family
 import socket
+from platform import system as get_os_family
 from unittest.mock import MagicMock
 
 import pytest
-from aiohttp.web_app import Application
 from pytest_toolbox import mktree
 
+from aiohttp.web_app import Application
 from aiohttp_devtools.exceptions import AiohttpDevException
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.log_handlers import fmt_size
 from aiohttp_devtools.runserver.serve import check_port_open, cleanup_aux_app, modify_main_app, src_reload
 
 from .conftest import SIMPLE_APP, create_future
-
 
 non_windows_test = pytest.mark.skipif(
     get_os_family() == 'Windows',
