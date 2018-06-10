@@ -25,6 +25,7 @@ async def test_check_port_open(unused_port, loop):
     port = unused_port()
     await check_port_open(port, loop, 0.001)
 
+
 @non_windows_test  # FIXME: probably needs some sock options
 async def test_check_port_not_open(unused_port, loop):
     port = unused_port()
