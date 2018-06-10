@@ -26,9 +26,12 @@ build_script:
 
 test_script:
 - "%PYTHON%\\python.exe -m setup check -rms"
-- "%PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --cov-report term-missing:skip-covered --cov-report xml --duration 5 -m \"not isort\" -vv --fulltrace"
+- "%PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --cov-report term-missing:skip-covered --cov-report xml --junitxml junit-test-results.xml --duration 5 -m \"not isort\" -vv --fulltrace"
 
 after_test:
+- ps: |
+    $wc = New-Object 'System.Net.WebClient'
+    $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\junit-test-results.xml))
 - ps: |
     $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
     Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
