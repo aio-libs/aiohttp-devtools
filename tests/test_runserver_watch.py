@@ -1,6 +1,8 @@
 from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
+import pytest
+
 from aiohttp.web import Application
 
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
