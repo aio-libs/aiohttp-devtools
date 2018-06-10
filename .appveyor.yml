@@ -9,6 +9,10 @@ services:
 - postgresql
 
 install:
+# Turn on UTF-8 encoding in the terminal
+# Ref: https://stackoverflow.com/a/32383309/595220
+- chcp 65001
+
 # Ensure the Git Submoduldes have been pulled down too
 - git submodule update --init --recursive
 
