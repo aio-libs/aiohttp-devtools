@@ -1,5 +1,9 @@
 environment:
   global:
+    # Ref: https://stackoverflow.com/a/48093971/595220
+    # Don't run
+    # $ chcp 65001
+    # as it might be harmful
     PYTHONIOENCODING: utf-8
   matrix:
   - PYTHON: "C:\\Python35"
@@ -11,10 +15,6 @@ services:
 - postgresql
 
 install:
-# Turn on UTF-8 encoding in the terminal
-# Ref: https://stackoverflow.com/a/32383309/595220
-- chcp 65001
-
 # Ensure the Git Submoduldes have been pulled down too
 - git submodule update --init --recursive
 
