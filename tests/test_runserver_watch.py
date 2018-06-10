@@ -157,6 +157,7 @@ def test_stop_process_clean(mocker):
     assert mock_kill.called_once_with(321, 2)
 
 
+@non_windows_test  # There's no signals in Windows
 def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
