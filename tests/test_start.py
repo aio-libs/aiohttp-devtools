@@ -36,8 +36,8 @@ def test_start_simple(tmpdir, smart_caplog):
         'tests',
     }
     if IS_WINDOWS:
-        log_path = r'"C:\Users\\appveyor\AppData\Local\Temp\..."'
-        log_normalizers = (r'"C:\\Users\\appveyor\\AppData\\Local\\Temp\\.*?"', log_path)
+        log_path = r'"C:\Users\appveyor\AppData\Local\Temp\..."'
+        log_normalizers = (r'"C:\\Users\\appveyor\\AppData\\Local\\Temp\\.*?"', log_path.replace(r'\', r'\\'))
     else:
         log_path = '"/tmp/..."'
         log_normalizers = ('"/tmp/.*?"', log_path)
