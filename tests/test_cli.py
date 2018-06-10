@@ -1,4 +1,5 @@
 import asyncio
+import pathlib
 
 from click.testing import CliRunner
 
@@ -112,7 +113,7 @@ def test_start_different_name(mocker):
     assert result.exit_code == 0
     assert mock_start_project.call_count == 1
     call_kwargs = mock_start_project.call_args[1]
-    assert call_kwargs['path'].endswith('/foobar')
+    assert pathlib.Path(call_kwargs['path']).parts[-1] == 'foobar'
     assert call_kwargs['name'] == 'splosh'
 
 
