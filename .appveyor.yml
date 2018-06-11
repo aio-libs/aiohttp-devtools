@@ -1,0 +1,41 @@
+environment:
+  global:
+    # Ref: https://stackoverflow.com/a/48093971/595220
+    # Don't run
+    # $ chcp 65001
+    # as it might be harmful
+    PYTHONIOENCODING: utf-8
+  matrix:
+  - PYTHON: "C:\\Python35"
+  - PYTHON: "C:\\Python35-x64"
+  - PYTHON: "C:\\Python36"
+  - PYTHON: "C:\\Python36-x64"
+
+services:
+- postgresql
+
+install:
+# Ensure the Git Submoduldes have been pulled down too
+- git submodule update --init --recursive
+
+- "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools . -r tests/requirements.txt"
+
+build_script:
+- "%PYTHON%\\Scripts\\grablib.exe"
+- "%PYTHON%\\python.exe -m setup sdist bdist_wheel"
+
+test_script:
+- "%PYTHON%\\python.exe -m setup check -rms"
+- "%PYTHON%\\python.exe -m pytest --cov=aiohttp_devtools --cov-report term-missing:skip-covered --cov-report xml --junitxml junit-test-results.xml --duration 5 -m \"not isort\" -vv --fulltrace"
+
+after_test:
+- ps: |
+    $wc = New-Object 'System.Net.WebClient'
+    $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\junit-test-results.xml))
+- ps: |
+    $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+    Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+    bash codecov.sh -f "coverage.xml"
+
+artifacts:
+- path: dist\*

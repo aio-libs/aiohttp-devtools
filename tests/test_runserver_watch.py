@@ -1,10 +1,17 @@
+from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
+import pytest
 from aiohttp.web import Application
 
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
+
+non_windows_test = pytest.mark.skipif(
+    get_os_family() == 'Windows',
+    reason='This only works under UNIX-based OS and gets stuck under Windows',
+)
 
 
 def create_awatch_mock(*results):
@@ -56,6 +63,7 @@ async def test_multiple_file_change(loop, mocker):
     await app_task._session.close()
 
 
+@non_windows_test
 async def test_python_no_server(loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})
@@ -147,6 +155,7 @@ def test_stop_process_clean(mocker):
     assert mock_kill.called_once_with(321, 2)
 
 
+@non_windows_test  # There's no signals in Windows
 def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')

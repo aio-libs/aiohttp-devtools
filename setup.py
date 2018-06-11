@@ -19,8 +19,12 @@ for _root, _, files in os.walk(str(THIS_DIR.joinpath('aiohttp_devtools/start/tem
         p = root / f
         start_package_data.append(str(p.relative_to(package)))
 
+name = 'aiohttp-devtools'
+repo_slug = 'aio-libs/{}'.format(name)
+repo_url = 'https://github.com/{}'.format(repo_slug)
+
 setup(
-    name='aiohttp-devtools',
+    name=name,
     version=str(version.VERSION),
     description='Dev tools for aiohttp',
     long_description=long_description,
@@ -35,8 +39,9 @@ setup(
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Unix',
+        'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
+        'Operating System :: Unix',
         'Environment :: MacOS X',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet',
@@ -44,7 +49,14 @@ setup(
     ],
     author='Samuel Colvin',
     author_email='s@muelcolvin.com',
-    url='https://github.com/aio-libs/aiohttp-devtools',
+    url=repo_url,
+    project_urls={
+        'CI: AppVeyor': 'https://ci.appveyor.com/project/{}'.format(repo_slug),
+        'CI: Travis': 'https://travis-ci.com/{}'.format(repo_slug),
+        'Coverage: codecov': 'https://codecov.io/github/{}'.format(repo_slug),
+        'GitHub: issues': '{}/issues'.format(repo_url),
+        'GitHub: repo': repo_url,
+    },
     license='MIT',
     package_data={
         'aiohttp_devtools.runserver': ['livereload.js'],

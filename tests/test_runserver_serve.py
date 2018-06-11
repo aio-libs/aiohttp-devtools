@@ -1,5 +1,7 @@
 import json
+import pathlib
 import socket
+from platform import system as get_os_family
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,12 +15,18 @@ from aiohttp_devtools.runserver.serve import check_port_open, cleanup_aux_app, m
 
 from .conftest import SIMPLE_APP, create_future
 
+non_windows_test = pytest.mark.skipif(
+    get_os_family() == 'Windows',
+    reason='This only works under UNIX-based OS and gets stuck under Windows',
+)
+
 
 async def test_check_port_open(unused_port, loop):
     port = unused_port()
     await check_port_open(port, loop, 0.001)
 
 
+@non_windows_test  # FIXME: probably needs some sock options
 async def test_check_port_not_open(unused_port, loop):
     port = unused_port()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -39,13 +47,14 @@ async def test_aux_reload(smart_caplog):
     assert 1 == await src_reload(aux_app, '/path/to/static_files/the_file.js')
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
+    expected_path = str(pathlib.Path('/static/the_file.js'))
     assert send_obj == {
         'command': 'reload',
-        'path': '/static/the_file.js',
+        'path': expected_path,
         'liveCSS': True,
         'liveImg': True,
     }
-    assert 'adev.server.aux INFO: prompted reload of /static/the_file.js on 1 client\n' == smart_caplog
+    assert 'adev.server.aux INFO: prompted reload of {} on 1 client\n'.format(expected_path) == smart_caplog
 
 
 async def test_aux_reload_no_path():

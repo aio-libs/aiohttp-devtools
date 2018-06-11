@@ -16,3 +16,4 @@ docs/_build/
 /aiohttp_devtools/runserver/livereload.js
 testapp/
 foobar
+/junit-test-results.xml
