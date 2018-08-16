@@ -48,7 +48,6 @@ suitable for setting up your environment such that you can run the dev server wi
 
 * **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload`_ for more details.
 * **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally
-* a **debug toolbar** is automatically enabled using `aiohttp debugtoolbar`_.
 
 For more options see ``adev runserver --help``.
 
@@ -179,7 +178,6 @@ With that:
 .. _History.rst: /HISTORY.rst
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
-.. _aiohttp debugtoolbar: https://github.com/aio-libs/aiohttp_debugtoolbar
 .. _aiohttp_jinja2: https://github.com/aio-libs/aiohttp_jinja2
 .. _aiohttp_session: https://aiohttp-session.readthedocs.io/en/latest/
 .. _aiopg: https://aiopg.readthedocs.io/en/latest/
