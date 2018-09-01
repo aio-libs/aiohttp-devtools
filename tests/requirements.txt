@@ -19,5 +19,5 @@ Sphinx==1.7.5
 aiohttp-jinja2==1.0.0
 aiohttp-session[secure]==2.5.1
 aiohttp-session[aioredis]==2.5.1
-aiopg==0.14.0
+aiopg==0.15.0
 SQLAlchemy==1.2.9
