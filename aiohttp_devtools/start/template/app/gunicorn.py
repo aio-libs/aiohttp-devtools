@@ -9,8 +9,6 @@ To run the app using gunicorn, in the terminal run
 
 You could use a variant of the above with heroku (in the `Procfile`) or with Docker in the ENTRYPOINT statement.
 """
-import asyncio
 from .main import create_app
 
-loop = asyncio.get_event_loop()
-app = create_app(loop)
+app = create_app()
