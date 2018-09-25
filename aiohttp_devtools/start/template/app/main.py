@@ -62,7 +62,7 @@ def setup_routes(app):
     # {% endif %}
 
 
-def create_app():
+async def create_app():
     app = web.Application()
     settings = Settings()
     app.update(
