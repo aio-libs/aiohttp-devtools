@@ -3,6 +3,11 @@
 History
 -------
 
+0.10.3 (2018-09-25)
+-------------------
+* remove ``loop`` argument from ``run_app()``, #206
+* uprev dependencies
+
 0.10.2 (2018-06-09)
 -------------------
 * fix path defining to work both for Unix and Windows
