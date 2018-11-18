@@ -7,10 +7,10 @@ from aiohttp_devtools.runserver import serve_static
 
 
 @pytest.yield_fixture
-def cli(loop, tmpworkdir, test_client):
+def cli(loop, tmpworkdir, aiohttp_client):
     asyncio.set_event_loop(loop)
     app, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
-    yield loop.run_until_complete(test_client(app))
+    yield loop.run_until_complete(aiohttp_client(app))
 
 
 async def test_simple_serve(cli, tmpworkdir):
@@ -32,10 +32,10 @@ async def test_file_missing(cli):
     assert '404: Not Found\n' in text
 
 
-async def test_html_file_livereload(loop, test_client, tmpworkdir):
+async def test_html_file_livereload(loop, aiohttp_client, tmpworkdir):
     app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True)
     assert port == 8000
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     mktree(tmpworkdir, {
         'foo.html': '<h1>hi</h1>',
     })
@@ -51,10 +51,10 @@ async def test_html_file_livereload(loop, test_client, tmpworkdir):
     assert text.startswith('(function e(t,n,r){')
 
 
-async def test_serve_index(loop, test_client, tmpworkdir):
+async def test_serve_index(loop, aiohttp_client, tmpworkdir):
     app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
     assert port == 8000
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     mktree(tmpworkdir, {
         'index.html': '<h1>hello index</h1>',
     })

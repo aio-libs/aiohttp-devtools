@@ -118,34 +118,34 @@ def kill_parent_soon(pid):
 
 @if_boxed
 @slow
-def test_run_app(loop, unused_port):
+def test_run_app(loop, aiohttp_unused_port):
     app = Application()
-    port = unused_port()
+    port = aiohttp_unused_port()
     Process(target=kill_parent_soon, args=(os.getpid(),)).start()
     run_app(app, port, loop)
 
 
 @if_boxed
-async def test_run_app_test_client(tmpworkdir, test_client):
+async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
     app_factory = config.import_app_factory()
     app = app_factory()
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
     assert text == 'hello world'
 
 
-async def test_aux_app(tmpworkdir, test_client):
+async def test_aux_app(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, {
         'test.txt': 'test value',
     })
     app = create_auxiliary_app(static_path='.')
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     r = await cli.get('/test.txt')
     assert r.status == 200
     text = await r.text()
@@ -189,9 +189,9 @@ app.router.add_get('/', hello)
 
 
 @pytest.yield_fixture
-def aux_cli(test_client, loop):
+def aux_cli(aiohttp_client, loop):
     app = create_auxiliary_app(static_path='.')
-    cli = loop.run_until_complete(test_client(app))
+    cli = loop.run_until_complete(aiohttp_client(app))
     yield cli
     loop.run_until_complete(cli.close())
 

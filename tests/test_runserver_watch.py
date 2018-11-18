@@ -81,11 +81,11 @@ async def test_python_no_server(loop, mocker):
     await app_task._session.close()
 
 
-async def test_reload_server_running(loop, test_client, mocker):
+async def test_reload_server_running(loop, aiohttp_client, mocker):
     app = Application()
     app['websockets'] = [None]
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     config = MagicMock()
     config.main_port = cli.server.port
 

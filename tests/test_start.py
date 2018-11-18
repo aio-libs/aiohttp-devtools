@@ -52,7 +52,7 @@ adev.main INFO: project created, 18 files generated\n""".format(log_path) == sma
 
 
 @if_boxed
-async def test_start_other_dir(tmpdir, loop, test_client, smart_caplog):
+async def test_start_other_dir(tmpdir, loop, aiohttp_client, smart_caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpdir.join('the-path').listdir()} == {
@@ -79,7 +79,7 @@ adev.main INFO: project created, 16 files generated\n""" == smart_caplog.log.rep
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
 
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
@@ -103,7 +103,7 @@ def test_conflicting_file(tmpdir):
     enum_choices(DatabaseChoice),
     enum_choices(ExampleChoice),
 ))
-async def test_all_options(tmpdir, test_client, loop, template_engine, session, database, example):
+async def test_all_options(tmpdir, aiohttp_client, loop, template_engine, session, database, example):
     StartProject(
         path=str(tmpdir),
         name='foobar',
@@ -123,7 +123,7 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
     app_factory = config.import_app_factory()
     app = await app_factory()
     modify_main_app(app, config)
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
@@ -132,7 +132,7 @@ async def test_all_options(tmpdir, test_client, loop, template_engine, session, 
 
 @if_boxed
 @slow
-async def test_db_creation(tmpdir, test_client, loop):
+async def test_db_creation(tmpdir, aiohttp_client, loop):
     StartProject(
         path=str(tmpdir),
         name='foobar postgres test',
@@ -162,7 +162,7 @@ async def test_db_creation(tmpdir, test_client, loop):
     app_factory = config.import_app_factory()
     app = await app_factory()
     modify_main_app(app, config)
-    cli = await test_client(app)
+    cli = await aiohttp_client(app)
     r = await cli.get('/')
     assert r.status == 200
     text = await r.text()
