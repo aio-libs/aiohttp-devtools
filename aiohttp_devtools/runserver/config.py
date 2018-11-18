@@ -78,7 +78,7 @@ class Config:
             logger.debug('app_path is a file, returning it directly')
             return path
 
-        assert path.is_dir()
+        assert path.is_dir(), f'app_path {path} is not a directory'
         files = [x for x in path.iterdir() if x.is_file()]
         for std_file_name in STD_FILE_NAMES:
             try:

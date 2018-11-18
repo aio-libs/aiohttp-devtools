@@ -3,6 +3,11 @@
 History
 -------
 
+0.10.4 (2018-11-18)
+-------------------
+* fix conflict with click checks that prevented the ``--root`` flag working properly, #206
+* uprev dependencies
+
 0.10.3 (2018-09-25)
 -------------------
 * remove ``loop`` argument from ``run_app()``, #206
