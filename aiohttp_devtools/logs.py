@@ -24,7 +24,7 @@ def get_log_format(record):
 class DefaultHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
-        m = re.match('^(\[.*?\])', log_entry)
+        m = re.match(r'^(\[.*?\])', log_entry)
         if m:
             time = click.style(m.groups()[0], fg='magenta')
             msg = click.style(log_entry[m.end():], **get_log_format(record))

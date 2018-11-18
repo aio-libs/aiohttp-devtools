@@ -11,8 +11,8 @@ from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
 
 STD_FILE_NAMES = [
-    re.compile('main\.py'),
-    re.compile('app\.py'),
+    re.compile(r'main\.py'),
+    re.compile(r'app\.py'),
 ]
 
 
