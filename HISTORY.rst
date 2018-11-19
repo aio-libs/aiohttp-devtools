@@ -3,7 +3,7 @@
 History
 -------
 
-0.10.4 (2018-11-18)
+0.10.4 (2018-11-19)
 -------------------
 * fix conflict with click checks that prevented the ``--root`` flag working properly, #206
 * uprev dependencies
