@@ -73,12 +73,15 @@ class Config:
         return self.static_path and str(self.static_path)
 
     def _find_app_path(self, app_path: str) -> Path:
+        # for backwards compatibility try this first
         path = (self.root_path / app_path).resolve()
+        if not path.exists():
+            path = Path(app_path).resolve()
         if path.is_file():
             logger.debug('app_path is a file, returning it directly')
             return path
 
-        assert path.is_dir()
+        assert path.is_dir(), 'app_path {} is not a directory'.format(path)
         files = [x for x in path.iterdir() if x.is_file()]
         for std_file_name in STD_FILE_NAMES:
             try:
