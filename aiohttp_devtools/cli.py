@@ -107,10 +107,10 @@ class EnumChoice(click.Choice):
 
 
 DECISIONS = [
-      ('template_engine', TemplateChoice),
-      ('session', SessionChoices),
-      ('database', DatabaseChoice),
-      ('example', ExampleChoice),
+    ('template_engine', TemplateChoice),
+    ('session', SessionChoices),
+    ('database', DatabaseChoice),
+    ('example', ExampleChoice),
 ]
 
 

@@ -208,14 +208,14 @@ async def message_data(request):
                 username, ts, message = line.split('|', 2)
                 # parse the datetime string and render it in a more readable format.
                 ts = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f'))
-                messages.append({'username': username, 'timestamp':  ts, 'message': message})
+                messages.append({'username': username, 'timestamp': ts, 'message': message})
         messages.reverse()
     # {% elif database.is_pg_sqlalchemy %}
 
     async with request.app['pg_engine'].acquire() as conn:
         async for row in conn.execute(sa_messages.select().order_by(sa_messages.c.timestamp.desc())):
             ts = '{:%Y-%m-%d %H:%M:%S}'.format(row.timestamp)
-            messages.append({'username': row.username, 'timestamp':  ts, 'message': row.message})
+            messages.append({'username': row.username, 'timestamp': ts, 'message': row.message})
     # {% endif %}
     return json_response(messages)
 # {% endif %}

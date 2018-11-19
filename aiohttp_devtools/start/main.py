@@ -15,14 +15,14 @@ TEMPLATE_DIR = THIS_DIR / 'template'  # type: Path
 
 FILES_REGEXES = {
     '.py': [
-        ('^ *# *\n', '', re.M),    # blank comments
-        ('\n *# *$', '', 0),       # blank comment at end of fie
-        ('\n{4,}', '\n\n\n', 0),   # more than 2 empty lines
-        ('^\s+', '', 0),           # leading new lines
+        (r'^ *# *\n', '', re.M),    # blank comments
+        (r'\n *# *$', '', 0),       # blank comment at end of fie
+        (r'\n{4,}', '\n\n\n', 0),   # more than 2 empty lines
+        (r'^\s+', '', 0),           # leading new lines
     ],
     '.sh': [
-        ('^ *# *\n', '', re.M),    # blank comments
-        ('\n *# *$', '', 0),       # blank comment at end of fie
+        (r'^ *# *\n', '', re.M),    # blank comments
+        (r'\n *# *$', '', 0),       # blank comment at end of fie
     ],
 }
 
@@ -126,7 +126,7 @@ class StartProject:
         logger.info('config:\n%s', '\n'.join('    {}: {}'.format(*c) for c in display_config))
         self.ctx = {
             'name': name,
-            'clean_name': re.sub('[^\w_]', '', re.sub('[.-]', '_', name)),
+            'clean_name': re.sub(r'[^\w_]', '', re.sub(r'[.-]', '_', name)),
             'cookie_secret_key': base64.urlsafe_b64encode(os.urandom(32)).decode(),
             'template_engine': self._choice_context(template_engine, TemplateChoice),
             'session': self._choice_context(session, SessionChoices),

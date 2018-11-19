@@ -11,7 +11,7 @@ class AuxiliaryHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        m = re.match('^(\[.*?\] )', log_entry)
+        m = re.match(r'^(\[.*?\] )', log_entry)
         time = click.style(m.groups()[0], fg='magenta')
         msg = log_entry[m.end():]
         if record.levelno in {logging.INFO, logging.DEBUG} and msg.startswith('>'):
@@ -33,7 +33,7 @@ class AiohttpAccessHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        m = re.match('^(\[.*?\] )', log_entry)
+        m = re.match(r'^(\[.*?\] )', log_entry)
         time = click.style(m.groups()[0], fg='magenta')
         msg = log_entry[m.end():]
         try:
