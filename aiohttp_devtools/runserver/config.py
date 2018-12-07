@@ -28,24 +28,26 @@ INFER_HOST = '<inference>'
 
 class Config:
     def __init__(self, *,
-                 app_path: str='.',
-                 root_path: str=None,
-                 verbose: bool=False,
-                 static_path: str=None,
-                 python_path: str=None,
-                 static_url: str='/static/',
-                 livereload: bool=True,
-                 debug_toolbar: bool=False,  # TODO set True once debug toolbar is fixed
-                 app_factory_name: str=None,
-                 host: str=INFER_HOST,
-                 main_port: int=8000,
-                 aux_port: int=None):
+                 app_path: str = '.',
+                 root_path: str = None,
+                 verbose: bool = False,
+                 static_path: str = None,
+                 python_path: str = None,
+                 static_url: str = '/static/',
+                 livereload: bool = True,
+                 debug_toolbar: bool = False,  # TODO set True once debug toolbar is fixed
+                 app_factory_name: str = None,
+                 host: str = INFER_HOST,
+                 main_port: int = 8000,
+                 aux_port: int = None):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
+            self.watch_path = self.root_path
         else:
             logger.debug('Root path not specified, using current working directory')
             self.root_path = Path('.').resolve()
+            self.watch_path = None
 
         self.app_path = self._find_app_path(app_path)
         if not self.app_path.name.endswith('.py'):
@@ -65,7 +67,6 @@ class Config:
         self.host = 'localhost' if self.infer_host else host
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
-        self.code_directory = None
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -153,7 +154,7 @@ class Config:
             raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
-        self.code_directory = Path(module.__file__).parent
+        self.watch_path = self.watch_path or Path(module.__file__).parent
         return attr
 
     async def load_app(self):

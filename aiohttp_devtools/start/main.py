@@ -102,11 +102,11 @@ class StartProject:
     def __init__(self, *,
                  path: str,
                  name: str,
-                 template_engine: TemplateChoice=enum_default(TemplateChoice),
-                 session: SessionChoices=enum_default(SessionChoices),
-                 database: DatabaseChoice=enum_default(DatabaseChoice),
-                 example: ExampleChoice=enum_default(ExampleChoice),
-                 template_dir: Path=TEMPLATE_DIR) -> None:
+                 template_engine: TemplateChoice = enum_default(TemplateChoice),
+                 session: SessionChoices = enum_default(SessionChoices),
+                 database: DatabaseChoice = enum_default(DatabaseChoice),
+                 example: ExampleChoice = enum_default(ExampleChoice),
+                 template_dir: Path = TEMPLATE_DIR) -> None:
         self.project_root = Path(path)
         self.template_dir = template_dir
         check_dir_clean(self.project_root)
