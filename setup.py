@@ -75,7 +75,6 @@ setup(
     """,
     install_requires=[
         'aiohttp>=3.2.0',
-        'aiohttp_debugtoolbar>=0.4.0',
         'click>=6.6',
         'isort>=4.3.3',
         'Jinja2>=2.10',

@@ -8,7 +8,7 @@ services:
 python:
 - '3.5'
 - '3.6'
-- 'nightly'  # currently 3.7
+- '3.7'
 
 env:
 # TODO keep this up to date
@@ -17,7 +17,6 @@ env:
 
 matrix:
   allow_failures:
-  - python: 'nightly'
   - env: 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 install:

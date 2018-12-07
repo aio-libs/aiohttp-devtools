@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import aiohttp_debugtoolbar
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED
 from aiohttp.web import FileResponse, Response
@@ -20,6 +19,12 @@ from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
+
+try:
+    import aiohttp_debugtoolbar
+except ImportError:
+    # aiohttp_debugtoolbar is not a required dependency
+    aiohttp_debugtoolbar = None
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
@@ -70,7 +75,7 @@ def modify_main_app(app, config: Config):
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         app['static_root_url'] = static_url
 
-    if config.debug_toolbar:
+    if config.debug_toolbar and aiohttp_debugtoolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
