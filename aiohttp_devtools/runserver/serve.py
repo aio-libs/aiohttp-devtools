@@ -192,11 +192,12 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     app.update(
         static_path=static_path,
         static_url=static_url,
-        livereload_script=MutableValue(),
     )
     app.on_shutdown.append(cleanup_aux_app)
 
     if livereload:
+        lr_path = Path(__file__).resolve().parent / 'livereload.js'
+        app['livereload_script'] = lr_path.read_bytes()
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         aux_logger.debug('enabling livereload on auxiliary app')
@@ -220,12 +221,8 @@ async def livereload_js(request):
         raise HTTPNotModified()
 
     lr_script = request.app['livereload_script']
-    if not lr_script:
-        lr_path = Path(__file__).absolute().parent.joinpath('livereload.js')
-        request.app['livereload_script'].change(lr_path.read_bytes())
-
     aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
-    return web.Response(body=bytes(lr_script), content_type='application/javascript',
+    return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
 WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
