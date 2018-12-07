@@ -19,7 +19,7 @@ from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
-from .log_handlers import fmt_size
+from .log_handlers import AccessLogger, fmt_size
 from .utils import MutableValue
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
@@ -127,7 +127,7 @@ async def start_main_app(config: Config, loop):
     modify_main_app(app, config)
 
     await check_port_open(config.main_port, loop)
-    runner = web.AppRunner(app, access_log_format='%r %s %b')
+    runner = web.AppRunner(app, access_log_class=AccessLogger)
     await runner.setup()
     site = web.TCPSite(runner, host=HOST, port=config.main_port, shutdown_timeout=0.1)
     await site.start()

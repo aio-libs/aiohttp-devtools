@@ -70,8 +70,8 @@ def log_config(verbose: bool) -> dict:
             },
             'aiohttp_access': {
                 'level': log_level,
-                'class': 'aiohttp_devtools.runserver.log_handlers.AiohttpAccessHandler',
-                'formatter': 'default'
+                'class': 'logging.StreamHandler',
+                'formatter': 'no_ts'
             },
         },
         'loggers': {
