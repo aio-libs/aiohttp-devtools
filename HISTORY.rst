@@ -8,6 +8,7 @@ History
 * use ``--root`` as base directory for watching if it's set, #209
 * add ``MutableValue`` to avoid aiohttp warnings, #215
 * improved logging including request time, #217
+* remove ``aiohttp_debugtoolbar`` as a requirement, improve CI, #216
 * uprev dependencies
 
 0.10.4 (2018-11-19)
