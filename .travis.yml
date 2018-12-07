@@ -5,18 +5,25 @@ cache: pip
 services:
 - postgresql
 
-python:
-- '3.5'
-- '3.6'
-- '3.7'
-
-env:
-# TODO keep this up to date
-- 'AIOHTTP_VERSION=aiohttp==3.4.4'  # WARNING: if you change this, change it in deploy too
-- 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
-
 matrix:
+  include:
+  - python: '3.5'
+    env: 'AIOHTTP_VERSION=aiohttp==3.4.4'
+  - python: '3.6'
+    env: 'AIOHTTP_VERSION=aiohttp==3.4.4'  # WARNING: if you change this, change it in deploy too
+  - python: '3.6'
+    env: 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
+  - python: '3.7'
+    dist: xenial
+    sudo: required
+    env: 'AIOHTTP_VERSION=aiohttp==3.4.4'
+  - python: '3.8-dev'
+    dist: xenial
+    sudo: required
+    env: 'AIOHTTP_VERSION=aiohttp==3.4.4'
+
   allow_failures:
+  - python: '3.8-dev'
   - env: 'AIOHTTP_VERSION=https://github.com/aio-libs/aiohttp/archive/master.zip'
 
 install:
