@@ -27,6 +27,11 @@ class MutableValue:
     def __bool__(self):
         return bool(self.value)
 
+    def __eq__(self, other):
+        return MutableValue(self.value == other)
+
+    def __add__(self, other):
+        return self.value + other
+
     def __getattr__(self, item):
         return getattr(self.value, item)
-

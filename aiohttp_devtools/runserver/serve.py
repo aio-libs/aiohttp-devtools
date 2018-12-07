@@ -61,7 +61,7 @@ def modify_main_app(app, config: Config):
         async def static_middleware(request, handler):
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
             dft_logger.debug('settings app static_root_url to "%s"', static_url)
-            request.app['static_root_url'] = static_url
+            request.app['static_root_url'].change(static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -69,7 +69,7 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        app['static_root_url'] = static_url
+        app['static_root_url'] = MutableValue(static_url)
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
