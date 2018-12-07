@@ -3,7 +3,7 @@
 .PHONY: install
 install:
 	pip install -U setuptools pip
-	pip install -U .
+	pip install -e .
 	pip install -r tests/requirements.txt
 	grablib
 

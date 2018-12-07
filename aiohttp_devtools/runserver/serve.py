@@ -22,7 +22,7 @@ from .log_handlers import fmt_size
 
 try:
     import aiohttp_debugtoolbar
-except ImportError:
+except ImportError:  # pragma: no cover
     # aiohttp_debugtoolbar is not a required dependency
     aiohttp_debugtoolbar = None
 
