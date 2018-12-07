@@ -20,6 +20,7 @@ from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
+from .utils import MutableValue
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
@@ -191,6 +192,7 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     app.update(
         static_path=static_path,
         static_url=static_url,
+        livereload_script=MutableValue(),
     )
     app.on_shutdown.append(cleanup_aux_app)
 
@@ -217,16 +219,13 @@ async def livereload_js(request):
         aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
-    script_key = 'livereload_script'
-    lr_script = request.app.get(script_key)
-    if lr_script is None:
+    lr_script = request.app['livereload_script']
+    if not lr_script:
         lr_path = Path(__file__).absolute().parent.joinpath('livereload.js')
-        with lr_path.open('rb') as f:
-            lr_script = f.read()
-            request.app[script_key] = lr_script
+        request.app['livereload_script'].change(lr_path.read_bytes())
 
     aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
-    return web.Response(body=lr_script, content_type='application/javascript',
+    return web.Response(body=bytes(lr_script), content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
 WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
