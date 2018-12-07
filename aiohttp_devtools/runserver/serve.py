@@ -20,6 +20,7 @@ from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
 from .log_handlers import fmt_size
+from .utils import MutableValue
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
@@ -60,7 +61,7 @@ def modify_main_app(app, config: Config):
         async def static_middleware(request, handler):
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
             dft_logger.debug('settings app static_root_url to "%s"', static_url)
-            request.app['static_root_url'] = static_url
+            request.app['static_root_url'].change(static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -68,7 +69,7 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        app['static_root_url'] = static_url
+        app['static_root_url'] = MutableValue(static_url)
 
     if config.debug_toolbar:
         aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
@@ -195,6 +196,8 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     app.on_shutdown.append(cleanup_aux_app)
 
     if livereload:
+        lr_path = Path(__file__).resolve().parent / 'livereload.js'
+        app['livereload_script'] = lr_path.read_bytes()
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         aux_logger.debug('enabling livereload on auxiliary app')
@@ -217,14 +220,7 @@ async def livereload_js(request):
         aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
-    script_key = 'livereload_script'
-    lr_script = request.app.get(script_key)
-    if lr_script is None:
-        lr_path = Path(__file__).absolute().parent.joinpath('livereload.js')
-        with lr_path.open('rb') as f:
-            lr_script = f.read()
-            request.app[script_key] = lr_script
-
+    lr_script = request.app['livereload_script']
     aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})

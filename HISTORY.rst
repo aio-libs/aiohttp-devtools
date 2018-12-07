@@ -6,6 +6,7 @@ History
 0.11.0 (2018-12-07)
 -------------------
 * use ``--root`` as base directory for watching if it's set, #209
+* add ``MutableValue`` to avoid aiohttp warnings, #215
 * uprev dependencies
 
 0.10.4 (2018-11-19)
