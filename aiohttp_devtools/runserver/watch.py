@@ -46,7 +46,7 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session = ClientSession(loop=loop)
         self._runner = None
-        super().__init__(self._config.code_directory, loop)
+        super().__init__(self._config.watch_path, loop)
 
     async def _run(self):
         try:

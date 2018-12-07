@@ -3,6 +3,11 @@
 History
 -------
 
+0.11.0 (2018-12-07)
+-------------------
+* use ``--root`` as base directory for watching if it's set, #209
+* uprev dependencies
+
 0.10.4 (2018-11-19)
 -------------------
 * fix conflict with click checks that prevented the ``--root`` flag working properly, #206
