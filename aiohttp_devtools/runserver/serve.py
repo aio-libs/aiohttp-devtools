@@ -19,8 +19,8 @@ from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
-from .utils import MutableValue
 from .log_handlers import AccessLogger, fmt_size
+from .utils import MutableValue
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
