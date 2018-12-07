@@ -1,7 +1,9 @@
 import logging
 import re
+from datetime import datetime, timedelta
 
 import click
+from aiohttp.abc import AbstractAccessLogger
 
 from ..logs import get_log_format
 
@@ -28,25 +30,26 @@ dbtb = '/_debugtoolbar/'
 check = '?_checking_alive=1'
 
 
-class AiohttpAccessHandler(logging.Handler):
+class AccessLogger(AbstractAccessLogger):
     prefix = click.style('●', fg='blue')
 
-    def emit(self, record):
-        log_entry = self.format(record)
-        m = re.match(r'^(\[.*?\] )', log_entry)
-        time = click.style(m.groups()[0], fg='magenta')
-        msg = log_entry[m.end():]
-        try:
-            method, path, _, code, size = msg.split(' ')
-        except ValueError:
-            click.echo(time + msg)
-        else:
-            size = fmt_size(int(size))
-            msg = '{method} {path} {code} {size}'.format(method=method, path=path, code=code, size=size)
-            if (code, size) == ('304', '0B') or path.startswith(dbtb) or path.endswith(check):
-                msg = click.style(msg, dim=True)
-            msg = '{} {}'.format(self.prefix, msg)
-            click.echo(time + msg)
+    def log(self, request, response, time):
+        now = datetime.now()
+        start_time = now - timedelta(seconds=time)
+        time_str = click.style(start_time.strftime('[%H:%M:%S]'), fg='magenta')
+
+        path = request.path
+        msg = '{method} {path} {code} {size} {ms:0.0f}ms'.format(
+            method=request.method,
+            path=path,
+            code=response.status,
+            size=fmt_size(response.body_length),
+            ms=time * 1000,
+        )
+        if (response.status, response.body_length) == ('304', 0) or path.startswith(dbtb) or path.endswith(check):
+            msg = click.style(msg, dim=True)
+        msg = '{} {}'.format(self.prefix, msg)
+        self.logger.info(time_str + msg)
 
 
 def fmt_size(num):

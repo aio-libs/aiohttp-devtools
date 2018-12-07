@@ -1,7 +1,8 @@
 import logging
+import re
 from unittest.mock import MagicMock
 
-from aiohttp_devtools.runserver.log_handlers import AiohttpAccessHandler, AuxiliaryHandler
+from aiohttp_devtools.runserver.log_handlers import AccessLogger, AuxiliaryHandler
 
 
 def _get_record(msg, level=logging.INFO):
@@ -39,19 +40,43 @@ def test_aux_request_304(capsys):
     assert '[foo] ◆ bar 304 0B\n' == out
 
 
-def test_aiohttp_std(capsys):
-    handler = AiohttpAccessHandler()
-    record = _get_record('[foo] POST /foo X 200 123')
-    handler.emit(record)
-    out, err = capsys.readouterr()
-    # no difference, could do better
-    assert '[foo] ● POST /foo 200 123B\n' == out
+def _strip_ansi(v):
+    return re.sub(r'\033\[((?:\d|;)*)([a-zA-Z])', '', v)
 
 
-def test_aiohttp_debugtoolbar(capsys):
-    handler = AiohttpAccessHandler()
-    record = _get_record('[foo] POST /_debugtoolbar/whatever X 200 123')
-    handler.emit(record)
-    out, err = capsys.readouterr()
-    # no difference, could do better
-    assert '[foo] ● POST /_debugtoolbar/whatever 200 123B\n' == out
+def test_aiohttp_std():
+    info = MagicMock()
+    logger = type('Logger', (), {'info': info})
+    handler = AccessLogger(logger, None)
+    request = MagicMock()
+    request.method = 'GET'
+    request.path = '/foobar?v=1'
+    response = MagicMock()
+    response.status = 200
+    response.body_length = 100
+    handler.log(request, response, 0.15)
+    assert info.call_count == 1
+    msg = _strip_ansi(info.call_args[0][0])
+    assert msg[msg.find(']'):] == ']● GET /foobar?v=1 200 100B 150ms'
+    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg), msg
+    # not dim
+    assert '\x1b[2m' not in info.call_args[0][0]
+
+
+def test_aiohttp_debugtoolbar():
+    info = MagicMock()
+    logger = type('Logger', (), {'info': info})
+    handler = AccessLogger(logger, None)
+    request = MagicMock()
+    request.method = 'GET'
+    request.path = '/_debugtoolbar/whatever'
+    response = MagicMock()
+    response.status = 200
+    response.body_length = 100
+    handler.log(request, response, 0.15)
+    assert info.call_count == 1
+    msg = _strip_ansi(info.call_args[0][0])
+    assert msg[msg.find(']'):] == ']● GET /_debugtoolbar/whatever 200 100B 150ms'
+    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg), msg
+    # dim
+    assert '\x1b[2m' in info.call_args[0][0]
