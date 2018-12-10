@@ -1,6 +1,7 @@
 env/
 env35/
 env36/
+env37/
 .idea/
 __pycache__/
 *.py[cod]

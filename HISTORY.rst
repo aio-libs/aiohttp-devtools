@@ -3,6 +3,10 @@
 History
 -------
 
+0.11.1 (upreleased)
+-------------------
+* fix tests for python 3.7, #218
+
 0.11.0 (2018-12-07)
 -------------------
 * use ``--root`` as base directory for watching if it's set, #209
