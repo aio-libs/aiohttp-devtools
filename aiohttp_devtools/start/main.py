@@ -176,7 +176,7 @@ class StartProject:
                 text = regex.sub(repl, text)
 
         # re-add a trailing newline accounting for newlines added by PY_REGEXES
-        # changed as per https://stackoverflow.com/questions/53706151/stange-regex-behaviour-with-python-3-7
+        # changed as per https://stackoverflow.com/questions/53642571
         text = re.sub(r'\n+$', r'\n', text + '\n')
         new_path.parent.mkdir(parents=True, exist_ok=True)
         new_path.write_text(text)
