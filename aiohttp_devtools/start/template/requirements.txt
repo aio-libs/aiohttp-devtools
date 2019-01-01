@@ -1,7 +1,7 @@
 # {# This file is special: lines are made unique, stripped and sorted before the new requirements.txt file is created #}
 # you will need to install these requirements with `pip install -r requirements.txt`
 
-aiohttp==3.4.4
+aiohttp==3.5.1
 pytest==4.0.1
 pytest-aiohttp==0.3.0
 pytest-cov==2.6.0
