@@ -1,3 +1,4 @@
+import asyncio
 from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
@@ -75,7 +76,11 @@ async def test_python_no_server(loop, mocker):
     app_task._stop_dev_server = MagicMock()
     app = Application()
     app.src_reload = MagicMock()
-    app['websockets'] = [None]
+    mock_ws = MagicMock()
+    f = asyncio.Future()
+    f.set_result(1)
+    mock_ws.send_str = MagicMock(return_value=f)
+    app['websockets'] = [(mock_ws, '/')]
     app_task._app = app
     await app_task._run(2)
     assert app_task._app.src_reload.called is False
