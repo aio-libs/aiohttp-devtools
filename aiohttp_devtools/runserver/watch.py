@@ -48,7 +48,7 @@ class AppTask(WatchTask):
         self._runner = None
         super().__init__(self._config.watch_path, loop)
 
-    async def _run(self):
+    async def _run(self, live_checks=20):
         try:
             self._start_dev_server()
 
@@ -58,7 +58,7 @@ class AppTask(WatchTask):
                     logger.debug('%d changes, restarting server', len(changes))
                     self._stop_dev_server()
                     self._start_dev_server()
-                    await self._src_reload_when_live()
+                    await self._src_reload_when_live(live_checks)
                 elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
                     # reload all pages
                     await src_reload(self._app)

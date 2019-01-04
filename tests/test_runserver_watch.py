@@ -73,8 +73,11 @@ async def test_python_no_server(loop, mocker):
     app_task = AppTask(config, loop)
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
-    app_task._app = MagicMock()
-    await app_task._run()
+    app = Application()
+    app.src_reload = MagicMock()
+    app['websockets'] = [None]
+    app_task._app = app
+    await app_task._run(2)
     assert app_task._app.src_reload.called is False
     assert app_task._start_dev_server.called
     assert app_task._stop_dev_server.called

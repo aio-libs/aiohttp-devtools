@@ -176,7 +176,8 @@ class StartProject:
                 text = regex.sub(repl, text)
 
         # re-add a trailing newline accounting for newlines added by PY_REGEXES
-        text = re.sub('\n*$', '\n', text)
+        # changed as per https://stackoverflow.com/questions/53642571
+        text = re.sub(r'\n+$', r'\n', text + '\n')
         new_path.parent.mkdir(parents=True, exist_ok=True)
         new_path.write_text(text)
         self.files_created += 1
