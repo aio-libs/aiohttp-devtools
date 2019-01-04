@@ -2,7 +2,7 @@ import logging
 import re
 from unittest.mock import MagicMock
 
-from aiohttp_devtools.runserver.log_handlers import AccessLogger, AuxiliaryHandler
+from aiohttp_devtools.runserver.log_handlers import AccessLogger
 
 
 def _get_record(msg, level=logging.INFO):
@@ -13,31 +13,6 @@ def _get_record(msg, level=logging.INFO):
     record.stack_info = None
     record.getMessage = MagicMock(return_value=msg)
     return record
-
-
-def test_aux_std(capsys):
-    handler = AuxiliaryHandler()
-    record = _get_record('[foo] bar')
-    handler.emit(record)
-    out, err = capsys.readouterr()
-    assert '[foo] bar\n' == out
-
-
-def test_aux_request(capsys):
-    handler = AuxiliaryHandler()
-    record = _get_record('[foo] > bar')
-    handler.emit(record)
-    out, err = capsys.readouterr()
-    assert '[foo] ◆ bar\n' == out
-
-
-def test_aux_request_304(capsys):
-    handler = AuxiliaryHandler()
-    record = _get_record('[foo] > bar 304 0B')
-    handler.emit(record)
-    out, err = capsys.readouterr()
-    # no difference, could do better
-    assert '[foo] ◆ bar 304 0B\n' == out
 
 
 def _strip_ansi(v):
