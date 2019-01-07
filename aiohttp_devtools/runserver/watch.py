@@ -75,7 +75,7 @@ class AppTask(WatchTask):
             url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
-                await asyncio.sleep(0.1, loop=self._app.loop)
+                await asyncio.sleep(0.1)
                 try:
                     async with self._session.get(url):
                         pass
