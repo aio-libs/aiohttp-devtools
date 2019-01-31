@@ -22,36 +22,38 @@ def _strip_ansi(v):
 def test_aiohttp_std():
     info = MagicMock()
     logger = type('Logger', (), {'info': info})
-    handler = AccessLogger(logger, None)
+    logger = AccessLogger(logger, None)
     request = MagicMock()
     request.method = 'GET'
-    request.path = '/foobar?v=1'
+    request.path_qs = '/foobar?v=1'
     response = MagicMock()
     response.status = 200
     response.body_length = 100
-    handler.log(request, response, 0.15)
+    logger.log(request, response, 0.15)
     assert info.call_count == 1
-    msg = _strip_ansi(info.call_args[0][0])
-    assert msg[msg.find(']'):] == ']● GET /foobar?v=1 200 100B 150ms'
-    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg), msg
+    msg = info.call_args[0][0]
+    msg_stripped = _strip_ansi(msg)
+    assert msg_stripped[msg_stripped.find(']'):] == ']● GET /foobar?v=1 200 100B 150ms'
+    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg_stripped), msg_stripped
     # not dim
-    assert '\x1b[2m' not in info.call_args[0][0]
+    assert '\x1b[2m' not in msg
 
 
 def test_aiohttp_debugtoolbar():
     info = MagicMock()
     logger = type('Logger', (), {'info': info})
-    handler = AccessLogger(logger, None)
+    logger = AccessLogger(logger, None)
     request = MagicMock()
     request.method = 'GET'
-    request.path = '/_debugtoolbar/whatever'
+    request.path_qs = '/_debugtoolbar/whatever'
     response = MagicMock()
     response.status = 200
     response.body_length = 100
-    handler.log(request, response, 0.15)
+    logger.log(request, response, 0.15)
     assert info.call_count == 1
-    msg = _strip_ansi(info.call_args[0][0])
-    assert msg[msg.find(']'):] == ']● GET /_debugtoolbar/whatever 200 100B 150ms'
-    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg), msg
+    msg = info.call_args[0][0]
+    msg_stripped = _strip_ansi(msg)
+    assert msg_stripped[msg_stripped.find(']'):] == ']● GET /_debugtoolbar/whatever 200 100B 150ms'
+    assert re.match(r'^\[\d\d:\d\d:\d\d\]', msg_stripped), msg_stripped
     # dim
-    assert '\x1b[2m' in info.call_args[0][0]
+    assert '\x1b[2m' in msg

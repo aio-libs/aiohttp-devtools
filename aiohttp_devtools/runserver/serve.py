@@ -18,7 +18,7 @@ from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
-from .log_handlers import AccessLogger, fmt_size
+from .log_handlers import AccessLogger
 from .utils import MutableValue
 
 try:

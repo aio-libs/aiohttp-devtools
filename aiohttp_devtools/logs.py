@@ -4,10 +4,11 @@ import re
 import traceback
 from io import StringIO
 
-import click
 import pygments
-from pygments.lexers import Python3TracebackLexer
+from devtools import pformat
+from devtools.ansi import isatty, sformat, strip_ansi
 from pygments.formatters import Terminal256Formatter
+from pygments.lexers import Python3TracebackLexer
 
 rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
@@ -16,45 +17,80 @@ tools_logger = logging.getLogger('adev.tools')
 main_logger = logging.getLogger('adev.main')
 
 LOG_FORMATS = {
-    logging.DEBUG: {'fg': 'white', 'dim': True},
-    logging.INFO: {'fg': 'green'},
-    logging.WARN: {'fg': 'yellow'},
+    logging.DEBUG: sformat.dim,
+    logging.INFO: sformat.green,
+    logging.WARN: sformat.yellow,
 }
 pyg_lexer = Python3TracebackLexer()
 pyg_formatter = Terminal256Formatter(style='vim')
+# only way to get "extra" from a LogRecord is to look in record.__dict__ and ignore all the standard keys
+standard_record_keys = {
+    'name',
+    'msg',
+    'args',
+    'levelname',
+    'levelno',
+    'pathname',
+    'filename',
+    'module',
+    'exc_info',
+    'exc_text',
+    'stack_info',
+    'lineno',
+    'funcName',
+    'created',
+    'msecs',
+    'relativeCreated',
+    'thread',
+    'threadName',
+    'processName',
+    'process',
+    'message',
+}
+split_log = re.compile(r'^(\[.*?\])')
 
 
-class CustomStreamHandler(logging.StreamHandler):
+class HighlightStreamHandler(logging.StreamHandler):
     def setFormatter(self, fmt):
         self.formatter = fmt
-        self.formatter.stream_is_tty = self.stream.isatty()
+        self.formatter.stream_is_tty = isatty(self.stream)
 
 
-class DevtoolsFormatter(logging.Formatter):
+class DefaultFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style='%'):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-
-class DefaultFormatter(DevtoolsFormatter):
     def format(self, record):
         msg = super().format(record)
         if not self.stream_is_tty:
             return msg
-        m = re.match(r'^(\[.*?\])', msg)
+        m = split_log.match(msg)
+        log_color = LOG_FORMATS.get(record.levelno, sformat.red)
         if m:
-            time = click.style(m.groups()[0], fg='magenta')
-            msg = click.style(msg[m.end():], **self.get_log_format(record))
-            return click.style(time + msg)
+            time = sformat(m.groups()[0], sformat.magenta)
+            return time + sformat(msg[m.end():], log_color)
         else:
-            return click.style(msg, **self.get_log_format(record))
-
-    @staticmethod
-    def get_log_format(record):
-        return LOG_FORMATS.get(record.levelno, {'fg': 'red'})
+            return sformat(msg, log_color)
 
 
-class ExceptionFormatter(DevtoolsFormatter):
+class AccessFormatter(logging.Formatter):
+    """
+    Used to log aiohttp_access and aiohttp_server
+    """
+    def __init__(self, fmt=None, datefmt=None, style='%'):
+        super().__init__(fmt, datefmt, style)
+        self.stream_is_tty = False
+
+    def formatMessage(self, record):
+        s = super().formatMessage(record)
+        if not self.stream_is_tty:
+            s = strip_ansi(s)
+        extra = {k: v for k, v in record.__dict__.items() if k not in standard_record_keys}
+        if extra:
+            s += '\nExtra: ' + pformat(extra, highlight=self.stream_is_tty)
+        return s
+
     def formatException(self, ei):
         sio = StringIO()
         traceback.print_exception(*ei, file=sio)
@@ -86,33 +122,30 @@ def log_config(verbose: bool) -> dict:
                 'format': '%(message)s',
                 'class': 'aiohttp_devtools.logs.DefaultFormatter',
             },
-            'aiohttp_access': {
+            'aiohttp': {
                 'format': '%(message)s',
-            },
-            'aiohttp_server': {
-                'format': '%(message)s',
-                'class': 'aiohttp_devtools.logs.ExceptionFormatter',
+                'class': 'aiohttp_devtools.logs.AccessFormatter',
             },
         },
         'handlers': {
             'default': {
                 'level': log_level,
-                'class': 'aiohttp_devtools.logs.CustomStreamHandler',
+                'class': 'aiohttp_devtools.logs.HighlightStreamHandler',
                 'formatter': 'default'
             },
             'no_ts': {
                 'level': log_level,
-                'class': 'aiohttp_devtools.logs.CustomStreamHandler',
+                'class': 'aiohttp_devtools.logs.HighlightStreamHandler',
                 'formatter': 'no_ts'
             },
             'aiohttp_access': {
                 'level': log_level,
-                'class': 'logging.StreamHandler',
-                'formatter': 'aiohttp_access'
+                'class': 'aiohttp_devtools.logs.HighlightStreamHandler',
+                'formatter': 'aiohttp'
             },
             'aiohttp_server': {
-                'class': 'aiohttp_devtools.logs.CustomStreamHandler',
-                'formatter': 'aiohttp_server'
+                'class': 'aiohttp_devtools.logs.HighlightStreamHandler',
+                'formatter': 'aiohttp'
             },
         },
         'loggers': {
@@ -135,9 +168,11 @@ def log_config(verbose: bool) -> dict:
             'aiohttp.access': {
                 'handlers': ['aiohttp_access'],
                 'level': log_level,
+                'propagate': False,
             },
             'aiohttp.server': {
                 'handlers': ['aiohttp_server'],
+                'level': log_level,
             },
         },
     }

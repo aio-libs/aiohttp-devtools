@@ -12,7 +12,7 @@ from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
 
 
-def run_app(app, port, loop, access_log_class=None):
+def run_app(app, port, loop, access_log_class):
     runner = AppRunner(app, access_log_class=access_log_class)
     loop.run_until_complete(runner.setup())
 
