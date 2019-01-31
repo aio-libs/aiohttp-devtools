@@ -44,11 +44,12 @@ class AppTask(WatchTask):
     def __init__(self, config: Config, loop: asyncio.AbstractEventLoop):
         self._config = config
         self._reloads = 0
-        self._session = ClientSession(loop=loop)
+        self._session = None
         self._runner = None
         super().__init__(self._config.watch_path, loop)
 
     async def _run(self, live_checks=20):
+        self._session = ClientSession()
         try:
             self._start_dev_server()
 
@@ -75,7 +76,7 @@ class AppTask(WatchTask):
             url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
-                await asyncio.sleep(0.1, loop=self._app.loop)
+                await asyncio.sleep(0.1)
                 try:
                     async with self._session.get(url):
                         pass

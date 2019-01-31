@@ -45,7 +45,7 @@ def pg_dsn(settings: Settings) -> str:
 
 
 async def startup(app: web.Application):
-    app['pg_engine'] = await create_engine(pg_dsn(app['settings']), loop=app.loop)
+    app['pg_engine'] = await create_engine(pg_dsn(app['settings']))
 
 
 async def cleanup(app: web.Application):
