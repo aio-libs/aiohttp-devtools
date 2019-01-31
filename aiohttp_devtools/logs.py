@@ -8,8 +8,6 @@ import click
 import pygments
 from pygments.lexers import Python3TracebackLexer
 from pygments.formatters import Terminal256Formatter
-from devtools import pformat as format_extra
-from devtools.ansi import isatty
 
 rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
@@ -29,17 +27,13 @@ pyg_formatter = Terminal256Formatter(style='vim')
 class CustomStreamHandler(logging.StreamHandler):
     def setFormatter(self, fmt):
         self.formatter = fmt
-        self.formatter.stream_is_tty = isatty and isatty(self.stream)
+        self.formatter.stream_is_tty = self.stream.isatty()
 
 
 class DevtoolsFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style='%'):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
-
-    @staticmethod
-    def get_log_format(record):
-        return LOG_FORMATS.get(record.levelno, {'fg': 'red'})
 
 
 class DefaultFormatter(DevtoolsFormatter):
@@ -55,41 +49,12 @@ class DefaultFormatter(DevtoolsFormatter):
         else:
             return click.style(msg, **self.get_log_format(record))
 
-
-# only way to get "extra" from a LogRecord is to look in record.__dict__ and ignore all the standard keys
-standard_record_keys = {
-    'name',
-    'msg',
-    'args',
-    'levelname',
-    'levelno',
-    'pathname',
-    'filename',
-    'module',
-    'exc_info',
-    'exc_text',
-    'stack_info',
-    'lineno',
-    'funcName',
-    'created',
-    'msecs',
-    'relativeCreated',
-    'thread',
-    'threadName',
-    'processName',
-    'process',
-    'message',
-}
+    @staticmethod
+    def get_log_format(record):
+        return LOG_FORMATS.get(record.levelno, {'fg': 'red'})
 
 
-class ErrorFormatter(DevtoolsFormatter):
-    def formatMessage(self, record):
-        s = super().formatMessage(record)
-        extra = {k: v for k, v in record.__dict__.items() if k not in standard_record_keys}
-        if extra:
-            s += '\nExtra: ' + format_extra(extra, highlight=self.stream_is_tty)
-        return s
-
+class ExceptionFormatter(DevtoolsFormatter):
     def formatException(self, ei):
         sio = StringIO()
         traceback.print_exception(*ei, file=sio)
@@ -126,7 +91,7 @@ def log_config(verbose: bool) -> dict:
             },
             'aiohttp_server': {
                 'format': '%(message)s',
-                'class': 'aiohttp_devtools.logs.ErrorFormatter',
+                'class': 'aiohttp_devtools.logs.ExceptionFormatter',
             },
         },
         'handlers': {
@@ -146,7 +111,6 @@ def log_config(verbose: bool) -> dict:
                 'formatter': 'aiohttp_access'
             },
             'aiohttp_server': {
-                'level': log_level,
                 'class': 'aiohttp_devtools.logs.CustomStreamHandler',
                 'formatter': 'aiohttp_server'
             },
@@ -174,7 +138,6 @@ def log_config(verbose: bool) -> dict:
             },
             'aiohttp.server': {
                 'handlers': ['aiohttp_server'],
-                'level': log_level,
             },
         },
     }
