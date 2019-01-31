@@ -8,6 +8,7 @@ from unittest import mock
 
 import aiohttp
 import pytest
+from aiohttp import ClientTimeout
 from aiohttp.web import Application
 from pytest_toolbox import mktree
 
@@ -21,15 +22,15 @@ slow = get_slow(pytest)
 if_boxed = get_if_boxed(pytest)
 
 
-async def check_server_running(loop, check_callback):
+async def check_server_running(check_callback):
     port_open = False
-    async with aiohttp.ClientSession(loop=loop, conn_timeout=1) as session:
+    async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
         for i in range(50):
             try:
                 async with session.get('http://localhost:8000/'):
                     pass
             except OSError:
-                await asyncio.sleep(0.1, loop=loop)
+                await asyncio.sleep(0.1)
             else:
                 port_open = True
                 break
@@ -78,7 +79,7 @@ def create_app(loop):
             assert 'raise ValueError()' in (await r.text())
 
     try:
-        loop.run_until_complete(check_server_running(loop, check_callback))
+        loop.run_until_complete(check_server_running(check_callback))
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
@@ -103,7 +104,6 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    asyncio.set_event_loop(loop)
     aux_app, aux_port, _ = runserver(app_path='app.py', host='foobar.com')
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
@@ -216,7 +216,7 @@ async def test_websocket_info(aux_cli, loop):
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
         await ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
-        await asyncio.sleep(0.05, loop=loop)
+        await asyncio.sleep(0.05)
         assert len(aux_cli.server.app['websockets']) == 1
     finally:
         await ws.close()
@@ -247,7 +247,7 @@ async def test_websocket_reload(aux_cli, loop):
             'url': 'foobar',
             'plugins': 'bang',
         })
-        await asyncio.sleep(0.05, loop=loop)
+        await asyncio.sleep(0.05)
         reloads = await src_reload(aux_cli.server.app, 'foobar')
         assert reloads == 1
     finally:

@@ -44,11 +44,12 @@ class AppTask(WatchTask):
     def __init__(self, config: Config, loop: asyncio.AbstractEventLoop):
         self._config = config
         self._reloads = 0
-        self._session = ClientSession(loop=loop)
+        self._session = None
         self._runner = None
         super().__init__(self._config.watch_path, loop)
 
     async def _run(self, live_checks=20):
+        self._session = ClientSession()
         try:
             self._start_dev_server()
 
