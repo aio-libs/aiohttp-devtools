@@ -49,21 +49,12 @@ class AccessLogger(_AccessLogger):
         if response.status > 310:
             request_body = request._read_bytes
             return dict(
-                request=dict(
-                    duration_ms=round(time * 1000, 3),
-                    url=str(request.rel_url),
-                    method=request.method,
-                    host=request.host,
-                    headers=dict(request.headers),
-                    body=parse_body(request_body, 'request body'),
-                    size=fmt_size(0 if request_body is None else len(request_body)),
-                ),
-                response=dict(
-                    status=response.status,
-                    headers=dict(response.headers),
-                    body=parse_body(response.text or response.body, 'response body'),
-                    size=fmt_size(response.body_length),
-                ),
+                request_duration_ms=round(time * 1000, 3),
+                request_headers=dict(request.headers),
+                request_body=parse_body(request_body, 'request body'),
+                request_size=fmt_size(0 if request_body is None else len(request_body)),
+                response_headers=dict(response.headers),
+                response_body=parse_body(response.text or response.body, 'response body'),
             )
 
 
