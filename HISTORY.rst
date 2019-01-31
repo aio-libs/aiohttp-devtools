@@ -3,9 +3,10 @@
 History
 -------
 
-0.11.1 (upreleased)
+0.12.0 (upreleased)
 -------------------
 * fix tests for python 3.7, #218
+* fix tests for aiohttp >= 3.5, #223
 
 0.11.0 (2018-12-07)
 -------------------
