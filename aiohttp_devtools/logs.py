@@ -1,3 +1,4 @@
+import json
 import logging
 import logging.config
 import re
@@ -6,7 +7,7 @@ from io import StringIO
 
 import pygments
 from devtools import pformat
-from devtools.ansi import isatty, sformat, strip_ansi
+from devtools.ansi import isatty, sformat
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
@@ -83,12 +84,19 @@ class AccessFormatter(logging.Formatter):
         self.stream_is_tty = False
 
     def formatMessage(self, record):
-        s = super().formatMessage(record)
-        if not self.stream_is_tty:
-            s = strip_ansi(s)
+        log = json.loads(super().formatMessage(record))
+        if self.stream_is_tty:
+            # in future we can do clever things about colouring the message based on status code
+            s = '{} {} {}'.format(
+                sformat(log['time'], sformat.magenta),
+                sformat(log['prefix'], sformat.blue),
+                sformat(log['msg'], sformat.dim if log['time'] else sformat.reset),
+            )
+        else:
+            s = '{time} {prefix} {msg}'.format(**log)
         extra = {k: v for k, v in record.__dict__.items() if k not in standard_record_keys}
         if extra:
-            s += '\nExtra: ' + pformat(extra, highlight=self.stream_is_tty)
+            s = 'details: {}\n{}'.format(pformat(extra, highlight=self.stream_is_tty), s)
         return s
 
     def formatException(self, ei):

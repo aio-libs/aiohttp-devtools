@@ -3,7 +3,6 @@ import warnings
 from datetime import datetime, timedelta
 
 from aiohttp.abc import AbstractAccessLogger
-from devtools import sformat
 
 dbtb = '/_debugtoolbar/'
 check = '?_checking_alive=1'
@@ -24,17 +23,20 @@ class _AccessLogger(AbstractAccessLogger):
             return
         now = datetime.now()
         start_time = now - timedelta(seconds=time)
-        time_str = sformat(start_time.strftime('[%H:%M:%S]'), sformat.magenta)
-
-        path = request.path_qs
-        if (response.status, response.body_length) == (304, 0) or path.startswith(dbtb) or path.endswith(check):
-            msg = sformat(msg, sformat.dim)
-        msg = '{} {}'.format(self.prefix, msg)
-        self.logger.info(time_str + msg, extra=self.extra(request, response, time))
+        pqs = request.path_qs
+        # log messages are encoded to JSON, so they can be easily coloured or not by the logger which knows whether
+        # the stream "isatty"
+        msg = json.dumps({
+            'time': start_time.strftime('[%H:%M:%S]'),
+            'prefix': self.prefix,
+            'msg': msg,
+            'dim': (response.status, response.body_length) == (304, 0) or pqs.startswith(dbtb) or pqs.endswith(check)
+        })
+        self.logger.info(msg, extra=self.extra(request, response, time))
 
 
 class AccessLogger(_AccessLogger):
-    prefix = sformat('●', sformat.blue)
+    prefix = '●'
 
     def get_msg(self, request, response, time):
         return '{method} {path} {code} {size} {ms:0.0f}ms'.format(
@@ -59,7 +61,7 @@ class AccessLogger(_AccessLogger):
 
 
 class AuxAccessLogger(_AccessLogger):
-    prefix = sformat('◆', sformat.blue)
+    prefix = '◆'
 
     def get_msg(self, request, response, time):
         # don't log livereload
@@ -85,10 +87,10 @@ def parse_body(v, name):
     if isinstance(v, (str, bytes)):
         try:
             return json.loads(v)
-        except (ValueError, TypeError):
-            pass
         except UnicodeDecodeError:
             warnings.warn('UnicodeDecodeError parsing ' + name, UserWarning)
             # bytes which cause UnicodeDecodeError can cause problems later on
             return v.decode(errors='ignore')
+        except (ValueError, TypeError):
+            pass
     return v
