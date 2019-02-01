@@ -60,20 +60,24 @@ class AccessFormatter(logging.Formatter):
         self.stream_is_tty = False
 
     def formatMessage(self, record):
-        log = json.loads(super().formatMessage(record))
+        msg = super().formatMessage(record)
+        if msg[0] != '{':
+            return msg
+        # json from AccessLogger
+        obj = json.loads(msg)
         if self.stream_is_tty:
             # in future we can do clever things about colouring the message based on status code
-            s = '{} {} {}'.format(
-                sformat(log['time'], sformat.magenta),
-                sformat(log['prefix'], sformat.blue),
-                sformat(log['msg'], sformat.dim if log['time'] else sformat.reset),
+            msg = '{} {} {}'.format(
+                sformat(obj['time'], sformat.magenta),
+                sformat(obj['prefix'], sformat.blue),
+                sformat(obj['msg'], sformat.dim if obj['dim'] else sformat.reset),
             )
         else:
-            s = '{time} {prefix} {msg}'.format(**log)
+            msg = '{time} {prefix} {msg}'.format(**obj)
         details = getattr(record, 'details', None)
         if details:
-            s = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), s)
-        return s
+            msg = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), msg)
+        return msg
 
     def formatException(self, ei):
         sio = StringIO()

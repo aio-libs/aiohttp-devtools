@@ -176,20 +176,25 @@ def test_dft_formatter_colour_time():
 
 def test_access_formatter():
     f = AccessFormatter()
-    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_'})
+    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_', 'dim': False})
     assert f.format(_mk_record(msg)) == '_time_ _p_ _msg_'
+
+
+def test_access_formatter_no_json():
+    f = AccessFormatter()
+    assert f.format(_mk_record('foobar')) == 'foobar'
 
 
 def test_access_formatter_colour():
     f = AccessFormatter()
     f.stream_is_tty = True
-    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_'})
-    assert f.format(_mk_record(msg)) == '\x1b[35m_time_\x1b[0m \x1b[34m_p_\x1b[0m \x1b[2m_msg_\x1b[0m'
+    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_', 'dim': False})
+    assert f.format(_mk_record(msg)) == '\x1b[35m_time_\x1b[0m \x1b[34m_p_\x1b[0m \x1b[0m_msg_\x1b[0m'
 
 
 def test_access_formatter_extra():
     f = AccessFormatter()
-    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_'})
+    msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_', 'dim': False})
     assert f.format(_mk_record(msg, details={'foo': 'bar'})) == (
         'details: {\n'
         "    'foo': 'bar',\n"
