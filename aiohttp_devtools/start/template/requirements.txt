@@ -16,5 +16,5 @@ aiohttp-session[secure]==2.7.0
 
 # {% if database.is_pg_sqlalchemy %}
 aiopg==0.16.0
-SQLAlchemy==1.2.15
+SQLAlchemy==1.2.17
 # {% endif %}
