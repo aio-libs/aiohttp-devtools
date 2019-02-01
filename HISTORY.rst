@@ -7,6 +7,7 @@ History
 -------------------
 * fix tests for python 3.7, #218
 * fix tests for aiohttp >= 3.5, #223
+* rebuild logging with coloured tracebacks and request & response details, #221
 
 0.11.0 (2018-12-07)
 -------------------
