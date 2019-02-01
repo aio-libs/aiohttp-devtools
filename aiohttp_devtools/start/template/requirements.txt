@@ -4,7 +4,7 @@
 aiohttp==3.5.4
 pytest==4.2.0
 pytest-aiohttp==0.3.0
-pytest-cov==2.6.0
+pytest-cov==2.6.1
 
 # {% if template_engine.is_jinja %}
 aiohttp-jinja2==1.1.0
