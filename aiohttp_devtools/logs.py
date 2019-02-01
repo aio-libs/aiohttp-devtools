@@ -24,30 +24,6 @@ LOG_FORMATS = {
 }
 pyg_lexer = Python3TracebackLexer()
 pyg_formatter = Terminal256Formatter(style='vim')
-# only way to get "extra" from a LogRecord is to look in record.__dict__ and ignore all the standard keys
-standard_record_keys = {
-    'name',
-    'msg',
-    'args',
-    'levelname',
-    'levelno',
-    'pathname',
-    'filename',
-    'module',
-    'exc_info',
-    'exc_text',
-    'stack_info',
-    'lineno',
-    'funcName',
-    'created',
-    'msecs',
-    'relativeCreated',
-    'thread',
-    'threadName',
-    'processName',
-    'process',
-    'message',
-}
 split_log = re.compile(r'^(\[.*?\])')
 
 
@@ -94,9 +70,9 @@ class AccessFormatter(logging.Formatter):
             )
         else:
             s = '{time} {prefix} {msg}'.format(**log)
-        extra = {k: v for k, v in record.__dict__.items() if k not in standard_record_keys}
-        if extra:
-            s = 'details: {}\n{}'.format(pformat(extra, highlight=self.stream_is_tty), s)
+        details = getattr(record, 'details', None)
+        if details:
+            s = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), s)
         return s
 
     def formatException(self, ei):

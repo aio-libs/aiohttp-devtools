@@ -109,16 +109,18 @@ def test_extra():
     logger.log(request, response, 0.15)
     assert info.call_count == 1
     assert info.call_args[1]['extra'] == {
-        'request_duration_ms': 150.0,
-        'request_headers': {
-            'Foo': 'Bar',
-        },
-        'request_body': b'testing',
-        'request_size': '7B',
-        'response_headers': {
-            'Foo': 'Spam',
-        },
-        'response_body': 'testing',
+        'details': {
+            'request_duration_ms': 150.0,
+            'request_headers': {
+                'Foo': 'Bar',
+            },
+            'request_body': b'testing',
+            'request_size': '7B',
+            'response_headers': {
+                'Foo': 'Spam',
+            },
+            'response_body': 'testing',
+        }
     }
 
 
@@ -188,7 +190,7 @@ def test_access_formatter_colour():
 def test_access_formatter_extra():
     f = AccessFormatter()
     msg = json.dumps({'time': '_time_', 'prefix': '_p_', 'msg': '_msg_'})
-    assert f.format(_mk_record(msg, foo='bar')) == (
+    assert f.format(_mk_record(msg, details={'foo': 'bar'})) == (
         'details: {\n'
         "    'foo': 'bar',\n"
         '}\n'

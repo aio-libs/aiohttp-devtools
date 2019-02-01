@@ -50,7 +50,7 @@ class AccessLogger(_AccessLogger):
     def extra(self, request, response, time: float):
         if response.status > 310:
             request_body = request._read_bytes
-            return dict(
+            details = dict(
                 request_duration_ms=round(time * 1000, 3),
                 request_headers=dict(request.headers),
                 request_body=parse_body(request_body, 'request body'),
@@ -58,6 +58,7 @@ class AccessLogger(_AccessLogger):
                 response_headers=dict(response.headers),
                 response_body=parse_body(response.text or response.body, 'response body'),
             )
+            return dict(details=details)
 
 
 class AuxAccessLogger(_AccessLogger):
