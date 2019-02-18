@@ -18,7 +18,7 @@ from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
 from .config import Config
-from .log_handlers import AccessLogger, fmt_size
+from .log_handlers import AccessLogger
 from .utils import MutableValue
 
 try:
@@ -222,11 +222,9 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
 
 async def livereload_js(request):
     if request.if_modified_since:
-        aux_logger.debug('> %s %s %s 0B', request.method, request.path, 304)
         raise HTTPNotModified()
 
     lr_script = request.app['livereload_script']
-    aux_logger.debug('> %s %s %s %s', request.method, request.path, 200, fmt_size(len(lr_script)))
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 
@@ -333,24 +331,16 @@ class CustomStaticResource(StaticResource):
 
     async def _handle(self, request):
         self.modify_request(request)
-        status, length = 'unknown', ''
         try:
             response = await super()._handle(request)
             response = self._insert_footer(response)
         except HTTPNotModified:
-            status, length = 304, 0
             raise
         except HTTPNotFound:
             # TODO include list of files in 404 body
             _404_msg = '404: Not Found\n'
             response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
-            status, length = response.status, response.content_length
         else:
             # Inject CORS headers to allow webfonts to load correctly
             response.headers['Access-Control-Allow-Origin'] = '*'
-
-            status, length = response.status, response.content_length
-        finally:
-            logger = aux_logger.info if status in {200, 304} else aux_logger.warning
-            logger('> %s %s %s %s', request.method, request.path, status, fmt_size(length))
         return response

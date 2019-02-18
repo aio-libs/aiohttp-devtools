@@ -76,8 +76,10 @@ setup(
     install_requires=[
         'aiohttp>=3.5.0',
         'click>=6.6',
+        'devtools>=0.5',
         'isort>=4.3.3',
         'Jinja2>=2.10',
+        'Pygments>=2.2.0',
         'watchgod>=0.2',
     ],
     python_requires='>=3.5',
