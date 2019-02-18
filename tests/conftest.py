@@ -1,5 +1,15 @@
 from asyncio import Future
 
+import pytest
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption('--boxed'):
+        skip_boxed = pytest.mark.skip(reason='only run with --boxed flag')
+        for item in items:
+            if 'boxed' in item.keywords:
+                item.add_marker(skip_boxed)
+
 
 def pytest_addoption(parser):
     try:
@@ -22,14 +32,6 @@ def create_app():
     app.router.add_get('/', hello)
     return app"""
 }
-
-
-def get_slow(_pytest):
-    return _pytest.mark.skipif(_pytest.config.getoption('--fast'), reason='not run with --fast flag')
-
-
-def get_if_boxed(_pytest):
-    return _pytest.mark.skipif(not _pytest.config.getoption('--boxed'), reason='only run with --boxed flag')
 
 
 def create_future(result=None):

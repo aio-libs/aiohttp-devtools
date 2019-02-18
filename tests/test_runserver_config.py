@@ -5,9 +5,7 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP, get_if_boxed
-
-if_boxed = get_if_boxed(pytest)
+from .conftest import SIMPLE_APP
 
 
 async def test_load_simple_app(tmpworkdir):
@@ -23,7 +21,7 @@ async def test_create_app_wrong_name(tmpworkdir, loop):
     assert excinfo.value.args[0] == 'Module "app.py" does not define a "missing" attribute/class'
 
 
-@if_boxed
+@pytest.mark.boxed
 async def test_no_loop_coroutine(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -43,7 +41,7 @@ async def app_factory():
     assert isinstance(app, web.Application)
 
 
-@if_boxed
+@pytest.mark.boxed
 async def test_not_app(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
