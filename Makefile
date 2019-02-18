@@ -16,7 +16,8 @@ isort:
 lint:
 	python setup.py check -rms
 	flake8 aiohttp_devtools/ tests/
-	pytest aiohttp_devtools -p no:sugar -q --cache-clear
+	isort -rc -w 120 --check-only -sg */template/* aiohttp_devtools
+	isort -rc -w 120 --check-only tests
 
 .PHONY: test
 test:

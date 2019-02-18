@@ -17,10 +17,7 @@ from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, src_reload, start_main_app
 
-from .conftest import SIMPLE_APP, get_if_boxed, get_slow
-
-slow = get_slow(pytest)
-if_boxed = get_if_boxed(pytest)
+from .conftest import SIMPLE_APP
 
 
 async def check_server_running(check_callback):
@@ -39,8 +36,7 @@ async def check_server_running(check_callback):
         await check_callback(session)
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -91,8 +87,7 @@ def create_app(loop):
     ) in smart_caplog
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 def test_start_runserver_app_instance(tmpworkdir, loop):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -117,8 +112,7 @@ def kill_parent_soon(pid):
     os.kill(pid, signal.SIGINT)
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 def test_run_app(loop, aiohttp_unused_port):
     app = Application()
     port = aiohttp_unused_port()
@@ -126,7 +120,7 @@ def test_run_app(loop, aiohttp_unused_port):
     run_app(app, port, loop, AccessLogger)
 
 
-@if_boxed
+@pytest.mark.boxed
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
@@ -153,8 +147,7 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
     assert text == 'test value'
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 async def test_serve_main_app(tmpworkdir, loop, mocker):
     asyncio.set_event_loop(loop)
     mktree(tmpworkdir, SIMPLE_APP)
@@ -167,8 +160,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\

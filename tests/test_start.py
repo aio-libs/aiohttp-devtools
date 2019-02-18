@@ -14,12 +14,6 @@ from aiohttp_devtools.runserver.serve import modify_main_app
 from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
 from aiohttp_devtools.start.main import enum_choices
 
-from .conftest import get_if_boxed, get_slow
-
-slow = get_slow(pytest)
-if_boxed = get_if_boxed(pytest)
-
-
 IS_WINDOWS = platform.system() == 'Windows'
 
 
@@ -51,7 +45,7 @@ adev.main INFO: config:
 adev.main INFO: project created, 18 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
-@if_boxed
+@pytest.mark.boxed
 async def test_start_other_dir(tmpdir, loop, aiohttp_client, smart_caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
@@ -95,8 +89,7 @@ def test_conflicting_file(tmpdir):
     assert excinfo.value.args[0].endswith('has files/directories which would conflict with the new project: Makefile')
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 @pytest.mark.parametrize('template_engine,session,database,example', itertools.product(
     enum_choices(TemplateChoice),
     enum_choices(SessionChoices),
@@ -130,8 +123,7 @@ async def test_all_options(tmpdir, aiohttp_client, loop, template_engine, sessio
     assert '<title>foobar</title>' in text
 
 
-@if_boxed
-@slow
+@pytest.mark.boxed
 async def test_db_creation(tmpdir, aiohttp_client, loop):
     StartProject(
         path=str(tmpdir),
