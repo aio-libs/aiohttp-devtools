@@ -18,3 +18,4 @@ docs/_build/
 testapp/
 foobar
 /junit-test-results.xml
+/.vscode/
