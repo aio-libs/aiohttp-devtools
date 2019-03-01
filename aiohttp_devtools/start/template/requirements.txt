@@ -2,7 +2,7 @@
 # you will need to install these requirements with `pip install -r requirements.txt`
 
 aiohttp==3.5.4
-pytest==4.2.0
+pytest==4.3.0
 pytest-aiohttp==0.3.0
 pytest-cov==2.6.1
 
