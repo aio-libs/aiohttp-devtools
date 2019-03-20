@@ -22,6 +22,7 @@ def test_start_simple(tmpdir, smart_caplog):
     assert {p.basename for p in tmpdir.listdir()} == {
         'app',
         'Makefile',
+        'Pipfile',
         'requirements.txt',
         'README.md',
         'activate.settings.sh',
@@ -42,7 +43,7 @@ adev.main INFO: config:
     session: secure
     database: pg-sqlalchemy
     example: message-board
-adev.main INFO: project created, 18 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
+adev.main INFO: project created, 19 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
 @pytest.mark.boxed
@@ -53,6 +54,7 @@ async def test_start_other_dir(tmpdir, loop, aiohttp_client, smart_caplog):
         'app',
         'Makefile',
         'requirements.txt',
+        'Pipfile',
         'README.md',
         'activate.settings.sh',
         'setup.cfg',
@@ -66,7 +68,7 @@ adev.main INFO: config:
     session: secure
     database: none
     example: message-board
-adev.main INFO: project created, 16 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 17 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
     config = Config(app_path='the-path/app/', root_path=str(tmpdir), static_path='.')
     app_factory = config.import_app_factory()
     app = await app_factory()
