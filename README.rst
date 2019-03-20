@@ -142,7 +142,7 @@ Before you can run your app you'll need to install the other requirements, lucki
 
     pip install -r requirements.txt
 
-Or you can use pipenv (if it is already installed in your env). For install packages and lock it on Pipfile.lock, use next command
+Or, you can use `pipenv`_ (if it is already installed in your env). To install packages and lock it via ``Pipfile.lock``, use next command
 
 .. code:: shell
 
