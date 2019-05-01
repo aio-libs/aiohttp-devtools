@@ -17,7 +17,7 @@ pytest-xdist==1.26.1
 Sphinx==1.8.3
 
 # required to run "start" apps
-aiohttp-jinja2==1.1.0
+aiohttp-jinja2==1.1.1
 aiohttp-session[secure]==2.7.0
 aiohttp-session[aioredis]==2.7.0
 aiopg==0.16.0
