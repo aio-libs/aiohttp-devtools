@@ -6,7 +6,7 @@ flake8==3.7.4
 grablib==0.6.1  # pyup: ignore (last version which is compatible with python 3.5)
 pycodestyle==2.5.0
 pyflakes==2.1.0
-pytest==4.2.0
+pytest==4.4.1
 pytest-aiohttp==0.3.0
 pytest-cov==2.6.1
 pytest-mock==1.10.0
