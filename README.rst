@@ -36,7 +36,9 @@ Usage is simply
 .. code:: shell
 
     adev runserver <app-path>
-**note:** since ``adev adev runserver <app-path>`` will import whole file so it DOESN't work with ``web.run_app(app)``, or use ``if __name__ == '__main__': web.run_app(app)``
+
+**note:** since ``adev adev runserver <app-path>`` will import whole file so it doesn't work
+with ``web.run_app(app)``, or use ``if __name__ == '__main__': web.run_app(app)``
 
 ``app-path`` can be a path to either a directory containing a recognized default file (``app.py``
 or ``main.py``) or to a specific file. The ``--app-factory`` option can be used to define which method is called
