@@ -1,7 +1,6 @@
 import sys
 import traceback
 from pathlib import Path
-from textwrap import dedent
 
 import click
 

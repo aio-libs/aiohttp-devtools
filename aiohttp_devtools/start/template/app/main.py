@@ -1,16 +1,15 @@
 from pathlib import Path
 
-import asyncpg
-from aiohttp import web
-
 import aiohttp_jinja2
-import jinja2
 import aiohttp_session
+import asyncpg
+import jinja2
+from aiohttp import web
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 
 from .db import prepare_database
 from .settings import Settings
-from .views import index, messages, message_data
+from .views import index, message_data, messages
 
 THIS_DIR = Path(__file__).parent
 

@@ -1,11 +1,9 @@
 from aiohttp.hdrs import METH_POST
 from aiohttp.web_exceptions import HTTPFound
 from aiohttp.web_response import Response
-
-from aiohttp_session import get_session
-
 from aiohttp_jinja2 import template
-from pydantic import BaseModel, constr, ValidationError
+from aiohttp_session import get_session
+from pydantic import BaseModel, ValidationError, constr
 
 
 @template('index.jinja')

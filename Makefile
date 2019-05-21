@@ -9,14 +9,14 @@ install:
 
 .PHONY: isort
 isort:
-	isort -rc -w 120 -sg */template/* aiohttp_devtools
+	isort -rc -w 120 aiohttp_devtools
 	isort -rc -w 120 tests
 
 .PHONY: lint
 lint:
 	python setup.py check -rms
 	flake8 aiohttp_devtools/ tests/
-	isort -rc -w 120 --check-only -sg */template/* aiohttp_devtools
+	isort -rc -w 120 --check-only aiohttp_devtools
 	isort -rc -w 120 --check-only tests
 
 .PHONY: test
