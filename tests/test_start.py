@@ -1,4 +1,5 @@
 import platform
+import sys
 
 import aiohttp
 import pytest
@@ -31,8 +32,9 @@ adev.main INFO: Starting new aiohttp project "foobar" at {}
 adev.main INFO: project created, 13 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 6), reason='start app requires python >= 3.6')
 @pytest.mark.boxed
-async def test_start_other_dir(tmpdir, loop, aiohttp_client, smart_caplog):
+async def test_start_run(tmpdir, loop, aiohttp_client, smart_caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar')
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpdir.join('the-path').listdir()} == {

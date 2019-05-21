@@ -5,6 +5,7 @@ install:
 	pip install -U setuptools pip
 	pip install -e .
 	pip install -r tests/requirements.txt
+	pip install -r aiohttp_devtools/start/template/requirements.txt
 	grablib
 
 .PHONY: isort
