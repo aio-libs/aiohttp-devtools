@@ -14,9 +14,12 @@ WHERE pg_stat_activity.datname = $1 AND pid <> pg_backend_pid()
 """
 
 
-async def prepare_database(settings: Settings, overwrite_existing: bool) -> bool:  # noqa: C901 (ignore complexity)
+async def prepare_database(settings: Settings, overwrite_existing: bool) -> bool:
     """
     (Re)create a fresh database and run migrations.
+
+    Partially taken from https://github.com/samuelcolvin/aiohttp-toolbox/blob/master/atoolbox/db/__init__.py
+
     :param settings: settings to use for db connection
     :param overwrite_existing: whether or not to drop an existing database if it exists
     :return: whether or not a database has been (re)created
@@ -58,13 +61,3 @@ async def prepare_database(settings: Settings, overwrite_existing: bool) -> bool
         await conn.close()
     print('database successfully setup ✓')
     return True
-
-
-def reset_database(settings: Settings):
-    if not (os.getenv('CONFIRM_DATABASE_RESET') == 'confirm' or input('Confirm database reset? [yN] ') == 'y'):
-        print('cancelling')
-    else:
-        print('resetting database...')
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(prepare_database(settings, True))
-        print('done.')

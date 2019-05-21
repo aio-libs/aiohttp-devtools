@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     """
     name = '{{ name }}'
     pg_dsn = 'postgres://postgres@localhost:5432/demo_app'
-    auth_key = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa='
-    cookie_name = 'aiohttp-demo-app'
+    auth_key = '{{ auth_key }}'
+    cookie_name = '{{ cookie_name }}'
 
     @property
     def _pg_dsn_parsed(self):

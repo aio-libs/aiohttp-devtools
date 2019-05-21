@@ -1,7 +1,4 @@
-from datetime import datetime
-
 from aiohttp.hdrs import METH_POST
-from aiohttp.web import json_response
 from aiohttp.web_exceptions import HTTPFound
 from aiohttp.web_response import Response
 
@@ -42,10 +39,7 @@ async def process_form(request):
     session = await get_session(request)
     session['username'] = m.username
 
-    await request.app['pg'].execute(
-        'insert into messages (username, message) values ($1, $2)', m.username, m.message
-    )
-
+    await request.app['pg'].execute('insert into messages (username, message) values ($1, $2)', m.username, m.message)
     raise HTTPFound(request.app.router['messages'].url_for())
 
 
@@ -59,12 +53,9 @@ async def messages(request):
 
     # simple demonstration of sessions by pre-populating username if it's already been set
     session = await get_session(request)
+    username = session.get('username', '')
 
-    return {
-        'title': 'Message board',
-        'form_errors': form_errors,
-        'username': session.get('username', ''),
-    }
+    return {'title': 'Message board', 'form_errors': form_errors, 'username': username}
 
 
 async def message_data(request):
