@@ -1,6 +1,7 @@
 import json
 import logging
 import logging.config
+import platform
 import re
 import traceback
 from io import StringIO
@@ -30,7 +31,7 @@ split_log = re.compile(r'^(\[.*?\])')
 class HighlightStreamHandler(logging.StreamHandler):
     def setFormatter(self, fmt):
         self.formatter = fmt
-        self.formatter.stream_is_tty = isatty(self.stream)
+        self.formatter.stream_is_tty = isatty(self.stream) and platform.system().lower() != 'windows'
 
 
 class DefaultFormatter(logging.Formatter):
