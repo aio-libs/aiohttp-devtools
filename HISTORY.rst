@@ -3,6 +3,12 @@
 History
 -------
 
+0.13.0 (2019-05-21)
+-------------------
+* greatly simplify the ``start`` command, #233
+* disable coloured output on windows, #234
+* fix ``adev serve ...``, #235
+
 0.12.0 (2019-02-20)
 -------------------
 * fix tests for python 3.7, #218
