@@ -77,34 +77,6 @@ def test_runserver_no_args(loop):
     assert result.output.startswith('Error: unable to find a recognised default file')
 
 
-def test_start(mocker):
-    mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
-    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start', 'foobar'])
-    assert result.exit_code == 0
-    assert mock_start_project.call_count == 1
-    call_kwargs = mock_start_project.call_args[1]
-    assert pathlib.Path(call_kwargs['path']).parts[-1] == 'foobar'
-    assert call_kwargs['name'] == 'foobar'
-    assert 'Please choose which database backend you wish to use.' in result.output
-    assert 'using: pg-raw' not in result.output
-
-
-def test_start_with_choice(mocker):
-    mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
-    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start', '--database', 'pg-sqlalchemy', 'foobar'])
-    assert result.exit_code == 0
-    assert mock_start_project.call_count == 1
-    call_kwargs = mock_start_project.call_args[1]
-    assert pathlib.Path(call_kwargs['path']).parts[-1] == 'foobar'
-    assert call_kwargs['name'] == 'foobar'
-    assert 'Please choose which database backend you wish to use.' not in result.output
-    assert 'using: pg-sqlalchemy' in result.output
-
-
 def test_start_different_name(mocker):
     mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
     mocker.patch('aiohttp_devtools.cli.check_dir_clean')
@@ -139,4 +111,3 @@ def test_start_help():
     result = runner.invoke(cli, ['start', '--help'])
     assert result.exit_code == 0
     assert 'Create a new aiohttp app.' in result.output
-    assert '--template-engine [jinja*|none]' in result.output

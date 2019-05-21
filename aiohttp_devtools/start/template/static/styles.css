@@ -11,7 +11,6 @@ main {
   padding: 20px 20px;
 }
 
-{% if example.is_message_board %}
 @keyframes fadein {
   from {
     opacity: 0;
@@ -28,4 +27,3 @@ main {
   border-radius: 3px;
   color: #79312f;
 }
-{% endif %}

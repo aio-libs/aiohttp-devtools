@@ -1,18 +1,14 @@
-import itertools
-import os
 import platform
-import subprocess
+import sys
 
 import aiohttp
 import pytest
-from flake8.api import legacy as flake8
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import modify_main_app
-from aiohttp_devtools.start import DatabaseChoice, ExampleChoice, SessionChoices, StartProject, TemplateChoice
-from aiohttp_devtools.start.main import enum_choices
+from aiohttp_devtools.start import StartProject
 
 IS_WINDOWS = platform.system() == 'Windows'
 
@@ -21,13 +17,9 @@ def test_start_simple(tmpdir, smart_caplog):
     StartProject(path=str(tmpdir), name='foobar')
     assert {p.basename for p in tmpdir.listdir()} == {
         'app',
-        'Makefile',
         'requirements.txt',
         'README.md',
-        'activate.settings.sh',
-        'setup.cfg',
         'static',
-        'tests',
     }
     if IS_WINDOWS:
         log_path = r'"C:\Users\appveyor\AppData\Local\Temp\..."'
@@ -37,36 +29,23 @@ def test_start_simple(tmpdir, smart_caplog):
         log_normalizers = ('"/tmp/.*?"', log_path)
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at {}
-adev.main INFO: config:
-    template_engine: jinja
-    session: secure
-    database: pg-sqlalchemy
-    example: message-board
-adev.main INFO: project created, 18 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
+adev.main INFO: project created, 13 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 6), reason='start app requires python >= 3.6')
 @pytest.mark.boxed
-async def test_start_other_dir(tmpdir, loop, aiohttp_client, smart_caplog):
-    StartProject(path=str(tmpdir.join('the-path')), name='foobar', database=DatabaseChoice.NONE)
+async def test_start_run(tmpdir, loop, aiohttp_client, smart_caplog):
+    StartProject(path=str(tmpdir.join('the-path')), name='foobar')
     assert {p.basename for p in tmpdir.listdir()} == {'the-path'}
     assert {p.basename for p in tmpdir.join('the-path').listdir()} == {
         'app',
-        'Makefile',
         'requirements.txt',
         'README.md',
-        'activate.settings.sh',
-        'setup.cfg',
         'static',
-        'tests',
     }
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
-adev.main INFO: config:
-    template_engine: jinja
-    session: secure
-    database: none
-    example: message-board
-adev.main INFO: project created, 16 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 13 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
     config = Config(app_path='the-path/app/', root_path=str(tmpdir), static_path='.')
     app_factory = config.import_app_factory()
     app = await app_factory()
@@ -82,80 +61,8 @@ adev.main INFO: project created, 16 files generated\n""" == smart_caplog.log.rep
 
 def test_conflicting_file(tmpdir):
     mktree(tmpdir, {
-        'Makefile': '...',
+        'README.md': '...',
     })
     with pytest.raises(AiohttpDevConfigError) as excinfo:
         StartProject(path=str(tmpdir), name='foobar')
-    assert excinfo.value.args[0].endswith('has files/directories which would conflict with the new project: Makefile')
-
-
-@pytest.mark.boxed
-@pytest.mark.parametrize('template_engine,session,database,example', itertools.product(
-    enum_choices(TemplateChoice),
-    enum_choices(SessionChoices),
-    enum_choices(DatabaseChoice),
-    enum_choices(ExampleChoice),
-))
-async def test_all_options(tmpdir, aiohttp_client, loop, template_engine, session, database, example):
-    StartProject(
-        path=str(tmpdir),
-        name='foobar',
-        template_engine=template_engine,
-        session=session,
-        database=database,
-        example=example,
-    )
-    assert 'app' in {p.basename for p in tmpdir.listdir()}
-    style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([str(tmpdir)])
-    assert report.total_errors == 0
-    if database != 'none':
-        return
-    config = Config(app_path='app/main.py', root_path=str(tmpdir), static_path='.')
-
-    app_factory = config.import_app_factory()
-    app = await app_factory()
-    modify_main_app(app, config)
-    cli = await aiohttp_client(app)
-    r = await cli.get('/')
-    assert r.status == 200
-    text = await r.text()
-    assert '<title>foobar</title>' in text
-
-
-@pytest.mark.boxed
-async def test_db_creation(tmpdir, aiohttp_client, loop):
-    StartProject(
-        path=str(tmpdir),
-        name='foobar postgres test',
-        template_engine=TemplateChoice.JINJA,
-        session=SessionChoices.NONE,
-        database=DatabaseChoice.PG_SA,
-        example=ExampleChoice.MESSAGE_BOARD,
-    )
-    assert 'app' in {p.basename for p in tmpdir.listdir()}
-    style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([str(tmpdir)])
-    assert report.total_errors == 0
-    db_password = os.getenv('APP_DB_PASSWORD', '')
-    env = {
-        'APP_DB_PASSWORD': db_password,
-        'PATH': os.getenv('PATH', ''),
-    }
-    p = subprocess.run(['make', 'reset-database'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                       cwd=str(tmpdir), env=env, universal_newlines=True)
-    assert p.returncode == 0, p.stdout
-    assert 'creating database "foobar"...'
-    assert 'creating tables from model definition...'
-
-    os.environ['APP_DB_PASSWORD'] = db_password
-    config = Config(app_path='app/main.py', root_path=str(tmpdir), static_path='.')
-
-    app_factory = config.import_app_factory()
-    app = await app_factory()
-    modify_main_app(app, config)
-    cli = await aiohttp_client(app)
-    r = await cli.get('/')
-    assert r.status == 200
-    text = await r.text()
-    assert '<title>foobar postgres test</title>' in text
+    assert excinfo.value.args[0].endswith('has files/directories which would conflict with the new project: README.md')
