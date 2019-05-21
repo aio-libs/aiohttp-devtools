@@ -1,20 +1,5 @@
-# {# This file is special: lines are made unique, stripped and sorted before the new requirements.txt file is created #}
-# you will need to install these requirements with `pip install -r requirements.txt`
-
 aiohttp==3.5.4
-pytest==4.4.1
-pytest-aiohttp==0.3.0
-pytest-cov==2.6.1
-
-# {% if template_engine.is_jinja %}
 aiohttp-jinja2==1.1.1
-# {% endif %}
-
-# {% if session.is_secure %}
 aiohttp-session[secure]==2.7.0
-# {% endif %}
-
-# {% if database.is_pg_sqlalchemy %}
-aiopg==0.16.0
-SQLAlchemy==1.3.3
-# {% endif %}
+asyncpg==0.18.3
+pydantic==0.25
