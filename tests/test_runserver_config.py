@@ -37,7 +37,7 @@ async def app_factory():
 """
     })
     config = Config(app_path='app.py')
-    app = await config.load_app()
+    app = await config.load_app(config.import_app_factory())
     assert isinstance(app, web.Application)
 
 
@@ -51,4 +51,4 @@ def app_factory():
     })
     config = Config(app_path='app.py')
     with pytest.raises(AiohttpDevConfigError):
-        await config.load_app()
+        await config.load_app(config.import_app_factory())

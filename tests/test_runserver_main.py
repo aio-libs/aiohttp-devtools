@@ -155,7 +155,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    await start_main_app(config, loop)
+    await start_main_app(config, config.import_app_factory(), loop)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
@@ -176,7 +176,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
     config = Config(app_path='app.py')
-    await start_main_app(config, loop)
+    await start_main_app(config, config.import_app_factory(), loop)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 

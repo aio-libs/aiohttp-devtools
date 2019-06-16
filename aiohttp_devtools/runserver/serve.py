@@ -115,8 +115,9 @@ def set_tty(tty_path):  # pragma: no cover
 def serve_main_app(config: Config, tty_path: Optional[str]):
     with set_tty(tty_path):
         setup_logging(config.verbose)
+        app_factory = config.import_app_factory()
         loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(start_main_app(config, loop))
+        runner = loop.run_until_complete(start_main_app(config, app_factory, loop))
         try:
             loop.run_forever()
         except KeyboardInterrupt:  # pragma: no cover
@@ -126,8 +127,8 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
                 loop.run_until_complete(runner.cleanup())
 
 
-async def start_main_app(config: Config, loop):
-    app = await config.load_app()
+async def start_main_app(config: Config, app_factory, loop):
+    app = await config.load_app(app_factory)
 
     modify_main_app(app, config)
 
