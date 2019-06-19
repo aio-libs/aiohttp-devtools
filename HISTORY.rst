@@ -3,6 +3,10 @@
 History
 -------
 
+0.13.1 (2019-06-19)
+-------------------
+* re-enable support for alternative loops, #238
+
 0.13.0 (2019-05-21)
 -------------------
 * greatly simplify the ``start`` command, #233
