@@ -157,8 +157,7 @@ class Config:
         self.watch_path = self.watch_path or Path(module.__file__).parent
         return attr
 
-    async def load_app(self):
-        app_factory = self.import_app_factory()
+    async def load_app(self, app_factory):
         if isinstance(app_factory, web.Application):
             app = app_factory
         else:
