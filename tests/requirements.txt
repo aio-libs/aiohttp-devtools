@@ -22,4 +22,4 @@ aiohttp==3.5.4
 aiohttp-jinja2==1.1.1
 aiohttp-session[secure]==2.7.0
 asyncpg==0.18.3
-pydantic==0.25;python_version>="3.6"
+pydantic==0.29;python_version>="3.6"
