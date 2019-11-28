@@ -79,32 +79,13 @@ Usage is simply
 
     adev start <path-to-directory-to-create-project-in>
 
-You're then asked a bunch of questions about the the application you're about to create, you get to choose:
+This will generate an example **message board** app with some basic functionality: Messages can be added via posting to a form, they are stored in the database and then displayed in a list, and the session is used to pre-populate the user's name.
 
-* **Template Engine**, options are
+The app includes:
 
-  - **jinja** views are rendered using Jinja2 templates via `aiohttp_jinja2`_.
-  - **none** views are rendered directly.
-
-* **Session**, options are
-
-  - **secure** will implemented encrypted cookie sessions using `aiohttp_session`_.
-  - **none** - session are not implemented
-
-* **Database**, options are:
-
-  - **pg-sqlalchemy** will use postgresql via `aiopg`_ and the `SqlAlchemy`_ ORM.
-  - **none** will use no database, persistence in examples is achieved by simply writing to file.
-    This is a quick way to get started but is obviously not suitable for production use!
-
-* **Example**, the newly created app can include some basic functionality
-
-  - **message board**: which demonstrates a little of aiohttp's usage. Messages can be added via posting to a form,
-    are stored in the database and then displayed in a list, if available the session is used to pre-populate the user's name.
-  - **none**: no example, just a single simple view is created.
-
-For more options see ``adev start --help``, or just run ``adev start foobar`` and follow instructions.
-
+* Jinja2 template engine, via `aiohttp_jinja2`_
+* encrypted cookie sessions using `aiohttp_session`_
+* Postgres database, via `asyncpg`_
 
 Tutorial
 --------
@@ -183,5 +164,4 @@ With that:
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
 .. _aiohttp_jinja2: https://github.com/aio-libs/aiohttp_jinja2
 .. _aiohttp_session: https://aiohttp-session.readthedocs.io/en/latest/
-.. _aiopg: https://aiopg.readthedocs.io/en/latest/
-.. _SqlAlchemy: http://www.sqlalchemy.org/
+.. _asyncpg: https://magicstack.github.io/asyncpg/current/
