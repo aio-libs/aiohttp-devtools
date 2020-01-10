@@ -42,7 +42,9 @@ with ``web.run_app(app)``. You can however use ``if __name__ == '__main__': web.
 
 ``app-path`` can be a path to either a directory containing a recognized default file (``app.py``
 or ``main.py``) or to a specific file. The ``--app-factory`` option can be used to define which method is called
-from the app path file, if not supplied some default method names are tried.
+from the app path file, if not supplied some default method names are tried
+(namely `app`, `app_factory`, `get_app` and `create_app`, which can be
+attributes, functions, or coroutines).
 
 All ``runserver`` arguments can be set via environment variables, the `start`_ command creates a script
 suitable for setting up your environment such that you can run the dev server with just ``adev runserver``.
