@@ -54,8 +54,10 @@ class AppTask(WatchTask):
             self._start_dev_server()
 
             static_path = str(self._app['static_path'])
+            
             def is_static(changes):
                 return all(str(c[1]).startswith(static_path) for c in changes)
+            
             async for changes in self._awatch:
                 self._reloads += 1
                 if any(f.endswith('.py') for _, f in changes):
