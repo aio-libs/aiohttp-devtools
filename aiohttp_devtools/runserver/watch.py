@@ -50,19 +50,19 @@ class AppTask(WatchTask):
 
     async def _run(self, live_checks=20):
         self._session = ClientSession()
+        is_static = lambda changes: all(str(c[1]).startswith(static_path) for c in changes)
         try:
             self._start_dev_server()
 
             static_path = str(self._app['static_path'])
             async for changes in self._awatch:
                 self._reloads += 1
-                is_static = all(str(c[1]).startswith(static_path) for c in changes)
                 if any(f.endswith('.py') for _, f in changes):
                     logger.debug('%d changes, restarting server', len(changes))
                     self._stop_dev_server()
                     self._start_dev_server()
                     await self._src_reload_when_live(live_checks)
-                elif len(changes) == 1 and is_static:
+                elif len(changes) == 1 and is_static(changes):
                     # a single (static) file has changed, reload a single file.
                     await src_reload(self._app, changes.pop()[1])
                 else:
