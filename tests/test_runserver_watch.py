@@ -78,7 +78,7 @@ async def test_python_no_server(loop, mocker):
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app = Application()
-    app["static_path"] = "/path/to/"
+    app['static_path'] = '/path/to/'
     app.src_reload = MagicMock()
     mock_ws = MagicMock()
     f = asyncio.Future()
