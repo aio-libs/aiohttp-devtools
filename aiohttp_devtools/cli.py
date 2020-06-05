@@ -3,10 +3,11 @@ import traceback
 from pathlib import Path
 
 import click
+from aiohttp.web import run_app
 
 from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
-from .runserver import INFER_HOST, run_app
+from .runserver import INFER_HOST
 from .runserver import runserver as _runserver
 from .runserver import serve_static
 from .start import StartProject, check_dir_clean
@@ -38,7 +39,7 @@ def serve(path, livereload, port, verbose):
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    run_app(*serve_static(static_path=path, livereload=livereload, port=port))
+    run_app(**serve_static(static_path=path, livereload=livereload, port=port))
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
@@ -81,7 +82,7 @@ def runserver(**config):
     active_config = {k: v for k, v in config.items() if v is not None}
     setup_logging(config['verbose'])
     try:
-        run_app(*_runserver(**active_config))
+        run_app(**_runserver(**active_config))
     except AiohttpDevException as e:
         if config['verbose']:
             tb = click.style(traceback.format_exc().strip('\n'), fg='white', dim=True)
