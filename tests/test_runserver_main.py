@@ -13,7 +13,7 @@ from aiohttp.web import Application
 from aiohttp.web_log import AccessLogger
 from pytest_toolbox import mktree
 
-from aiohttp_devtools.runserver import run_app, runserver
+from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, src_reload, start_main_app
 
@@ -110,14 +110,6 @@ app.router.add_get('/', hello)
 def kill_parent_soon(pid):
     time.sleep(0.2)
     os.kill(pid, signal.SIGINT)
-
-
-@pytest.mark.boxed
-def test_run_app(loop, aiohttp_unused_port):
-    app = Application()
-    port = aiohttp_unused_port()
-    Process(target=kill_parent_soon, args=(os.getpid(),)).start()
-    run_app(app, port, loop, AccessLogger)
 
 
 @pytest.mark.boxed
