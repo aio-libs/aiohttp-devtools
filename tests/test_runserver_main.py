@@ -54,7 +54,9 @@ def create_app(loop):
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    aux_app, aux_port, _, _ = runserver(app_path='app.py', static_path='static_dir')
+    args = runserver(app_path='app.py', static_path='static_dir')
+    aux_app = args["app"]
+    aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     for startup in aux_app.on_startup:
@@ -97,7 +99,9 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    aux_app, aux_port, _, _ = runserver(app_path='app.py', host='foobar.com')
+    args = runserver(app_path='app.py', host='foobar.com')
+    aux_app = args["app"]
+    aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 2
