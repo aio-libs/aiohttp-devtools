@@ -1,9 +1,6 @@
 import asyncio
-import contextlib
 import os
 from multiprocessing import set_start_method
-
-from aiohttp.web_runner import AppRunner, TCPSite
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
@@ -51,7 +48,8 @@ def runserver(**config_kwargs):
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return {"app": aux_app, "port": config.aux_port, "access_log_class": AuxAccessLogger}
+    return {"app": aux_app, "host": HOST, "port": config.aux_port,
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
 def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000):
@@ -68,4 +66,5 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return {"app": app, "port": port, "access_log_class": AuxAccessLogger}
+    return {"app": app, "host": HOST, "port": port,
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
