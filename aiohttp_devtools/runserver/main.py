@@ -3,7 +3,7 @@ import contextlib
 import os
 from multiprocessing import set_start_method
 
-from aiohttp.web_runner import AppRunner, TCPSite
+from aiohttp.web_runner import AppRunner, GracefulExit, TCPSite
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
@@ -21,7 +21,7 @@ def run_app(app, port, loop, access_log_class):
 
     try:
         loop.run_forever()
-    except KeyboardInterrupt:  # pragma: no branch
+    except (GracefulExit, KeyboardInterrupt):  # pragma: no branch
         pass
     finally:
         logger.info('shutting down server...')
