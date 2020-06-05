@@ -3,14 +3,11 @@ import json
 import os
 import signal
 import time
-from multiprocessing import Process
 from unittest import mock
 
 import aiohttp
 import pytest
 from aiohttp import ClientTimeout
-from aiohttp.web import Application
-from aiohttp.web_log import AccessLogger
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import runserver
