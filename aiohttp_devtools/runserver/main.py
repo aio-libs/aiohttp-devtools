@@ -13,7 +13,7 @@ from .watch import AppTask, LiveReloadTask
 
 
 def run_app(app, port, loop, access_log_class):
-    runner = AppRunner(app, access_log_class=access_log_class)
+    runner = AppRunner(app, handle_signals=True, access_log_class=access_log_class)
     loop.run_until_complete(runner.setup())
 
     site = TCPSite(runner, HOST, port, shutdown_timeout=0.01)
