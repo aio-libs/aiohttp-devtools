@@ -117,8 +117,9 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
         setup_logging(config.verbose)
         app_factory = config.import_app_factory()
         loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(start_main_app(config, app_factory, loop))
+        runner = loop.run_until_complete(create_main_app(config, app_factory, loop))
         try:
+            loop.run_until_complete(start_main_app(runner, config.main_port))
             loop.run_forever()
         except KeyboardInterrupt:  # pragma: no cover
             pass
@@ -127,17 +128,18 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
                 loop.run_until_complete(runner.cleanup())
 
 
-async def start_main_app(config: Config, app_factory, loop):
+async def create_main_app(config: Config, app_factory, loop):
     app = await config.load_app(app_factory)
-
     modify_main_app(app, config)
 
     await check_port_open(config.main_port, loop)
-    runner = web.AppRunner(app, access_log_class=AccessLogger)
+    return web.AppRunner(app, access_log_class=AccessLogger)
+
+
+async def start_main_app(runner: web.AppRunner, port):
     await runner.setup()
-    site = web.TCPSite(runner, host=HOST, port=config.main_port, shutdown_timeout=0.1)
+    site = web.TCPSite(runner, host=HOST, port=port, shutdown_timeout=0.1)
     await site.start()
-    return runner
 
 
 WS = 'websockets'
