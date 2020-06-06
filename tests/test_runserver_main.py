@@ -15,7 +15,8 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import run_app, runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app
+from aiohttp_devtools.runserver.serve import (create_auxiliary_app, create_main_app, modify_main_app, src_reload,
+                                              start_main_app)
 
 from .conftest import SIMPLE_APP
 
