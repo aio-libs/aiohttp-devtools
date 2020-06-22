@@ -57,7 +57,7 @@ def modify_main_app(app, config: Config):
     def change_static_url(app, url):
         app['static_root_url'].change(url)
         for subapp in app._subapps:
-            set_static_url(subapp, url)
+            change_static_url(subapp, url)
 
     if config.livereload:
         async def on_prepare(request, response):
