@@ -49,6 +49,16 @@ def modify_main_app(app, config: Config):
         else:
             return config.host
 
+    def set_static_url(app, url):
+        app['static_root_url'] = MutableValue(url)
+        for subapp in app._subapps:
+            set_static_url(subapp, url)
+
+    def change_static_url(app, url):
+        app['static_root_url'].change(url)
+        for subapp in app._subapps:
+            set_static_url(subapp, url)
+
     if config.livereload:
         async def on_prepare(request, response):
             if (not request.path.startswith('/_debugtoolbar') and
@@ -66,11 +76,7 @@ def modify_main_app(app, config: Config):
         async def static_middleware(request, handler):
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
             dft_logger.debug('setting app static_root_url to "%s"', static_url)
-            def set_static_url(app, url):
-                app['static_root_url'].change(url)
-                for subapp in app._subapps:
-                    set_static_url(subapp, url)
-            set_static_url(request.app, static_url)
+            change_static_url(request.app, static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -78,10 +84,6 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        def set_static_url(app, url):
-            app['static_root_url'] = MutableValue(url)
-            for subapp in app._subapps:
-                set_static_url(subapp, url)
         set_static_url(app, static_url)
 
     if config.debug_toolbar and aiohttp_debugtoolbar:
