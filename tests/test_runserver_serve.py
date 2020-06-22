@@ -133,8 +133,8 @@ class DummyApplication(dict):
         self.router = MagicMock()
         self['static_root_url'] = '/static/'
         self._subapps = []
-        
-    def add_subapp(self, app):
+
+    def add_subapp(self, path, app):
         self._subapps.append(app)
 
 
