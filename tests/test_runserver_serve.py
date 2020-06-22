@@ -132,6 +132,10 @@ class DummyApplication(dict):
         self.middlewares = []
         self.router = MagicMock()
         self['static_root_url'] = '/static/'
+        self._subapps = []
+        
+    def add_subapp(self, app):
+        self._subapps.append(app)
 
 
 def test_modify_main_app_all_off(tmpworkdir):
