@@ -36,13 +36,13 @@ HOST = '0.0.0.0'
 def _set_static_url(app, url):
     app['static_root_url'] = MutableValue(url)
     for subapp in app._subapps:
-        set_static_url(subapp, url)
+        _set_static_url(subapp, url)
 
-        
+
 def _change_static_url(app, url):
     app['static_root_url'].change(url)
     for subapp in app._subapps:
-        change_static_url(subapp, url)
+        _change_static_url(subapp, url)
 
 
 def modify_main_app(app, config: Config):
