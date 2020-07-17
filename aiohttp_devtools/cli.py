@@ -68,6 +68,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
+@click.argument('project_args', nargs=-1)
 def runserver(**config):
     """
     Run a development server for an aiohttp apps.
@@ -80,6 +81,8 @@ def runserver(**config):
     """
     active_config = {k: v for k, v in config.items() if v is not None}
     setup_logging(config['verbose'])
+    # Rewrite argv for the application.
+    sys.argv[1:] = active_config.pop('project_args')
     try:
         run_app(*_runserver(**active_config))
     except AiohttpDevException as e:
