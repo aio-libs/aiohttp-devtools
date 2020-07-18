@@ -144,7 +144,7 @@ class FakeProcess:
 def test_stop_process_dead(smart_caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=False)
     app_task._process.exitcode = 123
@@ -156,7 +156,7 @@ def test_stop_process_dead(smart_caplog, mocker):
 def test_stop_process_clean(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=True)
     app_task._process.pid = 321
@@ -169,7 +169,7 @@ def test_stop_process_clean(mocker):
 def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=True)
     app_task._process.pid = 321
