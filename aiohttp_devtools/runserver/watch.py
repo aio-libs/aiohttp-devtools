@@ -23,7 +23,7 @@ class WatchTask:
 
     async def start(self, app):
         self._app = app
-        self._task = asyncio.get_running_loop().create_task(self._run())
+        self._task = asyncio.get_event_loop().create_task(self._run())
 
     async def _run(self):
         raise NotImplementedError()
