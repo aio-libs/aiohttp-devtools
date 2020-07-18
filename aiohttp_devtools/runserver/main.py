@@ -86,4 +86,4 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return app, port, loop, AuxAccessLogger
+    return app, port, AuxAccessLogger
