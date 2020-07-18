@@ -14,17 +14,16 @@ from .serve import WS, serve_main_app, src_reload
 
 
 class WatchTask:
-    def __init__(self, path: str, loop: asyncio.AbstractEventLoop):
-        self._loop = loop
+    def __init__(self, path: str):
         self._app = None
         self._task = None
         assert path
-        self.stopper = asyncio.Event(loop=self._loop)
+        self.stopper = asyncio.Event()
         self._awatch = awatch(path, stop_event=self.stopper)
 
     async def start(self, app):
         self._app = app
-        self._task = self._loop.create_task(self._run())
+        self._task = asyncio.create_task(self._run())
 
     async def _run(self):
         raise NotImplementedError()
@@ -41,12 +40,12 @@ class WatchTask:
 class AppTask(WatchTask):
     template_files = '.html', '.jinja', '.jinja2'
 
-    def __init__(self, config: Config, loop: asyncio.AbstractEventLoop):
+    def __init__(self, config: Config):
         self._config = config
         self._reloads = 0
         self._session = None
         self._runner = None
-        super().__init__(self._config.watch_path, loop)
+        super().__init__(self._config.watch_path)
 
     async def _run(self, live_checks=20):
         self._session = ClientSession()
