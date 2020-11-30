@@ -14,7 +14,7 @@ libraries.
 Installation
 ------------
 
-Requires **python 3.5**, **python 3.6** or **python 3.7**.
+Requires **python 3.6** or later.
 
 .. code:: shell
 
@@ -96,7 +96,7 @@ To demonstrate what adev can do, let's walk through creating a new application:
 
 First let's create a clean python environment to work in and install aiohttp-devtools.
 
-(it is assumed you've already got **python 3.5**, **pip** and **virtualenv** installed)
+(it is assumed you've already got **python**, **pip** and **virtualenv** installed)
 
 .. code:: shell
 
