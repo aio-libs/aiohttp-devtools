@@ -82,5 +82,5 @@ setup(
         'Pygments>=2.2.0',
         'watchgod>=0.2',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
 )
