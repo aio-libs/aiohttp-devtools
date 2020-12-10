@@ -147,7 +147,7 @@ def test_modify_main_app_all_off(tmpworkdir):
 
 def test_modify_main_app_all_on(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', debug_toolbar=True, static_path='.')
+    config = Config(app_path='app.py', static_path='.')
     app = DummyApplication()
     modify_main_app(app, config)
     assert len(app.on_response_prepare) == 1

@@ -46,7 +46,6 @@ root_help = 'Root directory project used to qualify other paths. env variable: A
 static_url_help = 'URL path to serve static files from, default "/static/". env variable: AIO_STATIC_URL'
 host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
              'with default of localhost. env variable AIO_HOST')
-debugtoolbar_help = 'Whether to enable debug toolbar. env variable: AIO_DEBUG_TOOLBAR'
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, if missing default app-factory '
                     'names are tried. This can be either a function with signature '
                     '"def create_app(loop): -> Application" or "def create_app(): -> Application" '
@@ -63,7 +62,6 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--static-url', envvar='AIO_STATIC_URL', help=static_url_help)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--host', default=INFER_HOST, help=host_help)
-@click.option('--debug-toolbar/--no-debug-toolbar', envvar='AIO_DEBUG_TOOLBAR', default=None, help=debugtoolbar_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
