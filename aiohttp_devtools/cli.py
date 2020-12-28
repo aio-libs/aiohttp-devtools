@@ -9,7 +9,7 @@ from .logs import main_logger, setup_logging
 from .runserver import INFER_HOST, run_app
 from .runserver import runserver as _runserver
 from .runserver import serve_static
-from .start import StartProject, check_dir_clean
+from .start import DEMO_NAMES, StartProject, check_dir_clean
 from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
@@ -93,18 +93,19 @@ def runserver(**config):
 @cli.command()
 @click.argument('path', type=_dir_may_exist, required=True)
 @click.argument('name', required=False)
+@click.option('-d', '--demo', type=click.Choice(DEMO_NAMES), default="polls")
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
-def start(*, path, name, verbose):
+def start(*, path, name, demo, verbose):
     """
     Create a new aiohttp app.
     """
     setup_logging(verbose)
     try:
-        check_dir_clean(Path(path))
+        check_dir_clean(Path(path), demo)
         if name is None:
             name = Path(path).name
 
-        StartProject(path=path, name=name)
+        StartProject(path=path, name=name, demo=demo)
     except AiohttpDevException as e:
         main_logger.error('Error: %s', e)
         sys.exit(2)
