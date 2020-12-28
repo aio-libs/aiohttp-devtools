@@ -1,6 +1,3 @@
-import base64
-import os
-import re
 from pathlib import Path
 
 from ..exceptions import AiohttpDevConfigError
