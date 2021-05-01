@@ -15,7 +15,7 @@ pytest-sugar==0.9.4
 pytest-timeout==1.4.2
 pytest-toolbox==0.4
 pytest-xdist==2.2.1
-Sphinx==3.0.4
+Sphinx==3.5.4
 
 # from aiohttp_devtools/start/template/requirements.txt
 aiohttp==3.7.4.post0
