@@ -20,6 +20,7 @@ def test_start_simple(tmpdir, smart_caplog):
         'requirements.txt',
         'README.md',
         'static',
+        '__init__.py',
     }
     if IS_WINDOWS:
         log_path = r'"C:\Users\appveyor\AppData\Local\Temp\..."'
@@ -42,6 +43,7 @@ async def test_start_run(tmpdir, loop, aiohttp_client, smart_caplog):
         'requirements.txt',
         'README.md',
         'static',
+        '__init__.py',
     }
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
