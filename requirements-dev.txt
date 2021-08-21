@@ -3,12 +3,11 @@ aiohttp_debugtoolbar==0.5.0
 click==8.0.1
 coverage==4.5.3
 docutils==0.14
-flake8==3.7.7
+flake8==3.9.2
 grablib==0.8
 isort==4.3.20
 mypy==0.910
 pycodestyle==2.5.0
-pyflakes==2.1.1
 pytest==4.4.1
 pytest-aiohttp==0.3.0
 pytest-cov==2.6.1
