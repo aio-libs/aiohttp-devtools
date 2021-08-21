@@ -1,3 +1,4 @@
+-e .
 aiohttp_debugtoolbar==0.5.0
 click==7.0.0
 coverage==4.5.3

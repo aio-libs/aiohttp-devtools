@@ -15,7 +15,8 @@ isort:
 .PHONY: lint
 lint:
 	python setup.py check -rms
-	flake8 aiohttp_devtools/ tests/
+	mypy
+	flake8
 	isort -rc -w 120 --check-only aiohttp_devtools
 	isort -rc -w 120 --check-only tests
 
