@@ -2,7 +2,7 @@ aiohttp_debugtoolbar==0.5.0
 click==7.0.0
 coverage==4.5.3
 docutils==0.14
-flake8==3.7.7
+flake8==3.9.2
 grablib==0.8
 isort==4.3.20
 pycodestyle==2.5.0
