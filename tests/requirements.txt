@@ -4,7 +4,7 @@ coverage==4.5.3
 docutils==0.14
 flake8==3.7.7
 grablib==0.8
-isort==4.3.20
+isort==5.9.3
 pycodestyle==2.5.0
 pyflakes==2.1.1
 pytest==4.4.1
