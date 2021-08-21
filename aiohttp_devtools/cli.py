@@ -4,13 +4,13 @@ from pathlib import Path
 
 import click
 
+from . import __version__
 from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
 from .runserver import INFER_HOST, run_app
 from .runserver import runserver as _runserver
 from .runserver import serve_static
 from .start import StartProject, check_dir_clean
-from . import __version__
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
 _file_dir_existing = click.Path(exists=True, dir_okay=True, file_okay=True)
