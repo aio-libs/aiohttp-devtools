@@ -143,7 +143,7 @@ async def start_main_app(config: Config, app_factory, loop):
 WS = 'websockets'
 
 
-async def src_reload(app, path: str = None):
+async def src_reload(app, path: Optional[str] = None):
     """
     prompt each connected browser to reload by sending websocket message.
 
