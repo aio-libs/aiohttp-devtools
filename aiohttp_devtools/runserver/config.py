@@ -131,11 +131,7 @@ class Config:
         module_path = '.'.join(rel_py_file.with_suffix('').parts)
 
         sys.path.append(str(self.python_path))
-        try:
-            module = import_module(module_path)
-        except ImportError as e:
-            raise AdevConfigError('error importing "{}" '
-                                  'from "{}": {}'.format(module_path, self.python_path, e)) from e
+        module = import_module(module_path)
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
