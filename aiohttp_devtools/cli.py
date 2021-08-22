@@ -3,14 +3,15 @@ import traceback
 from pathlib import Path
 
 import click
+from aiohttp.web import run_app
 
+from . import __version__
 from .exceptions import AiohttpDevException
 from .logs import main_logger, setup_logging
-from .runserver import INFER_HOST, run_app
+from .runserver import INFER_HOST
 from .runserver import runserver as _runserver
 from .runserver import serve_static
 from .start import StartProject, check_dir_clean
-from .version import VERSION
 
 _dir_existing = click.Path(exists=True, dir_okay=True, file_okay=False)
 _file_dir_existing = click.Path(exists=True, dir_okay=True, file_okay=True)
@@ -18,7 +19,7 @@ _dir_may_exist = click.Path(dir_okay=True, file_okay=False, writable=True, resol
 
 
 @click.group()
-@click.version_option(VERSION, '-V', '--version', prog_name='aiohttp-devtools')
+@click.version_option(__version__, "-V", "--version", prog_name="aiohttp-devtools")
 def cli():
     pass
 
@@ -38,7 +39,7 @@ def serve(path, livereload, port, verbose):
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    run_app(*serve_static(static_path=path, livereload=livereload, port=port))
+    run_app(**serve_static(static_path=path, livereload=livereload, port=port))
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
@@ -66,6 +67,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
+@click.argument('project_args', nargs=-1)
 def runserver(**config):
     """
     Run a development server for an aiohttp apps.
@@ -78,8 +80,10 @@ def runserver(**config):
     """
     active_config = {k: v for k, v in config.items() if v is not None}
     setup_logging(config['verbose'])
+    # Rewrite argv for the application.
+    sys.argv[1:] = active_config.pop('project_args')
     try:
-        run_app(*_runserver(**active_config))
+        run_app(**_runserver(**active_config))
     except AiohttpDevException as e:
         if config['verbose']:
             tb = click.style(traceback.format_exc().strip('\n'), fg='white', dim=True)

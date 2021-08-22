@@ -30,7 +30,7 @@ def test_serve_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['serve'])
     assert result.exit_code == 2
-    assert 'Error: Missing argument "PATH"' in result.output
+    assert "Error: Missing argument 'PATH'" in result.output
 
 
 def test_runserver(mocker):
@@ -103,7 +103,7 @@ def test_start_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['start'])
     assert result.exit_code == 2
-    assert 'Error: Missing argument "PATH"' in result.output
+    assert "Error: Missing argument 'PATH'" in result.output
 
 
 def test_start_help():

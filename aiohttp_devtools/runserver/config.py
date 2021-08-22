@@ -4,6 +4,7 @@ import re
 import sys
 from importlib import import_module
 from pathlib import Path
+from typing import Optional
 
 from aiohttp import web
 
@@ -29,20 +30,20 @@ INFER_HOST = '<inference>'
 class Config:
     def __init__(self, *,
                  app_path: str = '.',
-                 root_path: str = None,
+                 root_path: Optional[str] = None,
                  verbose: bool = False,
-                 static_path: str = None,
-                 python_path: str = None,
+                 static_path: Optional[str] = None,
+                 python_path: Optional[str] = None,
                  static_url: str = '/static/',
                  livereload: bool = True,
-                 app_factory_name: str = None,
+                 app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  main_port: int = 8000,
-                 aux_port: int = None):
+                 aux_port: Optional[int] = None):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
-            self.watch_path = self.root_path
+            self.watch_path: Optional[Path] = self.root_path
         else:
             logger.debug('Root path not specified, using current working directory')
             self.root_path = Path('.').resolve()
@@ -68,7 +69,7 @@ class Config:
         logger.debug('config loaded:\n%s', self)
 
     @property
-    def static_path_str(self):
+    def static_path_str(self) -> Optional[str]:
         return self.static_path and str(self.static_path)
 
     def _find_app_path(self, app_path: str) -> Path:
@@ -93,7 +94,7 @@ class Config:
         raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def _resolve_path(self, _path: str, check: str, arg_name: str):
+    def _resolve_path(self, _path: Optional[str], check: str, arg_name: str):
         if _path is None:
             return
 
@@ -128,11 +129,7 @@ class Config:
         module_path = '.'.join(rel_py_file.with_suffix('').parts)
 
         sys.path.append(str(self.python_path))
-        try:
-            module = import_module(module_path)
-        except ImportError as e:
-            raise AdevConfigError('error importing "{}" '
-                                  'from "{}": {}'.format(module_path, self.python_path, e)) from e
+        module = import_module(module_path)
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
@@ -169,7 +166,7 @@ class Config:
                 app = app_factory()
 
             if asyncio.iscoroutine(app):
-                app = await app
+                app = await app  # type: ignore[misc]
 
             if not isinstance(app, web.Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
