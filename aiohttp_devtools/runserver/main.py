@@ -53,12 +53,12 @@ def runserver(**config_kwargs):
         livereload=config.livereload,
     )
 
-    main_manager = AppTask(config, loop)
+    main_manager = AppTask(config)
     aux_app.on_startup.append(main_manager.start)
     aux_app.on_shutdown.append(main_manager.close)
 
     if config.static_path:
-        static_manager = LiveReloadTask(config.static_path, loop)
+        static_manager = LiveReloadTask(config.static_path)
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.on_startup.append(static_manager.start)
         aux_app.on_shutdown.append(static_manager.close)
@@ -76,15 +76,14 @@ def runserver(**config_kwargs):
 def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000):
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    loop = asyncio.get_event_loop()
     app = create_auxiliary_app(static_path=static_path, livereload=livereload)
 
     if livereload:
-        livereload_manager = LiveReloadTask(static_path, loop)
+        livereload_manager = LiveReloadTask(static_path)
         logger.debug('starting livereload to watch %s', static_path)
         app.on_startup.append(livereload_manager.start)
         app.on_shutdown.append(livereload_manager.close)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return app, port, loop, AuxAccessLogger
+    return app, port, AuxAccessLogger
