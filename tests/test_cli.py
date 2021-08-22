@@ -12,7 +12,6 @@ def test_cli_help():
     assert result.exit_code == 0
     assert 'Run a development server for an aiohttp apps.' in result.output
     assert 'Serve static files from a directory.' in result.output
-    assert 'Create a new aiohttp app.' in result.output
 
 
 def test_serve(mocker, loop):
