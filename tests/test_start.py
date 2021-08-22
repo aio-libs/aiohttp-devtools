@@ -10,30 +10,7 @@ from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import modify_main_app
 from aiohttp_devtools.start import StartProject
 
-IS_WINDOWS = platform.system() == 'Windows'
 
-
-def test_start_simple(tmpdir, smart_caplog):
-    StartProject(path=str(tmpdir), name='foobar')
-    assert {p.basename for p in tmpdir.listdir()} == {
-        'app',
-        'requirements.txt',
-        'README.md',
-        'static',
-        '__init__.py',
-    }
-    if IS_WINDOWS:
-        log_path = r'"C:\Users\appveyor\AppData\Local\Temp\..."'
-        log_normalizers = (r'"C:\\Users\\appveyor\\AppData\\Local\\Temp\\.*?"', log_path.replace('\\', r'\\'))
-    else:
-        log_path = '"/tmp/..."'
-        log_normalizers = ('"/tmp/.*?"', log_path)
-    assert """\
-adev.main INFO: Starting new aiohttp project "foobar" at {}
-adev.main INFO: project created, 14 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
-
-
-@pytest.mark.skipif(sys.version_info < (3, 6), reason='start app requires python >= 3.6')
 @pytest.mark.boxed
 async def test_start_run(tmpdir, loop, aiohttp_client, smart_caplog):
     StartProject(path=str(tmpdir.join('the-path')), name='foobar')
