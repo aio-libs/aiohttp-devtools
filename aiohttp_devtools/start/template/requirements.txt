@@ -1,5 +1,5 @@
 aiohttp==3.5.4
 aiohttp-jinja2==1.2.0
 aiohttp-session[secure]==2.9.0
-asyncpg==0.18.3
+asyncpg==0.21.0
 pydantic==0.25
