@@ -151,7 +151,7 @@ def test_modify_main_app_all_on(tmpworkdir):
     app = DummyApplication()
     modify_main_app(app, config)
     assert len(app.on_response_prepare) == 1
-    assert len(app.middlewares) == 2
+    assert len(app.middlewares) == 1
     assert app['static_root_url'] == 'http://localhost:8001/static'
     assert app._debug is True
 
