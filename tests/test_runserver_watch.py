@@ -39,10 +39,12 @@ async def test_single_file_change(loop, mocker):
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
 
-    app_task = AppTask(MagicMock(), loop)
+    app_task = AppTask(MagicMock())
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app_task._app = MagicMock()
+    d = {'static_path': '/path/to/'}
+    app_task._app.__getitem__.side_effect = d.__getitem__
     await app_task._run()
     mock_src_reload.assert_called_once_with(app_task._app, '/path/to/file')
     assert app_task._start_dev_server.call_count == 1
@@ -54,7 +56,7 @@ async def test_multiple_file_change(loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
-    app_task = AppTask(MagicMock(), loop)
+    app_task = AppTask(MagicMock())
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
 
@@ -72,10 +74,11 @@ async def test_python_no_server(loop, mocker):
 
     config = MagicMock()
     config.main_port = 8000
-    app_task = AppTask(config, loop)
+    app_task = AppTask(config)
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app = Application()
+    app['static_path'] = '/path/to/'
     app.src_reload = MagicMock()
     mock_ws = MagicMock()
     f = asyncio.Future()
@@ -98,7 +101,7 @@ async def test_reload_server_running(loop, aiohttp_client, mocker):
     config = MagicMock()
     config.main_port = cli.server.port
 
-    app_task = AppTask(config, loop)
+    app_task = AppTask(config)
     app_task._app = app
     app_task._session = ClientSession()  # match behaviour of _run()
     await app_task._src_reload_when_live(2)
@@ -111,7 +114,7 @@ async def test_livereload_task_single(loop, mocker):
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
 
-    task = LiveReloadTask('x', loop)
+    task = LiveReloadTask('x')
     task._app = MagicMock()
     await task._run()
     mock_src_reload.assert_called_once_with(task._app, '/path/to/file')
@@ -122,7 +125,7 @@ async def test_livereload_task_multiple(loop, mocker):
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
 
-    task = LiveReloadTask('x', loop)
+    task = LiveReloadTask('x')
     task._app = MagicMock()
     await task._run()
     mock_src_reload.assert_called_once_with(task._app)
@@ -144,7 +147,8 @@ class FakeProcess:
 def test_stop_process_dead(smart_caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    mocker.patch('asyncio.Event')
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=False)
     app_task._process.exitcode = 123
@@ -156,7 +160,8 @@ def test_stop_process_dead(smart_caplog, mocker):
 def test_stop_process_clean(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    mocker.patch('asyncio.Event')
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=True)
     app_task._process.pid = 321
@@ -166,10 +171,10 @@ def test_stop_process_clean(mocker):
 
 
 @non_windows_test  # There's no signals in Windows
-def test_stop_process_dirty(mocker):
+async def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
-    app_task = AppTask(MagicMock(), MagicMock())
+    app_task = AppTask(MagicMock())
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=True)
     app_task._process.pid = 321

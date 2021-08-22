@@ -6,7 +6,7 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.runserver import serve_static
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def cli(loop, tmpworkdir, aiohttp_client):
     asyncio.set_event_loop(loop)
     args = serve_static(static_path=str(tmpworkdir), livereload=False)

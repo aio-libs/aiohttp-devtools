@@ -134,7 +134,6 @@ def test_parse_body(value, result):
     assert parse_body(value, 'testing') == result
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason='3.5 behaves differently')
 def test_parse_body_unicode_decode():
     with pytest.warns(UserWarning):
         assert parse_body(b'will fail: \x80', 'testing') == 'will fail: '

@@ -7,7 +7,7 @@ THIS_DIR = Path(__file__).resolve().parent
 long_description = THIS_DIR.joinpath('README.rst').read_text()
 
 # avoid loading the package before requirements are installed:
-version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module()
+version = SourceFileLoader("__version__", "aiohttp_devtools/__init__.py").load_module()
 
 package = THIS_DIR.joinpath('aiohttp_devtools/start')
 
@@ -25,7 +25,7 @@ repo_url = 'https://github.com/{}'.format(repo_slug)
 
 setup(
     name=name,
-    version=str(version.VERSION),
+    version=version.__version__,
     description='Dev tools for aiohttp',
     long_description=long_description,
     classifiers=[
@@ -33,9 +33,10 @@ setup(
         'Environment :: Console',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
@@ -81,5 +82,5 @@ setup(
         'Pygments>=2.2.0',
         'watchgod>=0.2',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
 )
