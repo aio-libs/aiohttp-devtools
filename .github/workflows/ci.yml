@@ -86,6 +86,8 @@ jobs:
       uses: py-actions/py-dependency-install@v2
       with:
         path: requirements-dev.txt
+    - name: Install JS dependencies
+      run: grablib
     - name: Run unittests
       env:
         COLOR: 'yes'
