@@ -85,7 +85,7 @@ First let's create a clean python environment to work in and install aiohttp-dev
     pip install aiohttp-devtools create-aio-app
 
 
-We're now ready to build our new application with `create-aio-app`_ and we'll name the
+We're now ready to build our new application with ``create-aio-app`` and we'll name the
 project ``my_new_app`` after the current directory.
 
 We're going to explicitly choose no database here to make, this tutorial easier but you can remove that option
@@ -101,7 +101,7 @@ You can just hit return to choose the default for all the options.
 That's it, your app is now created. You might want to have a look through the local directory's file tree.
 
 Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
-``./requirements.txt`` by `create-aio-app`_, to install simply run
+``./requirements.txt`` by ``create-aio-app``, to install simply run
 
 .. code:: shell
 
