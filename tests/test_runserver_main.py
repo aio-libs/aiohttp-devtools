@@ -181,7 +181,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def aux_cli(aiohttp_client, loop):
     app = create_auxiliary_app(static_path='.')
     cli = loop.run_until_complete(aiohttp_client(app))

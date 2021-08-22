@@ -168,7 +168,7 @@ def test_stop_process_clean(mocker):
 
 
 @non_windows_test  # There's no signals in Windows
-def test_stop_process_dirty(mocker):
+async def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     app_task = AppTask(MagicMock())

@@ -7,17 +7,11 @@ install:
 	pip install -r tests/requirements.txt
 	grablib
 
-.PHONY: isort
-isort:
-	isort -rc -w 120 aiohttp_devtools
-	isort -rc -w 120 tests
-
 .PHONY: lint
 lint:
 	python setup.py check -rms
-	flake8 aiohttp_devtools/ tests/
-	isort -rc -w 120 --check-only aiohttp_devtools
-	isort -rc -w 120 --check-only tests
+	mypy
+	flake8
 
 .PHONY: test
 test:

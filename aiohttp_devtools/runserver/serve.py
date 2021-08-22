@@ -3,6 +3,7 @@ import contextlib
 import json
 import mimetypes
 import sys
+from errno import EADDRINUSE
 from pathlib import Path
 from typing import Optional
 
@@ -87,10 +88,10 @@ async def check_port_open(port, loop, delay=1):
         try:
             server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
         except OSError as e:
-            if e.errno != 98:  # pragma: no cover
+            if e.errno != EADDRINUSE:
                 raise
             dft_logger.warning('port %d is already in use, waiting %d...', port, i)
-            await asyncio.sleep(delay, loop=loop)
+            await asyncio.sleep(delay)
         else:
             server.close()
             await server.wait_closed()
@@ -143,7 +144,7 @@ async def start_main_app(config: Config, app_factory, loop):
 WS = 'websockets'
 
 
-async def src_reload(app, path: str = None):
+async def src_reload(app, path: Optional[str] = None):
     """
     prompt each connected browser to reload by sending websocket message.
 

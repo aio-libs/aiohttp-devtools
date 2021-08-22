@@ -35,6 +35,6 @@ def create_app():
 
 
 def create_future(result=None):
-    f = Future()
+    f: Future[None] = Future()
     f.set_result(result)
     return f
