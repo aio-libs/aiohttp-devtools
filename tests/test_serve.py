@@ -9,7 +9,7 @@ from aiohttp_devtools.runserver import serve_static
 @pytest.yield_fixture
 def cli(loop, tmpworkdir, aiohttp_client):
     asyncio.set_event_loop(loop)
-    app, _, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
+    app, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
     yield loop.run_until_complete(aiohttp_client(app))
 
 
@@ -33,7 +33,7 @@ async def test_file_missing(cli):
 
 
 async def test_html_file_livereload(loop, aiohttp_client, tmpworkdir):
-    app, port, _, _ = serve_static(static_path=str(tmpworkdir), livereload=True)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=True)
     assert port == 8000
     cli = await aiohttp_client(app)
     mktree(tmpworkdir, {
@@ -52,7 +52,7 @@ async def test_html_file_livereload(loop, aiohttp_client, tmpworkdir):
 
 
 async def test_serve_index(loop, aiohttp_client, tmpworkdir):
-    app, port, _, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
+    app, port, _ = serve_static(static_path=str(tmpworkdir), livereload=False)
     assert port == 8000
     cli = await aiohttp_client(app)
     mktree(tmpworkdir, {
