@@ -1,6 +1,5 @@
 import sys
 import traceback
-from pathlib import Path
 
 import click
 from aiohttp.web import run_app
