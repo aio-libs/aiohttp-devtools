@@ -12,7 +12,6 @@ def pytest_collection_modifyitems(config, items):
 
 
 def pytest_addoption(parser):
-    parser.addoption("--boxed", action="store_true", help="Run boxed tests")
     try:
         parser.addoption('--fast', action='store_true', help="don't run slow tests")
     except ValueError:
