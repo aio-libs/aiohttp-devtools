@@ -1,7 +1,7 @@
 aiohttp-devtools
 ================
 
-|Travis Build Status| |AppVeyor Build Status| |Coverage| |pypi| |license|
+|Coverage| |pypi| |license|
 
 Dev tools for `aiohttp`_.
 
