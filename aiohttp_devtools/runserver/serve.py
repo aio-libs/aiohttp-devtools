@@ -24,7 +24,6 @@ from .utils import MutableValue
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
-JINJA_ENV = 'aiohttp_jinja2_environment'
 HOST = '0.0.0.0'
 
 

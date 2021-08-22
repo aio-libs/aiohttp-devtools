@@ -23,8 +23,8 @@ Requires **python 3.6** or later.
 Usage
 -----
 
-The ``aiohttp-devtools`` CLI (and it's shorter alias ``adev``) consist of three sub-commands:
-`runserver`_, `serve`_ and `start`_.
+The ``aiohttp-devtools`` CLI (and it's shorter alias ``adev``) consist of two sub-commands:
+`runserver`_ and `serve`_.
 
 runserver
 ~~~~~~~~~
@@ -46,8 +46,7 @@ from the app path file, if not supplied some default method names are tried
 (namely `app`, `app_factory`, `get_app` and `create_app`, which can be
 attributes, functions, or coroutines).
 
-All ``runserver`` arguments can be set via environment variables, the `start`_ command creates a script
-suitable for setting up your environment such that you can run the dev server with just ``adev runserver``.
+All ``runserver`` arguments can be set via environment variables.
 
 ``runserver`` has a few of useful features:
 
@@ -69,32 +68,12 @@ Usage is simply
 
 Like ``runserver`` you get nice live reloading and access logs. For more options see ``adev serve --help``.
 
-start
-~~~~~
-
-Creates a new bare bones aiohttp app similar to django's "startproject".
-
-
-Usage is simply
-
-.. code:: shell
-
-    adev start <path-to-directory-to-create-project-in>
-
-This will generate an example **message board** app with some basic functionality: Messages can be added via posting to a form, they are stored in the database and then displayed in a list, and the session is used to pre-populate the user's name.
-
-The app includes:
-
-* Jinja2 template engine, via `aiohttp_jinja2`_
-* encrypted cookie sessions using `aiohttp_session`_
-* Postgres database, via `asyncpg`_
-
 Tutorial
 --------
 
-To demonstrate what adev can do, let's walk through creating a new application:
+To demonstrate what adev can do when combined with create-aio-app, let's walk through creating a new application:
 
-First let's create a clean python environment to work in and install aiohttp-devtools.
+First let's create a clean python environment to work in and install aiohttp-devtools and create-aio-app.
 
 (it is assumed you've already got **python**, **pip** and **virtualenv** installed)
 
@@ -103,11 +82,11 @@ First let's create a clean python environment to work in and install aiohttp-dev
     mkdir my_new_app && cd my_new_app
     virtualenv -p `which python3.7` env
     . env/bin/activate
-    pip install aiohttp-devtools
+    pip install aiohttp-devtools create-aio-app
 
 
-We're now ready to build our new application with `start`_, using the current directory ``.`` will put files where
-we want them and will prompt adev to name the project ``my_new_app`` after the current directory.
+We're now ready to build our new application with `create-aio-app`_ and we'll name the
+project ``my_new_app`` after the current directory.
 
 We're going to explicitly choose no database here to make, this tutorial easier but you can remove that option
 and choose to use a proper database if you like.
@@ -117,28 +96,22 @@ You can just hit return to choose the default for all the options.
 
 .. code:: shell
 
-    adev start . --database none
+    create-aio-app my_new_app --without-postgres
 
 That's it, your app is now created. You might want to have a look through the local directory's file tree.
 
 Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
-``./requirements.txt`` by `start`_, to install simply run
+``./requirements.txt`` by `create-aio-app`_, to install simply run
 
 .. code:: shell
 
-    pip install -r requirements.txt
-
-(If you went off-piste and choose to use a database you'll need to edit ``activate.settings.sh`` to configure
-connection settings, then run ``make reset-database`` to create a database.)
+    pip install -r requirements/development.txt
 
 You can then run your app with just:
 
 .. code:: shell
 
-    source activate.settings.sh
     adev runserver
-
-`runserver`_ uses the environment variables set in ``activate.settings.sh`` to decide how to serve your app.
 
 With that:
 
@@ -149,12 +122,6 @@ With that:
 
 **That's it, go develop.**
 
-.. |Travis Build Status| image:: https://travis-ci.com/aio-libs/aiohttp-devtools.svg?branch=master
-   :target: https://travis-ci.com/aio-libs/aiohttp-devtools
-   :alt: Travis status for master branch
-.. |AppVeyor Build Status| image:: https://ci.appveyor.com/api/projects/status/abklub4k2spyutw7/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/aio-libs/aiohttp-devtools
-   :alt: AppVeyor status for master branch
 .. |Coverage| image:: https://codecov.io/gh/aio-libs/aiohttp-devtools/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/aio-libs/aiohttp-devtools
 .. |pypi| image:: https://img.shields.io/pypi/v/aiohttp-devtools.svg
@@ -164,6 +131,3 @@ With that:
 .. _History.rst: /HISTORY.rst
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
-.. _aiohttp_jinja2: https://github.com/aio-libs/aiohttp_jinja2
-.. _aiohttp_session: https://aiohttp-session.readthedocs.io/en/latest/
-.. _asyncpg: https://magicstack.github.io/asyncpg/current/

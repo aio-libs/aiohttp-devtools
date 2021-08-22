@@ -9,16 +9,6 @@ long_description = THIS_DIR.joinpath('README.rst').read_text()
 # avoid loading the package before requirements are installed:
 version = SourceFileLoader("__version__", "aiohttp_devtools/__init__.py").load_module()
 
-package = THIS_DIR.joinpath('aiohttp_devtools/start')
-
-start_package_data = []
-
-for _root, _, files in os.walk(str(THIS_DIR.joinpath('aiohttp_devtools/start/template'))):
-    root = Path(_root)
-    for f in files:
-        p = root / f
-        start_package_data.append(str(p.relative_to(package)))
-
 name = 'aiohttp-devtools'
 repo_slug = 'aio-libs/{}'.format(name)
 repo_url = 'https://github.com/{}'.format(repo_slug)
@@ -62,12 +52,10 @@ setup(
     license='MIT',
     package_data={
         'aiohttp_devtools.runserver': ['livereload.js'],
-        'aiohttp_devtools.start': start_package_data,
     },
     packages=[
         'aiohttp_devtools',
         'aiohttp_devtools.runserver',
-        'aiohttp_devtools.start',
     ],
     zip_safe=True,
     entry_points="""
