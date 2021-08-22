@@ -36,7 +36,6 @@ class Config:
                  python_path: Optional[str] = None,
                  static_url: str = '/static/',
                  livereload: bool = True,
-                 debug_toolbar: bool = False,  # TODO set True once debug toolbar is fixed
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  main_port: int = 8000,
@@ -62,7 +61,6 @@ class Config:
         self.static_path = self._resolve_path(static_path, 'is_dir', 'static-path')
         self.static_url = static_url
         self.livereload = livereload
-        self.debug_toolbar = debug_toolbar
         self.app_factory_name = app_factory_name
         self.infer_host = host == INFER_HOST
         self.host = 'localhost' if self.infer_host else host
@@ -177,6 +175,6 @@ class Config:
         return app
 
     def __str__(self):
-        fields = ('py_file', 'static_path', 'static_url', 'livereload', 'debug_toolbar',
+        fields = ('py_file', 'static_path', 'static_url', 'livereload',
                   'app_factory_name', 'host', 'main_port', 'aux_port')
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)

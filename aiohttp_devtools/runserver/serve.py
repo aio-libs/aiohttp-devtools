@@ -22,12 +22,6 @@ from .config import Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
-try:
-    import aiohttp_debugtoolbar
-except ImportError:  # pragma: no cover
-    # aiohttp_debugtoolbar is not a required dependency
-    aiohttp_debugtoolbar = None
-
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 JINJA_ENV = 'aiohttp_jinja2_environment'
@@ -39,7 +33,6 @@ def modify_main_app(app, config: Config):
     Modify the app we're serving to make development easier, eg.
     * modify responses to add the livereload snippet
     * set ``static_root_url`` on the app
-    * setup the debug toolbar
     """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
@@ -76,9 +69,6 @@ def modify_main_app(app, config: Config):
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         app['static_root_url'] = MutableValue(static_url)
-
-    if config.debug_toolbar and aiohttp_debugtoolbar:
-        aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
 
 
 async def check_port_open(port, loop, delay=1):
