@@ -1,6 +1,3 @@
-import platform
-import sys
-
 import aiohttp
 import pytest
 from pytest_toolbox import mktree
