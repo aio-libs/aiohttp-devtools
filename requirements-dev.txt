@@ -17,7 +17,7 @@ pytest-xdist==1.28.0
 Sphinx==3.0.4
 
 # from aiohttp_devtools/start/template/requirements.txt
-aiohttp==3.5.4
+aiohttp==3.7.4
 aiohttp-jinja2==1.2.0
 aiohttp-session[secure]==2.9.0
 jinja2==2.11.3
