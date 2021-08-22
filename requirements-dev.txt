@@ -1,7 +1,7 @@
 -e .
 aiohttp_debugtoolbar==0.5.0
 click==8.0.1
-coverage==4.5.3
+coverage==5.5
 docutils==0.14
 flake8==3.9.2
 grablib==0.8
