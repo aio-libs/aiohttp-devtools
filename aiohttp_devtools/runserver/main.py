@@ -1,34 +1,12 @@
 import asyncio
-import contextlib
 import os
 from multiprocessing import set_start_method
-
-from aiohttp.web_runner import AppRunner, TCPSite
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .log_handlers import AuxAccessLogger
 from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
-
-
-def run_app(app, port, loop, access_log_class):
-    runner = AppRunner(app, access_log_class=access_log_class)
-    loop.run_until_complete(runner.setup())
-
-    site = TCPSite(runner, HOST, port, shutdown_timeout=0.01)
-    loop.run_until_complete(site.start())
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:  # pragma: no branch
-        pass
-    finally:
-        logger.info('shutting down server...')
-        start = loop.time()
-        with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-            loop.run_until_complete(runner.cleanup())
-        logger.debug('shutdown took %0.2fs', loop.time() - start)
 
 
 def runserver(**config_kwargs):
@@ -70,7 +48,8 @@ def runserver(**config_kwargs):
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return aux_app, config.aux_port, loop, AuxAccessLogger
+    return {"app": aux_app, "host": HOST, "port": config.aux_port,
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
 def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000):
@@ -86,4 +65,5 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return app, port, AuxAccessLogger
+    return {"app": app, "host": HOST, "port": port,
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
