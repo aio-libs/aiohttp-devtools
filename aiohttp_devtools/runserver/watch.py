@@ -52,6 +52,11 @@ class AppTask(WatchTask):
         try:
             self._start_dev_server()
 
+            static_path = str(self._app['static_path'])
+
+            def is_static(changes):
+                return all(str(c[1]).startswith(static_path) for c in changes)
+
             async for changes in self._awatch:
                 self._reloads += 1
                 if any(f.endswith('.py') for _, f in changes):
@@ -59,12 +64,12 @@ class AppTask(WatchTask):
                     self._stop_dev_server()
                     self._start_dev_server()
                     await self._src_reload_when_live(live_checks)
-                elif len(changes) > 1 or any(f.endswith(self.template_files) for _, f in changes):
+                elif len(changes) == 1 and is_static(changes):
+                    # a single (static) file has changed, reload a single file.
+                    await src_reload(self._app, changes.pop()[1])
+                else:
                     # reload all pages
                     await src_reload(self._app)
-                else:
-                    # a single (non template) file has changed, reload a single file.
-                    await src_reload(self._app, changes.pop()[1])
         except Exception as exc:
             logger.exception(exc)
             await self._session.close()

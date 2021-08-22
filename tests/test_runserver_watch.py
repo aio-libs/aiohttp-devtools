@@ -43,6 +43,8 @@ async def test_single_file_change(loop, mocker):
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app_task._app = MagicMock()
+    d = {'static_path': '/path/to/'}
+    app_task._app.__getitem__.side_effect = d.__getitem__
     await app_task._run()
     mock_src_reload.assert_called_once_with(app_task._app, '/path/to/file')
     assert app_task._start_dev_server.call_count == 1
@@ -76,6 +78,7 @@ async def test_python_no_server(loop, mocker):
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app = Application()
+    app['static_path'] = '/path/to/'
     app.src_reload = MagicMock()
     mock_ws = MagicMock()
     f = asyncio.Future()
