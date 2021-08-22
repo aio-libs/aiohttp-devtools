@@ -21,6 +21,5 @@ Sphinx==3.0.4
 aiohttp==3.5.4
 aiohttp-jinja2==1.2.0
 aiohttp-session[secure]==2.9.0
-asyncpg==0.21.0
 jinja2==2.11.3
 pydantic==0.25;python_version>="3.6"
