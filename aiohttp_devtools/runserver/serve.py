@@ -90,7 +90,7 @@ async def check_port_open(port, loop, delay=1):
             if e.errno != 98:  # pragma: no cover
                 raise
             dft_logger.warning('port %d is already in use, waiting %d...', port, i)
-            await asyncio.sleep(delay, loop=loop)
+            await asyncio.sleep(delay)
         else:
             server.close()
             await server.wait_closed()

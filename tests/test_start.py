@@ -30,7 +30,7 @@ def test_start_simple(tmpdir, smart_caplog):
         log_normalizers = ('"/tmp/.*?"', log_path)
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at {}
-adev.main INFO: project created, 13 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
+adev.main INFO: project created, 14 files generated\n""".format(log_path) == smart_caplog(log_normalizers)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 6), reason='start app requires python >= 3.6')
@@ -47,7 +47,7 @@ async def test_start_run(tmpdir, loop, aiohttp_client, smart_caplog):
     }
     assert """\
 adev.main INFO: Starting new aiohttp project "foobar" at "/<tmpdir>/the-path"
-adev.main INFO: project created, 13 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
+adev.main INFO: project created, 14 files generated\n""" == smart_caplog.log.replace(str(tmpdir), '/<tmpdir>')
     config = Config(app_path='the-path/app/', root_path=str(tmpdir), static_path='.')
     app_factory = config.import_app_factory()
     app = await app_factory()
