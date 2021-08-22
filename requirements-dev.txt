@@ -7,7 +7,7 @@ flake8==3.9.2
 grablib==0.8
 isort==4.3.20
 mypy==0.910
-pytest==4.4.1
+pytest==6.2.4
 pytest-aiohttp==0.3.0
 pytest-cov==2.12.1
 pytest-mock==1.10.4
