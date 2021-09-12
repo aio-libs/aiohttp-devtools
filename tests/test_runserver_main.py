@@ -134,10 +134,10 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
         'test.txt': 'test value',
     })
     app = create_auxiliary_app(static_path='.')
-    cli = await aiohttp_client(app)
-    r = await cli.get('/test.txt')
-    assert r.status == 200
-    text = await r.text()
+    async with await aiohttp_client(app) as cli:
+        async with cli.get('/test.txt') as r:
+            assert r.status == 200
+            text = await r.text()
     assert text == 'test value'
 
 
