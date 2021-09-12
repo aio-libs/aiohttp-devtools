@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         pyver: [3.6, 3.7, 3.8, 3.9]
-        os: [ubuntu, macos]
+        os: [ubuntu, macos, windows]
         #include:
         #  - pyver: pypy3
         #    os: ubuntu
@@ -88,12 +88,13 @@ jobs:
         path: requirements-dev.txt
     - name: Install JS dependencies
       run: grablib
+      env:
+        PYTHONIOENCODING: 'utf-8'
     - name: Run unittests
+      run: pytest
       env:
         COLOR: 'yes'
-      run: |
-        pytest
-        python -m coverage xml
+    - run: python -m coverage xml
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
