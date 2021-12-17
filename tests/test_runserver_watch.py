@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
@@ -42,11 +43,12 @@ async def test_single_file_change(loop, mocker):
     app_task = AppTask(MagicMock())
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
-    app_task._app = MagicMock()
+    app = MagicMock()
+    await app_task.start(app)
     d = {'static_path': '/path/to/'}
     app_task._app.__getitem__.side_effect = d.__getitem__
-    await app_task._run()
-    mock_src_reload.assert_called_once_with(app_task._app, '/path/to/file')
+    await app_task._task
+    mock_src_reload.assert_called_once_with(app, '/path/to/file')
     assert app_task._start_dev_server.call_count == 1
     assert app_task._stop_dev_server.called is False
     await app_task._session.close()
@@ -60,9 +62,10 @@ async def test_multiple_file_change(loop, mocker):
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
 
-    app_task._app = MagicMock()
-    await app_task._run()
-    mock_src_reload.assert_called_once_with(app_task._app)
+    app = MagicMock()
+    await app_task.start(app)
+    await app_task._task
+    mock_src_reload.assert_called_once_with(app)
     assert app_task._start_dev_server.call_count == 1
     await app_task._session.close()
 
@@ -77,6 +80,7 @@ async def test_python_no_server(loop, mocker):
     app_task = AppTask(config)
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
+    app_task._run = partial(app_task._run, live_checks=2)
     app = Application()
     app['static_path'] = '/path/to/'
     app.src_reload = MagicMock()
@@ -85,8 +89,8 @@ async def test_python_no_server(loop, mocker):
     f.set_result(1)
     mock_ws.send_str = MagicMock(return_value=f)
     app['websockets'] = [(mock_ws, '/')]
-    app_task._app = app
-    await app_task._run(2)
+    await app_task.start(app)
+    await app_task._task
     assert app_task._app.src_reload.called is False
     assert app_task._start_dev_server.called
     assert app_task._stop_dev_server.called
@@ -115,9 +119,10 @@ async def test_livereload_task_single(loop, mocker):
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
 
     task = LiveReloadTask('x')
-    task._app = MagicMock()
-    await task._run()
-    mock_src_reload.assert_called_once_with(task._app, '/path/to/file')
+    app = MagicMock()
+    await task.start(app)
+    await task._task
+    mock_src_reload.assert_called_once_with(app, '/path/to/file')
 
 
 async def test_livereload_task_multiple(loop, mocker):
@@ -126,9 +131,10 @@ async def test_livereload_task_multiple(loop, mocker):
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
 
     task = LiveReloadTask('x')
-    task._app = MagicMock()
-    await task._run()
-    mock_src_reload.assert_called_once_with(task._app)
+    app = MagicMock()
+    await task.start(app)
+    await task._task
+    mock_src_reload.assert_called_once_with(app)
 
 
 class FakeProcess:

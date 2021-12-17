@@ -21,18 +21,18 @@ non_windows_test = pytest.mark.skipif(
 )
 
 
-async def test_check_port_open(aiohttp_unused_port, loop):
+async def test_check_port_open(aiohttp_unused_port):
     port = aiohttp_unused_port()
-    await check_port_open(port, loop, 0.001)
+    await check_port_open(port, 0.001)
 
 
 @non_windows_test  # FIXME: probably needs some sock options
-async def test_check_port_not_open(aiohttp_unused_port, loop):
+async def test_check_port_not_open(aiohttp_unused_port):
     port = aiohttp_unused_port()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('0.0.0.0', port))
         with pytest.raises(AiohttpDevException):
-            await check_port_open(port, loop, 0.001)
+            await check_port_open(port, 0.001)
 
 
 async def test_aux_reload(smart_caplog):
