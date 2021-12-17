@@ -1,7 +1,7 @@
 -e .
 click==8.0.3
 coverage==6.2
-docutils==0.18.1
+docutils==0.17.1
 flake8==4.0.1
 grablib==0.8
 mypy==0.920
