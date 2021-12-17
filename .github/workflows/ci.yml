@@ -59,9 +59,9 @@ jobs:
       matrix:
         pyver: ['3.7', '3.8', '3.9']
         os: [ubuntu, macos, windows]
-        #include:
-        #  - pyver: pypy3
-        #    os: ubuntu
+        include:
+          - pyver: pypy-3.8
+            os: ubuntu
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
     steps:
