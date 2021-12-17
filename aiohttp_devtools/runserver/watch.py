@@ -4,7 +4,7 @@ import signal
 import sys
 from multiprocessing import Process
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, web
 from watchgod import awatch
 
 from ..exceptions import AiohttpDevException
@@ -18,11 +18,12 @@ class WatchTask:
         self._app = None
         self._task = None
         assert path
-        self.stopper = asyncio.Event()
-        self._awatch = awatch(path, stop_event=self.stopper)
+        self._path = path
 
-    async def start(self, app):
+    async def start(self, app: web.Application) -> None:
         self._app = app
+        self.stopper = asyncio.Event()
+        self._awatch = awatch(self._path, stop_event=self.stopper)
         self._task = asyncio.get_event_loop().create_task(self._run())
 
     async def _run(self):
@@ -35,6 +36,11 @@ class WatchTask:
                 if self._task.done():
                     self._task.result()
                 self._task.cancel()
+
+    async def cleanup_ctx(self, app: web.Application) -> None:
+        await self.start(app)
+        yield
+        await self.close(app)
 
 
 class AppTask(WatchTask):

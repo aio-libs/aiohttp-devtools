@@ -70,7 +70,8 @@ def modify_main_app(app, config: Config):
         app['static_root_url'] = MutableValue(static_url)
 
 
-async def check_port_open(port, loop, delay=1):
+async def check_port_open(port: int, delay: int = 1) -> None:
+    loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
@@ -107,7 +108,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
         setup_logging(config.verbose)
         app_factory = config.import_app_factory()
         loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(create_main_app(config, app_factory, loop))
+        runner = loop.run_until_complete(create_main_app(config, app_factory))
         try:
             loop.run_until_complete(start_main_app(runner, config.main_port))
             loop.run_forever()
@@ -118,11 +119,11 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
                 loop.run_until_complete(runner.cleanup())
 
 
-async def create_main_app(config: Config, app_factory, loop):
+async def create_main_app(config: Config, app_factory):
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
 
-    await check_port_open(config.main_port, loop)
+    await check_port_open(config.main_port)
     return web.AppRunner(app, access_log_class=AccessLogger)
 
 

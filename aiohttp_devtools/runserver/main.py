@@ -21,9 +21,8 @@ def runserver(**config_kwargs):
 
     config = Config(**config_kwargs)
     config.import_app_factory()
-    loop = asyncio.get_event_loop()
 
-    loop.run_until_complete(check_port_open(config.main_port, loop))
+    asyncio.run(check_port_open(config.main_port))
 
     aux_app = create_auxiliary_app(
         static_path=config.static_path_str,
@@ -32,8 +31,7 @@ def runserver(**config_kwargs):
     )
 
     main_manager = AppTask(config)
-    aux_app.on_startup.append(main_manager.start)
-    aux_app.on_shutdown.append(main_manager.close)
+    aux_app.cleanup_ctx.append(main_manager.cleanup_ctx)
 
     if config.static_path:
         static_manager = LiveReloadTask(config.static_path)
