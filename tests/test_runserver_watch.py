@@ -44,7 +44,7 @@ async def test_single_file_change(loop, mocker):
     app_task._start_dev_server = MagicMock()
     app_task._stop_dev_server = MagicMock()
     app = MagicMock()
-    await app_task._start(app)
+    await app_task.start(app)
     d = {'static_path': '/path/to/'}
     app_task._app.__getitem__.side_effect = d.__getitem__
     await app_task._task
@@ -63,7 +63,7 @@ async def test_multiple_file_change(loop, mocker):
     app_task._stop_dev_server = MagicMock()
 
     app = MagicMock()
-    await app_task._start(app)
+    await app_task.start(app)
     await app_task._task
     mock_src_reload.assert_called_once_with(app)
     assert app_task._start_dev_server.call_count == 1
@@ -89,7 +89,7 @@ async def test_python_no_server(loop, mocker):
     f.set_result(1)
     mock_ws.send_str = MagicMock(return_value=f)
     app['websockets'] = [(mock_ws, '/')]
-    await app_task._start(app)
+    await app_task.start(app)
     await app_task._task
     assert app_task._app.src_reload.called is False
     assert app_task._start_dev_server.called
