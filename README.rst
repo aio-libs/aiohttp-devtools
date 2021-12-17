@@ -14,8 +14,6 @@ libraries.
 Installation
 ------------
 
-Requires **python 3.6** or later.
-
 .. code:: shell
 
     pip install aiohttp-devtools
