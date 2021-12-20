@@ -50,6 +50,7 @@ def modify_main_app(app, config: Config):
                 lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
                 dft_logger.debug('appending live reload snippet "%s" to body', lr_snippet)
                 response.body += lr_snippet.encode()
+                response.headers["Content-Length"] = str(len(response.body))
         app.on_response_prepare.append(on_prepare)
 
     static_path = config.static_url.strip('/')
