@@ -36,8 +36,7 @@ def runserver(**config_kwargs):
     if config.static_path:
         static_manager = LiveReloadTask(config.static_path)
         logger.debug('starting livereload to watch %s', config.static_path_str)
-        aux_app.on_startup.append(static_manager.start)
-        aux_app.on_shutdown.append(static_manager.close)
+        aux_app.cleanup_ctx.append(static_manager.cleanup_ctx)
 
     url = 'http://{0.host}:{0.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
@@ -58,8 +57,7 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000)
     if livereload:
         livereload_manager = LiveReloadTask(static_path)
         logger.debug('starting livereload to watch %s', static_path)
-        app.on_startup.append(livereload_manager.start)
-        app.on_shutdown.append(livereload_manager.close)
+        app.cleanup_ctx.append(livereload_manager.cleanup_ctx)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
