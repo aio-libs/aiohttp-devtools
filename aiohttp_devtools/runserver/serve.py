@@ -27,6 +27,18 @@ LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 HOST = '0.0.0.0'
 
 
+def _set_static_url(app, url):
+    app["static_root_url"] = MutableValue(url)
+    for subapp in app._subapps:
+        _set_static_url(subapp, url)
+
+
+def _change_static_url(app, url):
+    app["static_root_url"].change(url)
+    for subapp in app._subapps:
+        _change_static_url(subapp, url)
+
+
 def modify_main_app(app, config: Config):
     """
     Modify the app we're serving to make development easier, eg.
@@ -59,8 +71,8 @@ def modify_main_app(app, config: Config):
         @web.middleware
         async def static_middleware(request, handler):
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
-            dft_logger.debug('settings app static_root_url to "%s"', static_url)
-            request.app['static_root_url'].change(static_url)
+            dft_logger.debug('setting app static_root_url to "%s"', static_url)
+            _change_static_url(request.app, static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -68,7 +80,7 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        app['static_root_url'] = MutableValue(static_url)
+        _set_static_url(app, static_url)
 
 
 async def check_port_open(port: int, delay: int = 1) -> None:
