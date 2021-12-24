@@ -1,6 +1,7 @@
 import json
 import warnings
 from datetime import datetime, timedelta
+from typing import cast
 
 from aiohttp.abc import AbstractAccessLogger
 
@@ -9,7 +10,7 @@ check = '?_checking_alive=1'
 
 
 class _AccessLogger(AbstractAccessLogger):
-    prefix = NotImplemented
+    prefix: str
 
     def get_msg(self, request, response, time):
         raise NotImplementedError()
@@ -89,6 +90,7 @@ def parse_body(v, name):
         try:
             return json.loads(v)
         except UnicodeDecodeError:
+            v = cast(bytes, v)  # UnicodeDecodeError only occurs on bytes.
             warnings.warn('UnicodeDecodeError parsing ' + name, UserWarning)
             # bytes which cause UnicodeDecodeError can cause problems later on
             return v.decode(errors='ignore')

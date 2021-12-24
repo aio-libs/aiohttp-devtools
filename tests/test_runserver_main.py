@@ -3,19 +3,17 @@ import json
 import os
 import signal
 import time
-from multiprocessing import Process
 from unittest import mock
 
 import aiohttp
 import pytest
 from aiohttp import ClientTimeout
-from aiohttp.web import Application
-from aiohttp.web_log import AccessLogger
 from pytest_toolbox import mktree
 
-from aiohttp_devtools.runserver import run_app, runserver
+from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import create_auxiliary_app, modify_main_app, src_reload, start_main_app
+from aiohttp_devtools.runserver.serve import (create_auxiliary_app, create_main_app, modify_main_app, src_reload,
+                                              start_main_app)
 
 from .conftest import SIMPLE_APP
 
@@ -57,7 +55,9 @@ def create_app(loop):
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    aux_app, aux_port, _, _ = runserver(app_path='app.py', static_path='static_dir')
+    args = runserver(app_path='app.py', static_path='static_dir')
+    aux_app = args["app"]
+    aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     for startup in aux_app.on_startup:
@@ -100,7 +100,9 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    aux_app, aux_port, _, _ = runserver(app_path='app.py', host='foobar.com')
+    args = runserver(app_path='app.py', host='foobar.com')
+    aux_app = args["app"]
+    aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 2
@@ -110,14 +112,6 @@ app.router.add_get('/', hello)
 def kill_parent_soon(pid):
     time.sleep(0.2)
     os.kill(pid, signal.SIGINT)
-
-
-@pytest.mark.boxed
-def test_run_app(loop, aiohttp_unused_port):
-    app = Application()
-    port = aiohttp_unused_port()
-    Process(target=kill_parent_soon, args=(os.getpid(),)).start()
-    run_app(app, port, loop, AccessLogger)
 
 
 @pytest.mark.boxed
@@ -140,10 +134,10 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
         'test.txt': 'test value',
     })
     app = create_auxiliary_app(static_path='.')
-    cli = await aiohttp_client(app)
-    r = await cli.get('/test.txt')
-    assert r.status == 200
-    text = await r.text()
+    async with await aiohttp_client(app) as cli:
+        async with cli.get('/test.txt') as r:
+            assert r.status == 200
+            text = await r.text()
     assert text == 'test value'
 
 
@@ -155,7 +149,8 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path='app.py')
-    await start_main_app(config, config.import_app_factory(), loop)
+    runner = await create_main_app(config, config.import_app_factory(), loop)
+    await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
@@ -176,12 +171,13 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
     config = Config(app_path='app.py')
-    await start_main_app(config, config.import_app_factory(), loop)
+    runner = await create_main_app(config, config.import_app_factory(), loop)
+    await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def aux_cli(aiohttp_client, loop):
     app = create_auxiliary_app(static_path='.')
     cli = loop.run_until_complete(aiohttp_client(app))

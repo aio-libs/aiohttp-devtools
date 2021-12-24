@@ -3,6 +3,7 @@ import contextlib
 import json
 import mimetypes
 import sys
+from errno import EADDRINUSE
 from pathlib import Path
 from typing import Optional
 
@@ -21,16 +22,21 @@ from .config import Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
-try:
-    import aiohttp_debugtoolbar
-except ImportError:  # pragma: no cover
-    # aiohttp_debugtoolbar is not a required dependency
-    aiohttp_debugtoolbar = None
-
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
-JINJA_ENV = 'aiohttp_jinja2_environment'
 HOST = '0.0.0.0'
+
+
+def _set_static_url(app, url):
+    app["static_root_url"] = MutableValue(url)
+    for subapp in app._subapps:
+        _set_static_url(subapp, url)
+
+
+def _change_static_url(app, url):
+    app["static_root_url"].change(url)
+    for subapp in app._subapps:
+        _change_static_url(subapp, url)
 
 
 def modify_main_app(app, config: Config):
@@ -38,7 +44,6 @@ def modify_main_app(app, config: Config):
     Modify the app we're serving to make development easier, eg.
     * modify responses to add the livereload snippet
     * set ``static_root_url`` on the app
-    * setup the debug toolbar
     """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
@@ -66,8 +71,8 @@ def modify_main_app(app, config: Config):
         @web.middleware
         async def static_middleware(request, handler):
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
-            dft_logger.debug('settings app static_root_url to "%s"', static_url)
-            request.app['static_root_url'].change(static_url)
+            dft_logger.debug('setting app static_root_url to "%s"', static_url)
+            _change_static_url(request.app, static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -75,23 +80,21 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        app['static_root_url'] = MutableValue(static_url)
-
-    if config.debug_toolbar and aiohttp_debugtoolbar:
-        aiohttp_debugtoolbar.setup(app, intercept_redirects=False)
+        _set_static_url(app, static_url)
 
 
-async def check_port_open(port, loop, delay=1):
+async def check_port_open(port: int, delay: int = 1) -> None:
+    loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
         try:
             server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
         except OSError as e:
-            if e.errno != 98:  # pragma: no cover
+            if e.errno != EADDRINUSE:
                 raise
             dft_logger.warning('port %d is already in use, waiting %d...', port, i)
-            await asyncio.sleep(delay, loop=loop)
+            await asyncio.sleep(delay)
         else:
             server.close()
             await server.wait_closed()
@@ -118,8 +121,9 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
         setup_logging(config.verbose)
         app_factory = config.import_app_factory()
         loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(start_main_app(config, app_factory, loop))
+        runner = loop.run_until_complete(create_main_app(config, app_factory))
         try:
+            loop.run_until_complete(start_main_app(runner, config.main_port))
             loop.run_forever()
         except KeyboardInterrupt:  # pragma: no cover
             pass
@@ -128,23 +132,24 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
                 loop.run_until_complete(runner.cleanup())
 
 
-async def start_main_app(config: Config, app_factory, loop):
+async def create_main_app(config: Config, app_factory):
     app = await config.load_app(app_factory)
-
     modify_main_app(app, config)
 
-    await check_port_open(config.main_port, loop)
-    runner = web.AppRunner(app, access_log_class=AccessLogger)
+    await check_port_open(config.main_port)
+    return web.AppRunner(app, access_log_class=AccessLogger)
+
+
+async def start_main_app(runner: web.AppRunner, port):
     await runner.setup()
-    site = web.TCPSite(runner, host=HOST, port=config.main_port, shutdown_timeout=0.1)
+    site = web.TCPSite(runner, host=HOST, port=port, shutdown_timeout=0.1)
     await site.start()
-    return runner
 
 
 WS = 'websockets'
 
 
-async def src_reload(app, path: str = None):
+async def src_reload(app, path: Optional[str] = None):
     """
     prompt each connected browser to reload by sending websocket message.
 
@@ -294,10 +299,7 @@ class CustomStaticResource(StaticResource):
         filename = URL.build(path=request.match_info['filename'], encoded=True).path
         raw_path = self._directory.joinpath(filename)
         try:
-            filepath = raw_path.resolve()
-            if not filepath.exists():
-                # simulate strict=True for python 3.6 which is not permitted with 3.5
-                raise FileNotFoundError()
+            filepath = raw_path.resolve(strict=True)
         except FileNotFoundError:
             try:
                 html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)

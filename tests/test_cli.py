@@ -1,5 +1,4 @@
 import asyncio
-import pathlib
 
 from click.testing import CliRunner
 
@@ -13,7 +12,6 @@ def test_cli_help():
     assert result.exit_code == 0
     assert 'Run a development server for an aiohttp apps.' in result.output
     assert 'Serve static files from a directory.' in result.output
-    assert 'Create a new aiohttp app.' in result.output
 
 
 def test_serve(mocker, loop):
@@ -30,7 +28,7 @@ def test_serve_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['serve'])
     assert result.exit_code == 2
-    assert 'Error: Missing argument "PATH"' in result.output
+    assert "Error: Missing argument 'PATH'" in result.output
 
 
 def test_runserver(mocker):
@@ -75,39 +73,3 @@ def test_runserver_no_args(loop):
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2
     assert result.output.startswith('Error: unable to find a recognised default file')
-
-
-def test_start_different_name(mocker):
-    mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
-    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start', 'foobar', 'splosh'])
-    assert result.exit_code == 0
-    assert mock_start_project.call_count == 1
-    call_kwargs = mock_start_project.call_args[1]
-    assert pathlib.Path(call_kwargs['path']).parts[-1] == 'foobar'
-    assert call_kwargs['name'] == 'splosh'
-
-
-def test_start_error(mocker):
-    mock_start_project = mocker.patch('aiohttp_devtools.cli.StartProject')
-    mocker.patch('aiohttp_devtools.cli.check_dir_clean')
-    mock_start_project.side_effect = AiohttpDevException('foobar')
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start', 'foobar'])
-    assert result.exit_code == 2
-    assert mock_start_project.call_count == 1
-
-
-def test_start_no_args():
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start'])
-    assert result.exit_code == 2
-    assert 'Error: Missing argument "PATH"' in result.output
-
-
-def test_start_help():
-    runner = CliRunner()
-    result = runner.invoke(cli, ['start', '--help'])
-    assert result.exit_code == 0
-    assert 'Create a new aiohttp app.' in result.output

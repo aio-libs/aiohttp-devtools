@@ -1,4 +1,3 @@
-import os
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from setuptools import setup
@@ -7,17 +6,7 @@ THIS_DIR = Path(__file__).resolve().parent
 long_description = THIS_DIR.joinpath('README.rst').read_text()
 
 # avoid loading the package before requirements are installed:
-version = SourceFileLoader('version', 'aiohttp_devtools/version.py').load_module()
-
-package = THIS_DIR.joinpath('aiohttp_devtools/start')
-
-start_package_data = []
-
-for _root, _, files in os.walk(str(THIS_DIR.joinpath('aiohttp_devtools/start/template'))):
-    root = Path(_root)
-    for f in files:
-        p = root / f
-        start_package_data.append(str(p.relative_to(package)))
+version = SourceFileLoader("__version__", "aiohttp_devtools/__init__.py").load_module()
 
 name = 'aiohttp-devtools'
 repo_slug = 'aio-libs/{}'.format(name)
@@ -25,7 +14,7 @@ repo_url = 'https://github.com/{}'.format(repo_slug)
 
 setup(
     name=name,
-    version=str(version.VERSION),
+    version=version.__version__,
     description='Dev tools for aiohttp',
     long_description=long_description,
     classifiers=[
@@ -33,9 +22,10 @@ setup(
         'Environment :: Console',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
@@ -61,12 +51,10 @@ setup(
     license='MIT',
     package_data={
         'aiohttp_devtools.runserver': ['livereload.js'],
-        'aiohttp_devtools.start': start_package_data,
     },
     packages=[
         'aiohttp_devtools',
         'aiohttp_devtools.runserver',
-        'aiohttp_devtools.start',
     ],
     zip_safe=True,
     entry_points="""
@@ -81,5 +69,5 @@ setup(
         'Pygments>=2.2.0',
         'watchgod>=0.2',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.7',
 )
