@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from aiohttp import WSMsgType, web
-from aiohttp.hdrs import LAST_MODIFIED
+from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
 from aiohttp.web import FileResponse, Response
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
@@ -62,7 +62,7 @@ def modify_main_app(app, config: Config):
                 lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
                 dft_logger.debug('appending live reload snippet "%s" to body', lr_snippet)
                 response.body += lr_snippet.encode()
-                response.headers["Content-Length"] = str(len(response.body))
+                response.headers[CONTENT_LENGTH] = str(len(response.body))
         app.on_response_prepare.append(on_prepare)
 
     static_path = config.static_url.strip('/')
