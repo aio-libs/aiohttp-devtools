@@ -63,7 +63,7 @@ setup(
         aiohttp-devtools=aiohttp_devtools.cli:cli
     """,
     install_requires=[
-        'aiohttp>=3.5.0',
+        'aiohttp>=3.8.0',
         'click>=6.6',
         'devtools>=0.5',
         'Pygments>=2.2.0',

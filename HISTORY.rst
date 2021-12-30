@@ -3,6 +3,16 @@
 History
 -------
 
+1.0 (2021-12-31)
+----------------
+* Add support for passing arguments to the application, like ``adev runserver [adev-args] project -- [project-args]``
+* Remove ``start`` command (take a look at create-aio-app for an alternative).
+* Remove debugtoolbar integration (it must be installed manually now).
+* Fix an error when reloading a file not in the static path.
+* Fix app cleanup not running is some situations.
+* Fix static URLs in subapps.
+* Fix support for aiohttp 3.8+.
+
 0.13.1 (2019-06-19)
 -------------------
 * re-enable support for alternative loops, #238
