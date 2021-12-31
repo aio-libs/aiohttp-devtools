@@ -41,7 +41,9 @@ def serve(path, livereload, port, verbose):
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
-root_help = 'Root directory project used to qualify other paths. env variable: AIO_ROOT'
+root_help = ('Root directory project used to qualify other paths. '
+             'This can be used to watch a parent directory for changes in a more complex application. '
+             'env variable: AIO_ROOT')
 static_url_help = 'URL path to serve static files from, default "/static/". env variable: AIO_STATIC_URL'
 host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
              'with default of localhost. env variable AIO_HOST')
