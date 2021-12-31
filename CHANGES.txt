@@ -1,5 +1,10 @@
 .. towncrier release notes start
 
+1.0.1 (2021-12-31)
+==================
+
+* Fix missing JS files in release process
+
 1.0 (2021-12-31)
 ================
 
