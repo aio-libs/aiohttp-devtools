@@ -133,7 +133,7 @@ jobs:
     - name: Make Release
       uses: aio-libs/create-release@v1.2.3
       with:
-        changes_file: HISTORY.rst
+        changes_file: CHANGES.txt
         name: aiohttp-devtools
         version_file: aiohttp_devtools/__init__.py
         github_token: ${{ secrets.GITHUB_TOKEN }}
