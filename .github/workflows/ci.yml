@@ -54,7 +54,6 @@ jobs:
 
   test:
     name: Test
-    needs: lint
     strategy:
       matrix:
         pyver: ['3.7', '3.8', '3.9']
@@ -105,8 +104,7 @@ jobs:
   check:  # This job does nothing and is only used for the branch protection
     if: always()
 
-    needs:
-    - test
+    needs: [lint, test]
 
     runs-on: ubuntu-latest
 
@@ -120,7 +118,7 @@ jobs:
     name: Deploy
     environment: release
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    needs: [test]
+    needs: [check]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
