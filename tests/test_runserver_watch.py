@@ -1,7 +1,6 @@
 import asyncio
 from functools import partial
 from platform import system as get_os_family
-from typing import Sequence, Set, Tuple
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -64,7 +63,7 @@ async def test_multiple_file_change(loop, mocker):
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
     app_task = AppTask(MagicMock())
     start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True)
-    stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
+    mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
 
     app = MagicMock()
     await app_task.start(app)
@@ -191,12 +190,11 @@ async def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     app_task = AppTask(MagicMock())
-    app_task._process = MagicMock()
-    app_task._process.is_alive = MagicMock(return_value=True)
-    app_task._process.pid = 321
-    app_task._process.exitcode = None
+    process_mock = MagicMock()
+    app_task._process = process_mock
+    process_mock.is_alive = MagicMock(return_value=True)
+    process_mock.pid = 321
+    process_mock.exitcode = None
     app_task._stop_dev_server()
-    assert mock_kill.call_args_list == [
-        call(321, 2),
-        call(321, 9),
-    ]
+    assert mock_kill.call_args_list == [call(321, 2)]
+    assert process_mock.kill.called_once()

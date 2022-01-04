@@ -14,6 +14,8 @@ from devtools.ansi import isatty, sformat
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
+_Ei = Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]
+
 rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
 
@@ -76,13 +78,13 @@ class AccessFormatter(logging.Formatter):
             msg = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), msg)
         return msg
 
-    def formatException(self, ei: Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]) -> str:
+    def formatException(self, ei: _Ei) -> str:
         sio = StringIO()
         traceback.print_exception(*ei, file=sio)  # type: ignore[misc]
         stack = sio.getvalue()
         sio.close()
         if self.stream_is_tty and pyg_lexer:
-            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")  # type: ignore[no-any-return]
+            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")  # type: ignore[no-any-return]  # noqa
 
         return stack
 
