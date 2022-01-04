@@ -149,7 +149,7 @@ class Config:
             raise AdevConfigError('Module "{s.py_file.name}" '
                                   'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
 
-        self.watch_path = self.watch_path or Path(module.__file__).parent
+        self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
         return attr
 
     async def load_app(self, app_factory):
@@ -166,7 +166,7 @@ class Config:
                 app = app_factory()
 
             if asyncio.iscoroutine(app):
-                app = await app  # type: ignore[misc]
+                app = await app
 
             if not isinstance(app, web.Application):
                 raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '

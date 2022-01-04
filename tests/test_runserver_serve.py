@@ -2,6 +2,7 @@ import json
 import pathlib
 import socket
 from platform import system as get_os_family
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -126,7 +127,9 @@ def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
 
 
-class DummyApplication(dict):
+class DummyApplication(Dict[str, object]):
+    _debug = False
+
     def __init__(self):
         self.on_response_prepare = []
         self.middlewares = []

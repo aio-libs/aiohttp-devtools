@@ -5,6 +5,8 @@ import platform
 import re
 import traceback
 from io import StringIO
+from types import TracebackType
+from typing import Dict, Optional, Tuple, Type, Union
 
 import pygments
 from devtools import pformat
@@ -28,12 +30,6 @@ pyg_formatter = Terminal256Formatter(style='vim')
 split_log = re.compile(r'^(\[.*?\])')
 
 
-class HighlightStreamHandler(logging.StreamHandler):
-    def setFormatter(self, fmt):
-        self.formatter = fmt
-        self.formatter.stream_is_tty = isatty(self.stream) and platform.system().lower() != 'windows'
-
-
 class DefaultFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style='%'):
         super().__init__(fmt, datefmt, style)
@@ -48,8 +44,8 @@ class DefaultFormatter(logging.Formatter):
         if m:
             time = sformat(m.groups()[0], sformat.magenta)
             return time + sformat(msg[m.end():], log_color)
-        else:
-            return sformat(msg, log_color)
+
+        return sformat(msg, log_color)
 
 
 class AccessFormatter(logging.Formatter):
@@ -80,18 +76,27 @@ class AccessFormatter(logging.Formatter):
             msg = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), msg)
         return msg
 
-    def formatException(self, ei):
+    def formatException(self, ei: Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]) -> str:
         sio = StringIO()
-        traceback.print_exception(*ei, file=sio)
+        traceback.print_exception(*ei, file=sio)  # type: ignore[misc]
         stack = sio.getvalue()
         sio.close()
         if self.stream_is_tty and pyg_lexer:
-            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip('\n')
-        else:
-            return stack
+            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")  # type: ignore[no-any-return]
+
+        return stack
 
 
-def log_config(verbose: bool) -> dict:
+class HighlightStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    def setFormatter(self, fmt: Optional[logging.Formatter]) -> None:
+        stream_is_tty = isatty(self.stream) and platform.system().lower() != "windows"
+        if isinstance(fmt, (DefaultFormatter, AccessFormatter)):
+            fmt.stream_is_tty = stream_is_tty
+
+        self.formatter = fmt
+
+
+def log_config(verbose: bool) -> Dict[str, object]:
     """
     Setup default config. for dictConfig.
     :param verbose: level: DEBUG if True, INFO if False

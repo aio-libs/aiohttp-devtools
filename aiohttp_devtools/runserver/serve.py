@@ -83,13 +83,13 @@ def modify_main_app(app, config: Config):
         _set_static_url(app, static_url)
 
 
-async def check_port_open(port: int, delay: int = 1) -> None:
+async def check_port_open(port: int, delay: float = 1) -> None:
     loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
         try:
-            server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
+            server = await loop.create_server(asyncio.Protocol, host=HOST, port=port)
         except OSError as e:
             if e.errno != EADDRINUSE:
                 raise
@@ -198,7 +198,8 @@ async def cleanup_aux_app(app):
     await asyncio.gather(*(ws.close() for ws, _ in app[WS]))
 
 
-def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
+def create_auxiliary_app(
+        *, static_path: Optional[str], static_url="/", livereload=True) -> web.Application:
     app = web.Application()
     app[WS] = set()
     app.update(
@@ -330,7 +331,8 @@ class CustomStaticResource(StaticResource):
             body = f.read() + LIVE_RELOAD_LOCAL_SNIPPET
 
         resp = Response(body=body, content_type='text/html')
-        resp.last_modified = filepath.stat().st_mtime
+        # Mypy bug: https://github.com/python/mypy/issues/11892
+        resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
     async def _handle(self, request):

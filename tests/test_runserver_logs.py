@@ -12,8 +12,8 @@ from aiohttp_devtools.runserver.log_handlers import AccessLogger, AuxAccessLogge
 
 def test_aiohttp_std():
     info = MagicMock()
-    logger = type('Logger', (), {'info': info})
-    logger = AccessLogger(logger, None)
+    logger_type = type("Logger", (), {"info": info})
+    logger = AccessLogger(logger_type(), "")
     request = MagicMock()
     request.method = 'GET'
     request.path_qs = '/foobar?v=1'
@@ -34,8 +34,8 @@ def test_aiohttp_std():
 
 def test_aiohttp_debugtoolbar():
     info = MagicMock()
-    logger = type('Logger', (), {'info': info})
-    logger = AccessLogger(logger, None)
+    logger_type = type("Logger", (), {"info": info})
+    logger = AccessLogger(logger_type(), "")
     request = MagicMock()
     request.method = 'GET'
     request.path_qs = '/_debugtoolbar/whatever'
@@ -56,8 +56,8 @@ def test_aiohttp_debugtoolbar():
 
 def test_aux_logger():
     info = MagicMock()
-    logger = type('Logger', (), {'info': info})
-    logger = AuxAccessLogger(logger, None)
+    logger_type = type("Logger", (), {"info": info})
+    logger = AuxAccessLogger(logger_type(), "")
     request = MagicMock()
     request.method = 'GET'
     request.path = '/'
@@ -79,8 +79,8 @@ def test_aux_logger():
 
 def test_aux_logger_livereload():
     info = MagicMock()
-    logger = type('Logger', (), {'info': info})
-    logger = AuxAccessLogger(logger, None)
+    logger_type = type("Logger", (), {"info": info})
+    logger = AuxAccessLogger(logger_type(), "")
     request = MagicMock()
     request.method = 'GET'
     request.path = '/livereload.js'
@@ -94,8 +94,8 @@ def test_aux_logger_livereload():
 
 def test_extra():
     info = MagicMock()
-    logger = type('Logger', (), {'info': info})
-    logger = AccessLogger(logger, None)
+    logger_type = type("Logger", (), {"info": info})
+    logger = AccessLogger(logger_type(), "")
     request = MagicMock()
     request.method = 'GET'
     request.headers = {'Foo': 'Bar'}
