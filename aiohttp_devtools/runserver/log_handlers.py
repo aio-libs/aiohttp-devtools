@@ -51,18 +51,13 @@ class AccessLogger(_AccessLogger):
     def extra(self, request, response, time: float):
         if response.status > 310:
             request_body = request._read_bytes
-            try:
-                body = response.text
-            except AttributeError:
-                body = response.body
-
             details = dict(
                 request_duration_ms=round(time * 1000, 3),
                 request_headers=dict(request.headers),
                 request_body=parse_body(request_body, 'request body'),
                 request_size=fmt_size(0 if request_body is None else len(request_body)),
                 response_headers=dict(response.headers),
-                response_body=parse_body(body, "response body"),
+                response_body=parse_body(response.text, "response body"),
             )
             return dict(details=details)
 
