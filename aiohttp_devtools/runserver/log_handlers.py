@@ -57,7 +57,7 @@ class AccessLogger(_AccessLogger):
                 request_body=parse_body(request_body, 'request body'),
                 request_size=fmt_size(0 if request_body is None else len(request_body)),
                 response_headers=dict(response.headers),
-                response_body=parse_body(response.text or response.body, 'response body'),
+                response_body=parse_body(response.text, "response body"),
             )
             return dict(details=details)
 

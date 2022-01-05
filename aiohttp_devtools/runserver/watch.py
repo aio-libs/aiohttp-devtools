@@ -3,6 +3,8 @@ import os
 import signal
 import sys
 from multiprocessing import Process
+from pathlib import Path
+from typing import AsyncIterator, Optional, Union
 
 from aiohttp import ClientSession, web
 from watchgod import awatch
@@ -14,9 +16,9 @@ from .serve import WS, serve_main_app, src_reload
 
 
 class WatchTask:
-    def __init__(self, path: str):
-        self._app = None
-        self._task = None
+    def __init__(self, path: Union[Path, str, None]):
+        self._app: Optional[web.Application] = None
+        self._task: Optional[asyncio.Task[None]] = None
         assert path
         self._path = path
 
@@ -24,7 +26,7 @@ class WatchTask:
         self._app = app
         self.stopper = asyncio.Event()
         self._awatch = awatch(self._path, stop_event=self.stopper)
-        self._task = asyncio.get_event_loop().create_task(self._run())
+        self._task = asyncio.create_task(self._run())
 
     async def _run(self):
         raise NotImplementedError()
@@ -37,7 +39,7 @@ class WatchTask:
                     self._task.result()
                 self._task.cancel()
 
-    async def cleanup_ctx(self, app: web.Application) -> None:
+    async def cleanup_ctx(self, app: web.Application) -> AsyncIterator[None]:
         await self.start(app)
         yield
         await self.close(app)
@@ -49,11 +51,13 @@ class AppTask(WatchTask):
     def __init__(self, config: Config):
         self._config = config
         self._reloads = 0
-        self._session = None
+        self._session: Optional[ClientSession] = None
         self._runner = None
         super().__init__(self._config.watch_path)
 
     async def _run(self, live_checks=20):
+        assert self._app is not None
+
         self._session = ClientSession()
         try:
             self._start_dev_server()
@@ -81,7 +85,9 @@ class AppTask(WatchTask):
             await self._session.close()
             raise AiohttpDevException('error running dev server')
 
-    async def _src_reload_when_live(self, checks=20):
+    async def _src_reload_when_live(self, checks=20) -> None:
+        assert self._app is not None and self._session is not None
+
         if self._app[WS]:
             url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
@@ -116,11 +122,12 @@ class AppTask(WatchTask):
     def _stop_dev_server(self):
         if self._process.is_alive():
             logger.debug('stopping server process...')
-            os.kill(self._process.pid, signal.SIGINT)
+            if self._process.pid:
+                os.kill(self._process.pid, signal.SIGINT)
             self._process.join(5)
             if self._process.exitcode is None:
                 logger.warning('process has not terminated, sending SIGKILL')
-                os.kill(self._process.pid, signal.SIGKILL)
+                self._process.kill()
                 self._process.join(1)
             else:
                 logger.debug('process stopped')
@@ -130,6 +137,8 @@ class AppTask(WatchTask):
     async def close(self, *args):
         self.stopper.set()
         self._stop_dev_server()
+        if self._session is None:
+            raise RuntimeError("Object not started correctly before calling .close()")
         await asyncio.gather(super().close(), self._session.close())
 
 
