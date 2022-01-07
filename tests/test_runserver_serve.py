@@ -6,7 +6,7 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from aiohttp.web import Application
+from aiohttp.web import Application, Request, Response
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
@@ -175,9 +175,9 @@ async def test_modify_main_app_on_prepare(tmpworkdir):
     app = DummyApplication()
     modify_main_app(app, config)  # type: ignore[arg-type]
     on_prepare = app.on_response_prepare[0]
-    request = MagicMock()
+    request = MagicMock(spec=Request)
     request.path = '/'
-    response = MagicMock()
+    response = MagicMock(spec=Response)
     response.body = b'<h1>body</h1>'
     response.content_type = 'text/html'
     await on_prepare(request, response)
