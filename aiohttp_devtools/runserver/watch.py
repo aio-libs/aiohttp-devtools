@@ -17,7 +17,7 @@ from .serve import WS, serve_main_app, src_reload
 
 class WatchTask:
     _app: web.Application
-    _task: asyncio.Task[None]
+    _task: "asyncio.Task[None]"
 
     def __init__(self, path: Union[Path, str]):
         self._path = path
