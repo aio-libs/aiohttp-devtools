@@ -26,7 +26,7 @@ class MutableValue(Generic[_T]):
     def __bool__(self) -> bool:
         return bool(self.value)
 
-    def __eq__(self, other: object) -> MutableValue[bool]:  # type: ignore[override]
+    def __eq__(self, other: object) -> "MutableValue[bool]":  # type: ignore[override]
         return MutableValue(self.value == other)
 
     def __add__(self, other: _T) -> _T:

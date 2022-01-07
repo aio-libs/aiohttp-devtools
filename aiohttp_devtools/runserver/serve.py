@@ -56,13 +56,10 @@ def modify_main_app(app: web.Application, config: Config) -> None:
 
     if config.livereload:
         async def on_prepare(request: web.Request, response: web.StreamResponse) -> None:
-            if not isinstance(response, web.Response):
-                return
-            if not isinstance(response.body, bytes):  # No support for Payload
-                return
-            if request.path.startswith("/_debugtoolbar"):
-                return
-            if "text/html" not in response.content_type:
+            if (not isinstance(response, web.Response)
+                or not isinstance(response.body, bytes)  # No support for Payload
+                or request.path.startswith("/_debugtoolbar")
+                or "text/html" not in response.content_type):
                 return
             lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
             dft_logger.debug("appending live reload snippet '%s' to body", lr_snippet)

@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import re
 import sys
 from importlib import import_module
