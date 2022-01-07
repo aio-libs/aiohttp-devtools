@@ -1,7 +1,8 @@
 import asyncio
 import os
+import sys
 from multiprocessing import set_start_method
-from typing import Any, Type, TypedDict
+from typing import Any, Type
 
 from aiohttp.abc import AbstractAccessLogger
 from aiohttp.web import Application
@@ -11,6 +12,11 @@ from .config import Config
 from .log_handlers import AuxAccessLogger
 from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
+
+if sys.version_info < (3, 8):
+    from typing_extensions import TypedDict
+else:
+    from typing import TypedDict
 
 
 class RunServer(TypedDict):
