@@ -1,6 +1,10 @@
 import asyncio
 import os
 from multiprocessing import set_start_method
+from typing import Any, Type, TypedDict
+
+from aiohttp.abc import AbstractAccessLogger
+from aiohttp.web import Application
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
@@ -9,7 +13,15 @@ from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
 
 
-def runserver(**config_kwargs):
+class RunServer(TypedDict):
+    app: Application
+    host: str
+    port: int
+    shutdown_timeout: float
+    access_log_class: Type[AbstractAccessLogger]
+
+
+def runserver(**config_kwargs: Any) -> RunServer:
     """
     Prepare app ready to run development server.
 
@@ -49,7 +61,7 @@ def runserver(**config_kwargs):
             "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
-def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000):
+def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
     app = create_auxiliary_app(static_path=static_path, livereload=livereload)
