@@ -28,8 +28,7 @@ class RunServer(TypedDict):
 
 
 def runserver(**config_kwargs: Any) -> RunServer:
-    """
-    Prepare app ready to run development server.
+    """Prepare app ready to run development server.
 
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)

@@ -21,7 +21,7 @@ async def test_create_app_wrong_name(tmpworkdir, loop):
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 async def test_no_loop_coroutine(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -41,12 +41,25 @@ async def app_factory():
     assert isinstance(app, web.Application)
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 async def test_not_app(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
 def app_factory():
     return 123
+"""
+    })
+    config = Config(app_path='app.py')
+    with pytest.raises(AiohttpDevConfigError):
+        await config.load_app(config.import_app_factory())
+
+
+@pytest.mark.forked
+async def test_wrong_function_signature(tmpworkdir):
+    mktree(tmpworkdir, {
+        'app.py': """\
+def app_factory(foo):
+    return web.Application()
 """
     })
     config = Config(app_path='app.py')

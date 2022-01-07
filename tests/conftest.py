@@ -1,7 +1,5 @@
 from asyncio import Future
 
-import pytest
-
 
 SIMPLE_APP = {
     'app.py': """\

@@ -34,7 +34,7 @@ async def check_server_running(check_callback):
         await check_callback(session)
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -46,7 +46,7 @@ async def hello(request):
 async def has_error(request):
     raise ValueError()
 
-def create_app(loop):
+def create_app():
     app = web.Application()
     app.router.add_get('/', hello)
     app.router.add_get('/error', has_error)
@@ -87,7 +87,7 @@ def create_app(loop):
     ) in smart_caplog
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 def test_start_runserver_app_instance(tmpworkdir, loop):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -114,7 +114,7 @@ def kill_parent_soon(pid):
     os.kill(pid, signal.SIGINT)
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
@@ -141,7 +141,7 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
     assert text == 'test value'
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 async def test_serve_main_app(tmpworkdir, loop, mocker):
     asyncio.set_event_loop(loop)
     mktree(tmpworkdir, SIMPLE_APP)
@@ -155,7 +155,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
 
-@pytest.mark.boxed
+@pytest.mark.forked
 async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
