@@ -4,6 +4,7 @@ import re
 import sys
 from unittest.mock import MagicMock
 
+from aiohttp import web
 import pytest
 
 from aiohttp_devtools.logs import AccessFormatter, DefaultFormatter
@@ -96,12 +97,12 @@ def test_extra():
     info = MagicMock()
     logger_type = type("Logger", (), {"info": info})
     logger = AccessLogger(logger_type(), "")
-    request = MagicMock()
+    request = MagicMock(spec=web.Request)
     request.method = 'GET'
     request.headers = {'Foo': 'Bar'}
     request.path_qs = '/foobar?v=1'
     request._read_bytes = b'testing'
-    response = MagicMock()
+    response = MagicMock(spec=web.Response)
     response.status = 500
     response.body_length = 100
     response.headers = {'Foo': 'Spam'}

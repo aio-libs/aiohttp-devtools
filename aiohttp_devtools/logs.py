@@ -3,10 +3,17 @@ import logging
 import logging.config
 import platform
 import re
+import sys
 import traceback
 from io import StringIO
+from logging import LogRecord
 from types import TracebackType
 from typing import Dict, Optional, Tuple, Type, Union
+
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal
+else:
+    from typing import Literal
 
 import pygments
 from devtools import pformat
@@ -33,11 +40,11 @@ split_log = re.compile(r'^(\[.*?\])')
 
 
 class DefaultFormatter(logging.Formatter):
-    def __init__(self, fmt=None, datefmt=None, style='%'):
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def format(self, record):
+    def format(self, record: LogRecord) -> str:
         msg = super().format(record)
         if not self.stream_is_tty:
             return msg
@@ -45,20 +52,19 @@ class DefaultFormatter(logging.Formatter):
         log_color = LOG_FORMATS.get(record.levelno, sformat.red)
         if m:
             time = sformat(m.groups()[0], sformat.magenta)
-            return time + sformat(msg[m.end():], log_color)
+            return time + sformat(msg[m.end():], log_color)  # type: ignore[no-any-return]
 
-        return sformat(msg, log_color)
+        return sformat(msg, log_color)  # type: ignore[no-any-return]
 
 
 class AccessFormatter(logging.Formatter):
-    """
-    Used to log aiohttp_access and aiohttp_server
-    """
-    def __init__(self, fmt=None, datefmt=None, style='%'):
+    """Used to log aiohttp_access and aiohttp_server."""
+
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def formatMessage(self, record):
+    def formatMessage(self, record: LogRecord) -> str:
         msg = super().formatMessage(record)
         if msg[0] != '{':
             return msg
@@ -174,6 +180,6 @@ def log_config(verbose: bool) -> Dict[str, object]:
     }
 
 
-def setup_logging(verbose):
+def setup_logging(verbose: bool) -> None:
     config = log_config(verbose)
     logging.config.dictConfig(config)

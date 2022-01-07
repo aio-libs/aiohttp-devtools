@@ -68,6 +68,7 @@ setup(
         'devtools>=0.5',
         'Pygments>=2.2.0',
         'watchgod>=0.2',
+        'typing_extensions >= 3.7.4; python_version<"3.8"'
     ],
     python_requires='>=3.7',
 )

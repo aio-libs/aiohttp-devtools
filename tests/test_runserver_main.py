@@ -119,7 +119,7 @@ async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
     app_factory = config.import_app_factory()
-    app = app_factory()
+    app = await config.load_app(app_factory)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
     cli = await aiohttp_client(app)

@@ -1,5 +1,6 @@
 import sys
 import traceback
+from typing import Any
 
 import click
 from aiohttp.web import run_app
@@ -18,7 +19,7 @@ _dir_may_exist = click.Path(dir_okay=True, file_okay=False, writable=True, resol
 
 @click.group()
 @click.version_option(__version__, "-V", "--version", prog_name="aiohttp-devtools")
-def cli():
+def cli() -> None:
     pass
 
 
@@ -32,7 +33,7 @@ livereload_help = ('Whether to inject livereload.js into html page footers to au
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=True, help=livereload_help)
 @click.option('-p', '--port', default=8000, type=int)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
-def serve(path, livereload, port, verbose):
+def serve(path: str, livereload: bool, port: int, verbose: bool) -> None:
     """
     Serve static files from a directory.
     """
@@ -68,7 +69,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.argument('project_args', nargs=-1)
-def runserver(**config):
+def runserver(**config: Any) -> None:
     """
     Run a development server for an aiohttp apps.
 

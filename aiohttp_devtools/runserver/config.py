@@ -1,15 +1,16 @@
 import asyncio
-import inspect
 import re
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Optional
+from typing import Awaitable, Callable, Optional, Union
 
 from aiohttp import web
 
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
+
+AppFactory = Union[web.Application, Callable[[], web.Application], Callable[[], Awaitable[web.Application]]]
 
 STD_FILE_NAMES = [
     re.compile(r'main\.py'),
@@ -56,9 +57,12 @@ class Config:
         self.settings_found = False
 
         self.py_file = self._resolve_path(str(self.app_path), 'is_file', 'app-path')
-        self.python_path = self._resolve_path(python_path, 'is_dir', 'python-path') or self.root_path
+        if python_path:
+            self.python_path = self._resolve_path(python_path, "is_dir", "python-path")
+        else:
+            self.python_path = self.root_path
 
-        self.static_path = self._resolve_path(static_path, 'is_dir', 'static-path')
+        self.static_path = self._resolve_path(static_path, "is_dir", "static-path") if static_path else None
         self.static_url = static_url
         self.livereload = livereload
         self.app_factory_name = app_factory_name
@@ -70,7 +74,7 @@ class Config:
 
     @property
     def static_path_str(self) -> Optional[str]:
-        return self.static_path and str(self.static_path)
+        return str(self.static_path) if self.static_path else None
 
     def _find_app_path(self, app_path: str) -> Path:
         # for backwards compatibility try this first
@@ -94,10 +98,7 @@ class Config:
         raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
                               'in the directory "%s"' % app_path)
 
-    def _resolve_path(self, _path: Optional[str], check: str, arg_name: str):
-        if _path is None:
-            return
-
+    def _resolve_path(self, _path: str, check: str, arg_name: str) -> Path:
         if _path.startswith('/'):
             path = Path(_path)
             error_msg = '{arg_name} "{path}" is not a valid path'
@@ -119,11 +120,11 @@ class Config:
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
 
-    def import_app_factory(self):
-        """
-        Import attribute/class from from a python module. Raise AdevConfigError if the import failed.
+    def import_app_factory(self) -> AppFactory:
+        """Import and return attribute/class from a python module.
 
-        :return: (attribute, Path object for directory of file)
+        Raises:
+            AdevConfigError - If the import failed.
         """
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = '.'.join(rel_py_file.with_suffix('').parts)
@@ -145,36 +146,39 @@ class Config:
 
         try:
             attr = getattr(module, self.app_factory_name)
-        except AttributeError as e:
-            raise AdevConfigError('Module "{s.py_file.name}" '
-                                  'does not define a "{s.app_factory_name}" attribute/class'.format(s=self)) from e
+        except AttributeError:
+            raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
+                self.py_file.name, self.app_factory_name))
+
+        if not isinstance(attr, web.Application) and not callable(attr):
+            raise AdevConfigError("'{}.{}' is not an Application or callable".format(
+                self.py_file.name, self.app_factory_name))
+
+        if callable(attr):
+            required_args = attr.__code__.co_argcount - len(attr.__defaults__)
+            if required_args > 0:
+                raise AdevConfigError("'{}.{}' should not have required arguments.".format(
+                    self.py_file.name, self.app_factory_name))
 
         self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
-        return attr
+        return attr  # type: ignore[no-any-return]
 
-    async def load_app(self, app_factory):
+    async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):
-            app = app_factory
-        else:
-            # app_factory should be a proper factory with signature (loop): -> Application
-            signature = inspect.signature(app_factory)
-            if 'loop' in signature.parameters:
-                loop = asyncio.get_event_loop()
-                app = app_factory(loop=loop)
-            else:
-                # loop argument missing, assume no arguments
-                app = app_factory()
+            return app_factory
 
-            if asyncio.iscoroutine(app):
-                app = await app
+        app = app_factory()
 
-            if not isinstance(app, web.Application):
-                raise AdevConfigError('app factory "{.app_factory_name}" returned "{.__class__.__name__}" not an '
-                                      'aiohttp.web.Application'.format(self, app))
+        if asyncio.iscoroutine(app):
+            app = await app
+
+        if not isinstance(app, web.Application):
+            raise AdevConfigError("app factory '{}' returned '{}' not an aiohttp.web.Application".format(
+                self.app_factory_name, app.__class__.__name__))
 
         return app
 
-    def __str__(self):
+    def __str__(self) -> str:
         fields = ('py_file', 'static_path', 'static_url', 'livereload',
                   'app_factory_name', 'host', 'main_port', 'aux_port')
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)

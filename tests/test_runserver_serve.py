@@ -6,7 +6,7 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from aiohttp.web_app import Application
+from aiohttp.web import Application, Request, Response
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
@@ -147,7 +147,7 @@ def test_modify_main_app_all_off(tmpworkdir):
     app = DummyApplication()
     subapp = DummyApplication()
     app.add_subapp("/sub/", subapp)
-    modify_main_app(app, config)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 0
     assert len(app.middlewares) == 0
     assert app['static_root_url'] == 'http://foobar.com:8001/static'
@@ -161,7 +161,7 @@ def test_modify_main_app_all_on(tmpworkdir):
     app = DummyApplication()
     subapp = DummyApplication()
     app.add_subapp("/sub/", subapp)
-    modify_main_app(app, config)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 1
     assert len(app.middlewares) == 1
     assert app['static_root_url'] == 'http://localhost:8001/static'
@@ -173,11 +173,11 @@ async def test_modify_main_app_on_prepare(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', host='foobar.com')
     app = DummyApplication()
-    modify_main_app(app, config)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     on_prepare = app.on_response_prepare[0]
-    request = MagicMock()
+    request = MagicMock(spec=Request)
     request.path = '/'
-    response = MagicMock()
+    response = MagicMock(spec=Response)
     response.body = b'<h1>body</h1>'
     response.content_type = 'text/html'
     await on_prepare(request, response)
