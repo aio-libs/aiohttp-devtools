@@ -50,7 +50,8 @@ def app_factory():
 """
     })
     config = Config(app_path='app.py')
-    with pytest.raises(AiohttpDevConfigError):
+    with pytest.raises(AiohttpDevConfigError,
+                       match=r"'app_factory' returned 'int' not an aiohttp\.web\.Application"):
         await config.load_app(config.import_app_factory())
 
 
@@ -63,5 +64,6 @@ def app_factory(foo):
 """
     })
     config = Config(app_path='app.py')
-    with pytest.raises(AiohttpDevConfigError):
+    with pytest.raises(AiohttpDevConfigError,
+                       match=r"'app\.py\.app_factory' should not have required arguments"):
         await config.load_app(config.import_app_factory())
