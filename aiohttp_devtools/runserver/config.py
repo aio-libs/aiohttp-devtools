@@ -154,8 +154,8 @@ class Config:
             raise AdevConfigError("'{}.{}' is not an Application or callable".format(
                 self.py_file.name, self.app_factory_name))
 
-        if callable(attr):
-            required_args = attr.__code__.co_argcount - len(attr.__defaults__)
+        if hasattr(attr, "__code__"):
+            required_args = attr.__code__.co_argcount - len(attr.__defaults__ or ())
             if required_args > 0:
                 raise AdevConfigError("'{}.{}' should not have required arguments.".format(
                     self.py_file.name, self.app_factory_name))
