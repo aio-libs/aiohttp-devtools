@@ -56,6 +56,7 @@ def test_runserver_error(mocker):
     assert mock_runserver.call_count == 1
 
 
+@forked
 def test_runserver_error_verbose(mocker):
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     mock_run_app.side_effect = AiohttpDevException('foobar')
