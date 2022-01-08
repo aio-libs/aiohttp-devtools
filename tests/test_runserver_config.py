@@ -5,7 +5,7 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, forked
 
 
 async def test_load_simple_app(tmpworkdir):
@@ -13,6 +13,7 @@ async def test_load_simple_app(tmpworkdir):
     Config(app_path='app.py')
 
 
+@forked
 async def test_create_app_wrong_name(tmpworkdir, loop):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
@@ -21,7 +22,7 @@ async def test_create_app_wrong_name(tmpworkdir, loop):
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
 
-@pytest.mark.boxed
+@forked
 async def test_no_loop_coroutine(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -41,7 +42,7 @@ async def app_factory():
     assert isinstance(app, web.Application)
 
 
-@pytest.mark.boxed
+@forked
 async def test_not_app(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -50,5 +51,20 @@ def app_factory():
 """
     })
     config = Config(app_path='app.py')
-    with pytest.raises(AiohttpDevConfigError):
+    with pytest.raises(AiohttpDevConfigError,
+                       match=r"'app_factory' returned 'int' not an aiohttp\.web\.Application"):
+        await config.load_app(config.import_app_factory())
+
+
+@forked
+async def test_wrong_function_signature(tmpworkdir):
+    mktree(tmpworkdir, {
+        'app.py': """\
+def app_factory(foo):
+    return web.Application()
+"""
+    })
+    config = Config(app_path='app.py')
+    with pytest.raises(AiohttpDevConfigError,
+                       match=r"'app\.py\.app_factory' should not have required arguments"):
         await config.load_app(config.import_app_factory())
