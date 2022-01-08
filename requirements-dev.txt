@@ -4,7 +4,7 @@ coverage==6.2
 docutils==0.17.1
 flake8==4.0.1
 grablib==0.8
-mypy==0.930
+mypy==0.931
 pytest==6.2.5
 pytest-aiohttp==0.3.0
 pytest-cov==3.0.0
@@ -14,4 +14,4 @@ pytest-sugar==0.9.4
 pytest-timeout==2.0.2
 pytest-toolbox==0.4
 Sphinx==4.3.2
-types-pygments==2.9.10
+types-pygments==2.9.11
