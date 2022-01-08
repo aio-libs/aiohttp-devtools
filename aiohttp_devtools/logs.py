@@ -6,7 +6,6 @@ import re
 import sys
 import traceback
 from io import StringIO
-from logging import LogRecord
 from types import TracebackType
 from typing import Dict, Optional, Tuple, Type, Union
 
@@ -44,7 +43,7 @@ class DefaultFormatter(logging.Formatter):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def format(self, record: LogRecord) -> str:
+    def format(self, record: logging.LogRecord) -> str:
         msg = super().format(record)
         if not self.stream_is_tty:
             return msg
@@ -64,7 +63,7 @@ class AccessFormatter(logging.Formatter):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def formatMessage(self, record: LogRecord) -> str:
+    def formatMessage(self, record: logging.LogRecord) -> str:
         msg = super().formatMessage(record)
         if msg[0] != '{':
             return msg

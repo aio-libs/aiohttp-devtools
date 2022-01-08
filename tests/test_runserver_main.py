@@ -100,13 +100,14 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    args = runserver(app_path='app.py', host='foobar.com')
+    args = runserver(app_path="app.py", host="foobar.com", main_port=0, aux_port=8001)
     aux_app = args["app"]
     aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 2
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
+    assert len(aux_app.cleanup_ctx) == 1
 
 
 def kill_parent_soon(pid):
@@ -148,11 +149,13 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
-    config = Config(app_path='app.py')
+    config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
     await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
+
+    await runner.cleanup()
 
 
 @pytest.mark.forked
@@ -170,11 +173,13 @@ app.router.add_get('/', hello)
     })
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
-    config = Config(app_path='app.py')
+    config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
     await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
+
+    await runner.cleanup()
 
 
 @pytest.fixture
