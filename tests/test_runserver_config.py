@@ -13,6 +13,7 @@ async def test_load_simple_app(tmpworkdir):
     Config(app_path='app.py')
 
 
+@forked
 async def test_create_app_wrong_name(tmpworkdir, loop):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
