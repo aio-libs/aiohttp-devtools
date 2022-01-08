@@ -1,5 +1,12 @@
+import sys
 from asyncio import Future
 
+import pytest
+
+if sys.platform == "win32":
+    forked = pytest.mark.skip(reason="Windows doesn't suport fork")
+else:
+    forked = pytest.mark.forked
 
 SIMPLE_APP = {
     'app.py': """\

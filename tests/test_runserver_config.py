@@ -5,7 +5,7 @@ from pytest_toolbox import mktree
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, forked
 
 
 async def test_load_simple_app(tmpworkdir):
@@ -21,7 +21,7 @@ async def test_create_app_wrong_name(tmpworkdir, loop):
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
 
-@pytest.mark.forked
+@forked
 async def test_no_loop_coroutine(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -41,7 +41,7 @@ async def app_factory():
     assert isinstance(app, web.Application)
 
 
-@pytest.mark.forked
+@forked
 async def test_not_app(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -54,7 +54,7 @@ def app_factory():
         await config.load_app(config.import_app_factory())
 
 
-@pytest.mark.forked
+@forked
 async def test_wrong_function_signature(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\

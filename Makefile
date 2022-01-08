@@ -13,16 +13,8 @@ lint:
 	mypy
 	flake8
 
-.PHONY: test
-test:
-	pytest --cov=aiohttp_devtools --forked --duration 5 && (coverage combine || test 0)
-
-.PHONY: testcov
-testcov:
-	pytest --cov=aiohttp_devtools --forked && (echo "building coverage html"; coverage combine; coverage html)
-
 .PHONY: all
-all: testcov lint
+all: lint
 
 .PHONY: clean
 clean:

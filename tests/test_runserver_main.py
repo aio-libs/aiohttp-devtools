@@ -15,7 +15,7 @@ from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (create_auxiliary_app, create_main_app, modify_main_app, src_reload,
                                               start_main_app)
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, forked
 
 
 async def check_server_running(check_callback):
@@ -34,7 +34,7 @@ async def check_server_running(check_callback):
         await check_callback(session)
 
 
-@pytest.mark.forked
+@forked
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -87,7 +87,7 @@ def create_app():
     ) in smart_caplog
 
 
-@pytest.mark.forked
+@forked
 def test_start_runserver_app_instance(tmpworkdir, loop):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -115,7 +115,7 @@ def kill_parent_soon(pid):
     os.kill(pid, signal.SIGINT)
 
 
-@pytest.mark.forked
+@forked
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
@@ -142,7 +142,7 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
     assert text == 'test value'
 
 
-@pytest.mark.forked
+@forked
 async def test_serve_main_app(tmpworkdir, loop, mocker):
     asyncio.set_event_loop(loop)
     mktree(tmpworkdir, SIMPLE_APP)
@@ -158,7 +158,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
     await runner.cleanup()
 
 
-@pytest.mark.forked
+@forked
 async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
