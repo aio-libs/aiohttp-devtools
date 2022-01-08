@@ -5,9 +5,6 @@ aiohttp-devtools
 
 Dev tools for `aiohttp`_.
 
-(Note: ``aiohttp-devtools>=0.8`` only supports ``aiohttp>=3.0``, if you're using older aiohttp, please use
-an older version of ``aiohttp-devtools``, see `History.rst`_ for details.)
-
 **aiohttp-devtools** provides a number of tools useful when developing applications with aiohttp and associated
 libraries.
 
@@ -42,14 +39,14 @@ with ``web.run_app(app)``. You can however use ``if __name__ == '__main__': web.
 or ``main.py``) or to a specific file. The ``--app-factory`` option can be used to define which method is called
 from the app path file, if not supplied some default method names are tried
 (namely `app`, `app_factory`, `get_app` and `create_app`, which can be
-attributes, functions, or coroutines).
+variables, functions, or coroutines).
 
 All ``runserver`` arguments can be set via environment variables.
 
-``runserver`` has a few of useful features:
+``runserver`` has a few useful features:
 
 * **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload`_ for more details.
-* **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally
+* **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally.
 
 For more options see ``adev runserver --help``.
 
@@ -86,7 +83,7 @@ First let's create a clean python environment to work in and install aiohttp-dev
 We're now ready to build our new application with ``create-aio-app`` and we'll name the
 project ``my_new_app`` after the current directory.
 
-We're going to explicitly choose no database here to make, this tutorial easier but you can remove that option
+We're going to explicitly choose no database here to make this tutorial easier, but you can remove that option
 and choose to use a proper database if you like.
 
 You can just hit return to choose the default for all the options.
@@ -99,7 +96,7 @@ You can just hit return to choose the default for all the options.
 That's it, your app is now created. You might want to have a look through the local directory's file tree.
 
 Before you can run your app you'll need to install the other requirements, luckily they've already been listed in
-``./requirements.txt`` by ``create-aio-app``, to install simply run
+``requirements/development.txt`` by ``create-aio-app``, to install simply run
 
 .. code:: shell
 
@@ -126,6 +123,6 @@ With that:
    :target: https://pypi.python.org/pypi/aiohttp-devtools
 .. |license| image:: https://img.shields.io/pypi/l/aiohttp-devtools.svg
    :target: https://github.com/aio-libs/aiohttp-devtools
-.. _History.rst: /HISTORY.rst
+.. _Changes.txt: /CHANGES.txt
 .. _livereload: https://github.com/livereload/livereload-js
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
