@@ -89,7 +89,7 @@ class AccessFormatter(logging.Formatter):
         stack = sio.getvalue()
         sio.close()
         if self.stream_is_tty and pyg_lexer:
-            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")  # type: ignore[no-any-return]  # noqa
+            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")
 
         return stack
 
