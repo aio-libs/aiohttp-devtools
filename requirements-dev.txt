@@ -11,7 +11,7 @@ pytest-cov==3.0.0
 pytest-forked==1.4.0
 pytest-mock==3.6.1
 pytest-sugar==0.9.4
-pytest-timeout==2.0.2
+pytest-timeout==2.1.0
 pytest-toolbox==0.4
 Sphinx==4.3.2
 types-pygments==2.9.14
