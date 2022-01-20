@@ -10,7 +10,7 @@ from aiohttp_devtools.runserver import serve_static
 def cli(event_loop, tmpworkdir, aiohttp_client):
     asyncio.set_event_loop(event_loop)
     args = serve_static(static_path=str(tmpworkdir), livereload=False)
-    yield loop.run_until_complete(aiohttp_client(args["app"]))
+    yield event_loop.run_until_complete(aiohttp_client(args["app"]))
 
 
 async def test_simple_serve(cli, tmpworkdir):
