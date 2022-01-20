@@ -7,8 +7,8 @@ from aiohttp_devtools.runserver import serve_static
 
 
 @pytest.fixture
-def cli(loop, tmpworkdir, aiohttp_client):
-    asyncio.set_event_loop(loop)
+def cli(event_loop, tmpworkdir, aiohttp_client):
+    asyncio.set_event_loop(event_loop)
     args = serve_static(static_path=str(tmpworkdir), livereload=False)
     yield loop.run_until_complete(aiohttp_client(args["app"]))
 
@@ -32,7 +32,7 @@ async def test_file_missing(cli):
     assert '404: Not Found\n' in text
 
 
-async def test_html_file_livereload(loop, aiohttp_client, tmpworkdir):
+async def test_html_file_livereload(event_loop, aiohttp_client, tmpworkdir):
     args = serve_static(static_path=str(tmpworkdir), livereload=True)
     assert args["port"] == 8000
     cli = await aiohttp_client(args["app"])
@@ -51,7 +51,7 @@ async def test_html_file_livereload(loop, aiohttp_client, tmpworkdir):
     assert text.startswith('(function e(t,n,r){')
 
 
-async def test_serve_index(loop, aiohttp_client, tmpworkdir):
+async def test_serve_index(event_loop, aiohttp_client, tmpworkdir):
     args = serve_static(static_path=str(tmpworkdir), livereload=False)
     assert args["port"] == 8000
     cli = await aiohttp_client(args["app"])
