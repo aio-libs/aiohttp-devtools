@@ -147,7 +147,7 @@ async def test_serve_main_app(tmpworkdir, event_loop, mocker):
     asyncio.set_event_loop(event_loop)
     mktree(tmpworkdir, SIMPLE_APP)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    loop.call_later(0.5, loop.stop)
+    event_loop.call_later(0.5, event_loop.stop)
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
@@ -185,9 +185,9 @@ app.router.add_get('/', hello)
 @pytest.fixture
 def aux_cli(aiohttp_client, event_loop):
     app = create_auxiliary_app(static_path='.')
-    cli = loop.run_until_complete(aiohttp_client(app))
+    cli = event_loop.run_until_complete(aiohttp_client(app))
     yield cli
-    loop.run_until_complete(cli.close())
+    event_loop.run_until_complete(cli.close())
 
 
 async def test_websocket_hello(aux_cli, smart_caplog):
