@@ -22,14 +22,14 @@ non_windows_test = pytest.mark.skipif(
 )
 
 
-async def test_check_port_open(aiohttp_unused_port):
-    port = aiohttp_unused_port()
+async def test_check_port_open(unused_tcp_port_factory):
+    port = unused_tcp_port_factory()
     await check_port_open(port, 0.001)
 
 
 @non_windows_test  # FIXME: probably needs some sock options
-async def test_check_port_not_open(aiohttp_unused_port):
-    port = aiohttp_unused_port()
+async def test_check_port_not_open(unused_tcp_port_factory):
+    port = unused_tcp_port_factory()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('0.0.0.0', port))
         with pytest.raises(AiohttpDevException):
@@ -106,7 +106,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == smart_caplog
 
 
-async def test_aux_cleanup(loop):
+async def test_aux_cleanup(event_loop):
     aux_app = Application()
     aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()
