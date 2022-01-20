@@ -88,7 +88,7 @@ def create_app():
 
 
 @forked
-def test_start_runserver_app_instance(tmpworkdir, loop):
+def test_start_runserver_app_instance(tmpworkdir, event_loop):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -143,8 +143,8 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
 
 
 @forked
-async def test_serve_main_app(tmpworkdir, loop, mocker):
-    asyncio.set_event_loop(loop)
+async def test_serve_main_app(tmpworkdir, event_loop, mocker):
+    asyncio.set_event_loop(event_loop)
     mktree(tmpworkdir, SIMPLE_APP)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
@@ -159,7 +159,7 @@ async def test_serve_main_app(tmpworkdir, loop, mocker):
 
 
 @forked
-async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
+async def test_start_main_app_app_instance(tmpworkdir, event_loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -183,7 +183,7 @@ app.router.add_get('/', hello)
 
 
 @pytest.fixture
-def aux_cli(aiohttp_client, loop):
+def aux_cli(aiohttp_client, event_loop):
     app = create_auxiliary_app(static_path='.')
     cli = loop.run_until_complete(aiohttp_client(app))
     yield cli
@@ -205,7 +205,7 @@ async def test_websocket_hello(aux_cli, smart_caplog):
     assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in smart_caplog
 
 
-async def test_websocket_info(aux_cli, loop):
+async def test_websocket_info(aux_cli, event_loop):
     assert len(aux_cli.server.app['websockets']) == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
@@ -231,7 +231,7 @@ async def test_websocket_bad(aux_cli, smart_caplog):
     assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in smart_caplog
 
 
-async def test_websocket_reload(aux_cli, loop):
+async def test_websocket_reload(aux_cli, event_loop):
     reloads = await src_reload(aux_cli.server.app, 'foobar')
     assert reloads == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
