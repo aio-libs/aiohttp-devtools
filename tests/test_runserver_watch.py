@@ -35,7 +35,7 @@ def create_awatch_mock(*results_):
     return awatch_mock
 
 
-async def test_single_file_change(loop, mocker):
+async def test_single_file_change(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -57,7 +57,7 @@ async def test_single_file_change(loop, mocker):
     await app_task._session.close()
 
 
-async def test_multiple_file_change(loop, mocker):
+async def test_multiple_file_change(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -76,7 +76,7 @@ async def test_multiple_file_change(loop, mocker):
 
 
 @non_windows_test
-async def test_python_no_server(loop, mocker):
+async def test_python_no_server(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})
 
@@ -104,7 +104,7 @@ async def test_python_no_server(loop, mocker):
     await app_task._session.close()
 
 
-async def test_reload_server_running(loop, aiohttp_client, mocker):
+async def test_reload_server_running(event_loop, aiohttp_client, mocker):
     app = Application()
     app['websockets'] = [None]
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -120,7 +120,7 @@ async def test_reload_server_running(loop, aiohttp_client, mocker):
     await app_task._session.close()
 
 
-async def test_livereload_task_single(loop, mocker):
+async def test_livereload_task_single(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -133,7 +133,7 @@ async def test_livereload_task_single(loop, mocker):
     mock_src_reload.assert_called_once_with(app, '/path/to/file')
 
 
-async def test_livereload_task_multiple(loop, mocker):
+async def test_livereload_task_multiple(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
