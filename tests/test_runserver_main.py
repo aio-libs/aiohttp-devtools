@@ -32,7 +32,7 @@ async def check_server_running(check_callback):
                 break
         assert port_open
         await check_callback(session)
-    await asyncio.sleep(0)  # TODO(aiohttp 4): Remove this hack
+    await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
