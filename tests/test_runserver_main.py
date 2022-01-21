@@ -86,6 +86,7 @@ def create_app():
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
     ) in smart_caplog
+    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
