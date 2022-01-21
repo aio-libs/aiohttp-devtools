@@ -141,6 +141,7 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
             assert r.status == 200
             text = await r.text()
     assert text == 'test value'
+    await asyncio.sleep(0)  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
