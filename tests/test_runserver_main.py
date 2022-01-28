@@ -35,6 +35,8 @@ async def check_server_running(check_callback):
     await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
+# TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
+@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
