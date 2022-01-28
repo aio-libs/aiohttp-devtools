@@ -32,6 +32,7 @@ async def check_server_running(check_callback):
                 break
         assert port_open
         await check_callback(session)
+    await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
 # TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
@@ -87,6 +88,7 @@ def create_app():
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
     ) in smart_caplog
+    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
@@ -142,6 +144,7 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
             assert r.status == 200
             text = await r.text()
     assert text == 'test value'
+    await asyncio.sleep(0)  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
