@@ -33,7 +33,9 @@ async def check_server_running(check_callback):
         assert port_open
         await check_callback(session)
 
-
+        
+# TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
+@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
@@ -85,8 +87,6 @@ def create_app():
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
     ) in smart_caplog
-    # TODO: Remove hack in aiohttp 4
-    loop.run_until_complete(asyncio.sleep(1))
 
 
 @forked
