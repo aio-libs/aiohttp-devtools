@@ -46,8 +46,8 @@ jobs:
         make lint
     - name: Prepare twine checker
       run: |
-        pip install -U twine wheel
-        python setup.py sdist bdist_wheel
+        pip install -U build twine wheel
+        python -m build
     - name: Run twine checker
       run: |
         twine check dist/*
