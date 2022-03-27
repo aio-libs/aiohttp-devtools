@@ -67,7 +67,7 @@ setup(
         'click>=6.6',
         'devtools>=0.5',
         'Pygments>=2.2.0',
-        'watchgod>=0.2',
+        'watchfiles>=0.10',
         'typing_extensions >= 3.7.4; python_version<"3.8"'
     ],
     python_requires='>=3.7',
