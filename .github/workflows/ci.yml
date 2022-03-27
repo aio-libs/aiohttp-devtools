@@ -90,7 +90,7 @@ jobs:
       env:
         PYTHONIOENCODING: 'utf-8'
     - name: Run unittests
-      run: pytest
+      run: pytest --cov-report xml --cov-report html
       env:
         COLOR: 'yes'
     - run: python -m coverage xml
