@@ -15,7 +15,7 @@ from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (create_auxiliary_app, create_main_app, modify_main_app, src_reload,
                                               start_main_app)
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, forked
 
 
 async def check_server_running(check_callback):
@@ -32,9 +32,12 @@ async def check_server_running(check_callback):
                 break
         assert port_open
         await check_callback(session)
+    await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
-@pytest.mark.boxed
+# TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
+@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
+@forked
 def test_start_runserver(tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -46,7 +49,7 @@ async def hello(request):
 async def has_error(request):
     raise ValueError()
 
-def create_app(loop):
+def create_app():
     app = web.Application()
     app.router.add_get('/', hello)
     app.router.add_get('/error', has_error)
@@ -85,10 +88,11 @@ def create_app(loop):
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
         'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
     ) in smart_caplog
+    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
-@pytest.mark.boxed
-def test_start_runserver_app_instance(tmpworkdir, loop):
+@forked
+def test_start_runserver_app_instance(tmpworkdir, event_loop):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -100,13 +104,14 @@ app = web.Application()
 app.router.add_get('/', hello)
 """
     })
-    args = runserver(app_path='app.py', host='foobar.com')
+    args = runserver(app_path="app.py", host="foobar.com", main_port=0, aux_port=8001)
     aux_app = args["app"]
     aux_port = args["port"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert len(aux_app.on_startup) == 2
-    assert len(aux_app.on_shutdown) == 2
+    assert len(aux_app.on_startup) == 1
+    assert len(aux_app.on_shutdown) == 1
+    assert len(aux_app.cleanup_ctx) == 1
 
 
 def kill_parent_soon(pid):
@@ -114,12 +119,12 @@ def kill_parent_soon(pid):
     os.kill(pid, signal.SIGINT)
 
 
-@pytest.mark.boxed
+@forked
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
     app_factory = config.import_app_factory()
-    app = app_factory()
+    app = await config.load_app(app_factory)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
     cli = await aiohttp_client(app)
@@ -139,24 +144,27 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
             assert r.status == 200
             text = await r.text()
     assert text == 'test value'
+    await asyncio.sleep(0)  # TODO(aiohttp 4): Remove this hack
 
 
-@pytest.mark.boxed
-async def test_serve_main_app(tmpworkdir, loop, mocker):
-    asyncio.set_event_loop(loop)
+@forked
+async def test_serve_main_app(tmpworkdir, event_loop, mocker):
+    asyncio.set_event_loop(event_loop)
     mktree(tmpworkdir, SIMPLE_APP)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    loop.call_later(0.5, loop.stop)
+    event_loop.call_later(0.5, event_loop.stop)
 
-    config = Config(app_path='app.py')
-    runner = await create_main_app(config, config.import_app_factory(), loop)
+    config = Config(app_path="app.py", main_port=0)
+    runner = await create_main_app(config, config.import_app_factory())
     await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
+    await runner.cleanup()
 
-@pytest.mark.boxed
-async def test_start_main_app_app_instance(tmpworkdir, loop, mocker):
+
+@forked
+async def test_start_main_app_app_instance(tmpworkdir, event_loop, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -170,19 +178,21 @@ app.router.add_get('/', hello)
     })
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
-    config = Config(app_path='app.py')
-    runner = await create_main_app(config, config.import_app_factory(), loop)
+    config = Config(app_path="app.py", main_port=0)
+    runner = await create_main_app(config, config.import_app_factory())
     await start_main_app(runner, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
+    await runner.cleanup()
+
 
 @pytest.fixture
-def aux_cli(aiohttp_client, loop):
+def aux_cli(aiohttp_client, event_loop):
     app = create_auxiliary_app(static_path='.')
-    cli = loop.run_until_complete(aiohttp_client(app))
+    cli = event_loop.run_until_complete(aiohttp_client(app))
     yield cli
-    loop.run_until_complete(cli.close())
+    event_loop.run_until_complete(cli.close())
 
 
 async def test_websocket_hello(aux_cli, smart_caplog):
@@ -200,7 +210,7 @@ async def test_websocket_hello(aux_cli, smart_caplog):
     assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in smart_caplog
 
 
-async def test_websocket_info(aux_cli, loop):
+async def test_websocket_info(aux_cli, event_loop):
     assert len(aux_cli.server.app['websockets']) == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
@@ -226,7 +236,7 @@ async def test_websocket_bad(aux_cli, smart_caplog):
     assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in smart_caplog
 
 
-async def test_websocket_reload(aux_cli, loop):
+async def test_websocket_reload(aux_cli, event_loop):
     reloads = await src_reload(aux_cli.server.app, 'foobar')
     assert reloads == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))

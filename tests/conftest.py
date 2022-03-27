@@ -1,23 +1,12 @@
+import sys
 from asyncio import Future
 
 import pytest
 
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption('--boxed'):
-        skip_boxed = pytest.mark.skip(reason='only run with --boxed flag')
-        for item in items:
-            if 'boxed' in item.keywords:
-                item.add_marker(skip_boxed)
-
-
-def pytest_addoption(parser):
-    try:
-        parser.addoption('--fast', action='store_true', help="don't run slow tests")
-    except ValueError:
-        # --fast is already defined by aiohttp
-        pass
-
+if sys.platform == "win32":
+    forked = pytest.mark.skip(reason="Windows doesn't suport fork")
+else:
+    forked = pytest.mark.forked
 
 SIMPLE_APP = {
     'app.py': """\

@@ -5,11 +5,11 @@ import mimetypes
 import sys
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Optional
+from typing import Any, Iterator, Optional
 
 from aiohttp import WSMsgType, web
-from aiohttp.hdrs import LAST_MODIFIED
-from aiohttp.web import FileResponse, Response
+from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
+from aiohttp.typedefs import Handler
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import URL
@@ -18,7 +18,7 @@ from ..exceptions import AiohttpDevException
 from ..logs import rs_aux_logger as aux_logger
 from ..logs import rs_dft_logger as dft_logger
 from ..logs import setup_logging
-from .config import Config
+from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
@@ -27,7 +27,19 @@ LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 HOST = '0.0.0.0'
 
 
-def modify_main_app(app, config: Config):
+def _set_static_url(app: web.Application, url: str) -> None:
+    app["static_root_url"] = MutableValue(url)
+    for subapp in app._subapps:
+        _set_static_url(subapp, url)
+
+
+def _change_static_url(app: web.Application, url: str) -> None:
+    app["static_root_url"].change(url)
+    for subapp in app._subapps:
+        _change_static_url(subapp, url)
+
+
+def modify_main_app(app: web.Application, config: Config) -> None:
     """
     Modify the app we're serving to make development easier, eg.
     * modify responses to add the livereload snippet
@@ -36,30 +48,33 @@ def modify_main_app(app, config: Config):
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
 
-    def get_host(request):
+    def get_host(request: web.Request) -> str:
         if config.infer_host:
             return request.headers.get('host', 'localhost').split(':', 1)[0]
         else:
             return config.host
 
     if config.livereload:
-        async def on_prepare(request, response):
-            if (not request.path.startswith('/_debugtoolbar') and
-                    'text/html' in response.content_type and
-                    getattr(response, 'body', False)):
-                lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
-                dft_logger.debug('appending live reload snippet "%s" to body', lr_snippet)
-                response.body += lr_snippet.encode()
+        async def on_prepare(request: web.Request, response: web.StreamResponse) -> None:
+            if (not isinstance(response, web.Response)
+                    or not isinstance(response.body, bytes)  # No support for Payload
+                    or request.path.startswith("/_debugtoolbar")
+                    or "text/html" not in response.content_type):
+                return
+            lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
+            dft_logger.debug("appending live reload snippet '%s' to body", lr_snippet)
+            response.body += lr_snippet.encode()
+            response.headers[CONTENT_LENGTH] = str(len(response.body))
         app.on_response_prepare.append(on_prepare)
 
     static_path = config.static_url.strip('/')
     if config.infer_host and config.static_path is not None:
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
         @web.middleware
-        async def static_middleware(request, handler):
+        async def static_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
             static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
-            dft_logger.debug('settings app static_root_url to "%s"', static_url)
-            request.app['static_root_url'].change(static_url)
+            dft_logger.debug('setting app static_root_url to "%s"', static_url)
+            _change_static_url(request.app, static_url)
             return await handler(request)
 
         app.middlewares.insert(0, static_middleware)
@@ -67,15 +82,16 @@ def modify_main_app(app, config: Config):
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
-        app['static_root_url'] = MutableValue(static_url)
+        _set_static_url(app, static_url)
 
 
-async def check_port_open(port, loop, delay=1):
+async def check_port_open(port: int, delay: float = 1) -> None:
+    loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
         try:
-            server = await loop.create_server(asyncio.Protocol(), host=HOST, port=port)
+            server = await loop.create_server(asyncio.Protocol, host=HOST, port=port)
         except OSError as e:
             if e.errno != EADDRINUSE:
                 raise
@@ -89,7 +105,7 @@ async def check_port_open(port, loop, delay=1):
 
 
 @contextlib.contextmanager
-def set_tty(tty_path):  # pragma: no cover
+def set_tty(tty_path: Optional[str]) -> Iterator[None]:
     try:
         if not tty_path:
             # to match OSError from open
@@ -102,12 +118,12 @@ def set_tty(tty_path):  # pragma: no cover
         yield
 
 
-def serve_main_app(config: Config, tty_path: Optional[str]):
+def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
         app_factory = config.import_app_factory()
         loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(create_main_app(config, app_factory, loop))
+        runner = loop.run_until_complete(create_main_app(config, app_factory))
         try:
             loop.run_until_complete(start_main_app(runner, config.main_port))
             loop.run_forever()
@@ -118,15 +134,15 @@ def serve_main_app(config: Config, tty_path: Optional[str]):
                 loop.run_until_complete(runner.cleanup())
 
 
-async def create_main_app(config: Config, app_factory, loop):
+async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRunner:
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
 
-    await check_port_open(config.main_port, loop)
+    await check_port_open(config.main_port)
     return web.AppRunner(app, access_log_class=AccessLogger)
 
 
-async def start_main_app(runner: web.AppRunner, port):
+async def start_main_app(runner: web.AppRunner, port: int) -> None:
     await runner.setup()
     site = web.TCPSite(runner, host=HOST, port=port, shutdown_timeout=0.1)
     await site.start()
@@ -135,7 +151,7 @@ async def start_main_app(runner: web.AppRunner, port):
 WS = 'websockets'
 
 
-async def src_reload(app, path: Optional[str] = None):
+async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
     """
     prompt each connected browser to reload by sending websocket message.
 
@@ -179,12 +195,13 @@ async def src_reload(app, path: Optional[str] = None):
     return reloads
 
 
-async def cleanup_aux_app(app):
+async def cleanup_aux_app(app: web.Application) -> None:
     aux_logger.debug('closing %d websockets...', len(app[WS]))
     await asyncio.gather(*(ws.close() for ws, _ in app[WS]))
 
 
-def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
+def create_auxiliary_app(
+        *, static_path: Optional[str], static_url: str = "/", livereload: bool = True) -> web.Application:
     app = web.Application()
     app[WS] = set()
     app.update(
@@ -213,7 +230,7 @@ def create_auxiliary_app(*, static_path: str, static_url='/', livereload=True):
     return app
 
 
-async def livereload_js(request):
+async def livereload_js(request: web.Request) -> web.Response:
     if request.if_modified_since:
         raise HTTPNotModified()
 
@@ -224,7 +241,7 @@ async def livereload_js(request):
 WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
 
 
-async def websocket_handler(request):
+async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
     ws = web.WebSocketResponse(timeout=0.01)
     url = None
     await ws.prepare(request)
@@ -273,12 +290,12 @@ async def websocket_handler(request):
 
 
 class CustomStaticResource(StaticResource):
-    def __init__(self, *args, add_tail_snippet=False, **kwargs):
+    def __init__(self, *args: Any, add_tail_snippet: bool = False, **kwargs: Any):
         self._add_tail_snippet = add_tail_snippet
         super().__init__(*args, **kwargs)
         self._show_index = True
 
-    def modify_request(self, request):
+    def modify_request(self, request: web.Request) -> None:
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
@@ -303,8 +320,8 @@ class CustomStaticResource(StaticResource):
                         # path is not not relative to self._directory
                         pass
 
-    def _insert_footer(self, response):
-        if not isinstance(response, FileResponse) or not self._add_tail_snippet:
+    def _insert_footer(self, response: web.StreamResponse) -> web.StreamResponse:
+        if not isinstance(response, web.FileResponse) or not self._add_tail_snippet:
             return response
 
         filepath = response._path
@@ -315,11 +332,12 @@ class CustomStaticResource(StaticResource):
         with filepath.open('rb') as f:
             body = f.read() + LIVE_RELOAD_LOCAL_SNIPPET
 
-        resp = Response(body=body, content_type='text/html')
-        resp.last_modified = filepath.stat().st_mtime
+        resp = web.Response(body=body, content_type="text/html")
+        # Mypy bug: https://github.com/python/mypy/issues/11892
+        resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
-    async def _handle(self, request):
+    async def _handle(self, request: web.Request) -> web.StreamResponse:
         self.modify_request(request)
         try:
             response = await super()._handle(request)

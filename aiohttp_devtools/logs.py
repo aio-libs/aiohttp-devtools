@@ -3,14 +3,24 @@ import logging
 import logging.config
 import platform
 import re
+import sys
 import traceback
 from io import StringIO
+from types import TracebackType
+from typing import Dict, Optional, Tuple, Type, Union
+
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal
+else:
+    from typing import Literal
 
 import pygments
 from devtools import pformat
 from devtools.ansi import isatty, sformat
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
+
+_Ei = Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]
 
 rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
@@ -28,18 +38,12 @@ pyg_formatter = Terminal256Formatter(style='vim')
 split_log = re.compile(r'^(\[.*?\])')
 
 
-class HighlightStreamHandler(logging.StreamHandler):
-    def setFormatter(self, fmt):
-        self.formatter = fmt
-        self.formatter.stream_is_tty = isatty(self.stream) and platform.system().lower() != 'windows'
-
-
 class DefaultFormatter(logging.Formatter):
-    def __init__(self, fmt=None, datefmt=None, style='%'):
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         msg = super().format(record)
         if not self.stream_is_tty:
             return msg
@@ -47,20 +51,19 @@ class DefaultFormatter(logging.Formatter):
         log_color = LOG_FORMATS.get(record.levelno, sformat.red)
         if m:
             time = sformat(m.groups()[0], sformat.magenta)
-            return time + sformat(msg[m.end():], log_color)
-        else:
-            return sformat(msg, log_color)
+            return time + sformat(msg[m.end():], log_color)  # type: ignore[no-any-return]
+
+        return sformat(msg, log_color)  # type: ignore[no-any-return]
 
 
 class AccessFormatter(logging.Formatter):
-    """
-    Used to log aiohttp_access and aiohttp_server
-    """
-    def __init__(self, fmt=None, datefmt=None, style='%'):
+    """Used to log aiohttp_access and aiohttp_server."""
+
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
-    def formatMessage(self, record):
+    def formatMessage(self, record: logging.LogRecord) -> str:
         msg = super().formatMessage(record)
         if msg[0] != '{':
             return msg
@@ -80,18 +83,27 @@ class AccessFormatter(logging.Formatter):
             msg = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), msg)
         return msg
 
-    def formatException(self, ei):
+    def formatException(self, ei: _Ei) -> str:
         sio = StringIO()
-        traceback.print_exception(*ei, file=sio)
+        traceback.print_exception(*ei, file=sio)  # type: ignore[misc]
         stack = sio.getvalue()
         sio.close()
         if self.stream_is_tty and pyg_lexer:
-            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip('\n')
-        else:
-            return stack
+            return pygments.highlight(stack, lexer=pyg_lexer, formatter=pyg_formatter).rstrip("\n")
+
+        return stack
 
 
-def log_config(verbose: bool) -> dict:
+class HighlightStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    def setFormatter(self, fmt: Optional[logging.Formatter]) -> None:
+        stream_is_tty = isatty(self.stream) and platform.system().lower() != "windows"
+        if isinstance(fmt, (DefaultFormatter, AccessFormatter)):
+            fmt.stream_is_tty = stream_is_tty
+
+        self.formatter = fmt
+
+
+def log_config(verbose: bool) -> Dict[str, object]:
     """
     Setup default config. for dictConfig.
     :param verbose: level: DEBUG if True, INFO if False
@@ -167,6 +179,6 @@ def log_config(verbose: bool) -> dict:
     }
 
 
-def setup_logging(verbose):
+def setup_logging(verbose: bool) -> None:
     config = log_config(verbose)
     logging.config.dictConfig(config)

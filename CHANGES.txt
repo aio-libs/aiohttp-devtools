@@ -1,0 +1,45 @@
+.. towncrier release notes start
+
+1.0.post0 (2021-12-31)
+======================
+
+* Fix missing JS files in release process
+
+1.0 (2021-12-31)
+================
+
+* Add support for passing arguments to the application, like ``adev runserver [adev-args] project -- [project-args]``
+* Remove ``start`` command (take a look at create-aio-app for an alternative).
+* Remove debugtoolbar integration (it must be installed manually now).
+* Fix an error when reloading a file not in the static path.
+* Fix app cleanup not running is some situations.
+* Fix static URLs in subapps.
+* Fix support for aiohttp 3.8+.
+
+0.13.1 (2019-06-19)
+===================
+
+* re-enable support for alternative loops, #238
+
+0.13.0 (2019-05-21)
+===================
+
+* greatly simplify the ``start`` command, #233
+* disable coloured output on windows, #234
+* fix ``adev serve ...``, #235
+
+0.12.0 (2019-02-20)
+===================
+
+* fix tests for python 3.7, #218
+* fix tests for aiohttp >= 3.5, #223
+* rebuild logging with coloured tracebacks and request & response details, #221
+
+0.11.0 (2018-12-07)
+===================
+
+* use ``--root`` as base directory for watching if it's set, #209
+* add ``MutableValue`` to avoid aiohttp warnings, #215
+* improved logging including request time, #217
+* remove ``aiohttp_debugtoolbar`` as a requirement, improve CI, #216
+* uprev dependencies

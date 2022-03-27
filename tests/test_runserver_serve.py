@@ -2,10 +2,11 @@ import json
 import pathlib
 import socket
 from platform import system as get_os_family
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from aiohttp.web_app import Application
+from aiohttp.web import Application, Request, Response
 from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
@@ -21,18 +22,18 @@ non_windows_test = pytest.mark.skipif(
 )
 
 
-async def test_check_port_open(aiohttp_unused_port, loop):
-    port = aiohttp_unused_port()
-    await check_port_open(port, loop, 0.001)
+async def test_check_port_open(unused_tcp_port_factory):
+    port = unused_tcp_port_factory()
+    await check_port_open(port, 0.001)
 
 
 @non_windows_test  # FIXME: probably needs some sock options
-async def test_check_port_not_open(aiohttp_unused_port, loop):
-    port = aiohttp_unused_port()
+async def test_check_port_not_open(unused_tcp_port_factory):
+    port = unused_tcp_port_factory()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('0.0.0.0', port))
         with pytest.raises(AiohttpDevException):
-            await check_port_open(port, loop, 0.001)
+            await check_port_open(port, 0.001)
 
 
 async def test_aux_reload(smart_caplog):
@@ -105,7 +106,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == smart_caplog
 
 
-async def test_aux_cleanup(loop):
+async def test_aux_cleanup(event_loop):
     aux_app = Application()
     aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()
@@ -126,22 +127,31 @@ def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
 
 
-class DummyApplication(dict):
+class DummyApplication(Dict[str, object]):
+    _debug = False
+
     def __init__(self):
         self.on_response_prepare = []
         self.middlewares = []
         self.router = MagicMock()
         self['static_root_url'] = '/static/'
+        self._subapps = []
+
+    def add_subapp(self, path, app):
+        self._subapps.append(app)
 
 
 def test_modify_main_app_all_off(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', livereload=False, host='foobar.com', static_path='.')
     app = DummyApplication()
-    modify_main_app(app, config)
+    subapp = DummyApplication()
+    app.add_subapp("/sub/", subapp)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 0
     assert len(app.middlewares) == 0
     assert app['static_root_url'] == 'http://foobar.com:8001/static'
+    assert subapp["static_root_url"] == "http://foobar.com:8001/static"
     assert app._debug is True
 
 
@@ -149,10 +159,13 @@ def test_modify_main_app_all_on(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', static_path='.')
     app = DummyApplication()
-    modify_main_app(app, config)
+    subapp = DummyApplication()
+    app.add_subapp("/sub/", subapp)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 1
     assert len(app.middlewares) == 1
     assert app['static_root_url'] == 'http://localhost:8001/static'
+    assert subapp['static_root_url'] == "http://localhost:8001/static"
     assert app._debug is True
 
 
@@ -160,11 +173,11 @@ async def test_modify_main_app_on_prepare(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', host='foobar.com')
     app = DummyApplication()
-    modify_main_app(app, config)
+    modify_main_app(app, config)  # type: ignore[arg-type]
     on_prepare = app.on_response_prepare[0]
-    request = MagicMock()
+    request = MagicMock(spec=Request)
     request.path = '/'
-    response = MagicMock()
+    response = MagicMock(spec=Response)
     response.body = b'<h1>body</h1>'
     response.content_type = 'text/html'
     await on_prepare(request, response)

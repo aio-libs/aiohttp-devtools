@@ -1,6 +1,11 @@
 import asyncio
 import os
+import sys
 from multiprocessing import set_start_method
+from typing import Any, Type
+
+from aiohttp.abc import AbstractAccessLogger
+from aiohttp.web import Application
 
 from ..logs import rs_dft_logger as logger
 from .config import Config
@@ -8,10 +13,22 @@ from .log_handlers import AuxAccessLogger
 from .serve import HOST, check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
 
+if sys.version_info < (3, 8):
+    from typing_extensions import TypedDict
+else:
+    from typing import TypedDict
 
-def runserver(**config_kwargs):
-    """
-    Prepare app ready to run development server.
+
+class RunServer(TypedDict):
+    app: Application
+    host: str
+    port: int
+    shutdown_timeout: float
+    access_log_class: Type[AbstractAccessLogger]
+
+
+def runserver(**config_kwargs: Any) -> RunServer:
+    """Prepare app ready to run development server.
 
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)
@@ -21,9 +38,8 @@ def runserver(**config_kwargs):
 
     config = Config(**config_kwargs)
     config.import_app_factory()
-    loop = asyncio.get_event_loop()
 
-    loop.run_until_complete(check_port_open(config.main_port, loop))
+    asyncio.run(check_port_open(config.main_port))
 
     aux_app = create_auxiliary_app(
         static_path=config.static_path_str,
@@ -32,14 +48,12 @@ def runserver(**config_kwargs):
     )
 
     main_manager = AppTask(config)
-    aux_app.on_startup.append(main_manager.start)
-    aux_app.on_shutdown.append(main_manager.close)
+    aux_app.cleanup_ctx.append(main_manager.cleanup_ctx)
 
     if config.static_path:
         static_manager = LiveReloadTask(config.static_path)
         logger.debug('starting livereload to watch %s', config.static_path_str)
-        aux_app.on_startup.append(static_manager.start)
-        aux_app.on_shutdown.append(static_manager.close)
+        aux_app.cleanup_ctx.append(static_manager.cleanup_ctx)
 
     url = 'http://{0.host}:{0.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
@@ -52,7 +66,7 @@ def runserver(**config_kwargs):
             "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
-def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000):
+def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
     app = create_auxiliary_app(static_path=static_path, livereload=livereload)
@@ -60,8 +74,7 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000)
     if livereload:
         livereload_manager = LiveReloadTask(static_path)
         logger.debug('starting livereload to watch %s', static_path)
-        app.on_startup.append(livereload_manager.start)
-        app.on_shutdown.append(livereload_manager.close)
+        app.cleanup_ctx.append(livereload_manager.cleanup_ctx)
 
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)

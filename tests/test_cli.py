@@ -5,6 +5,8 @@ from click.testing import CliRunner
 from aiohttp_devtools.cli import cli
 from aiohttp_devtools.exceptions import AiohttpDevException
 
+from .conftest import forked
+
 
 def test_cli_help():
     runner = CliRunner()
@@ -14,8 +16,8 @@ def test_cli_help():
     assert 'Serve static files from a directory.' in result.output
 
 
-def test_serve(mocker, loop):
-    asyncio.set_event_loop(loop)
+def test_serve(mocker, event_loop):
+    asyncio.set_event_loop(event_loop)
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     runner = CliRunner()
     result = runner.invoke(cli, ['serve', '.'])
@@ -54,6 +56,7 @@ def test_runserver_error(mocker):
     assert mock_runserver.call_count == 1
 
 
+@forked
 def test_runserver_error_verbose(mocker):
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     mock_run_app.side_effect = AiohttpDevException('foobar')
@@ -67,8 +70,9 @@ def test_runserver_error_verbose(mocker):
     assert mock_runserver.call_count == 1
 
 
-def test_runserver_no_args(loop):
-    asyncio.set_event_loop(loop)
+@forked
+def test_runserver_no_args(event_loop):
+    asyncio.set_event_loop(event_loop)
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2
