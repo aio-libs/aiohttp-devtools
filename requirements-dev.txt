@@ -13,5 +13,5 @@ pytest-mock==3.7.0
 pytest-sugar==0.9.4
 pytest-timeout==2.1.0
 pytest-toolbox==0.4
-Sphinx==4.3.2
+Sphinx==5.0.1
 types-pygments==2.9.19
