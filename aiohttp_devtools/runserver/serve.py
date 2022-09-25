@@ -43,7 +43,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:
     """
     Modify the app we're serving to make development easier, eg.
     * modify responses to add the livereload snippet
-    * set ``static_root_url`` on the app
+    * set ``static_root_url`` on the app (for use with aiohttp-jinja2)
     """
     app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
@@ -122,16 +122,28 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
         app_factory = config.import_app_factory()
-        loop = asyncio.get_event_loop()
-        runner = loop.run_until_complete(create_main_app(config, app_factory))
-        try:
-            loop.run_until_complete(start_main_app(runner, config.main_port))
-            loop.run_forever()
-        except KeyboardInterrupt:  # pragma: no cover
-            pass
-        finally:
-            with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-                loop.run_until_complete(runner.cleanup())
+        if sys.version_info >= (3, 11):
+            with asyncio.Runner() as runner:
+                app_runner = runner.run(create_main_app(config, app_factory))
+                try:
+                    runner.run(start_main_app(app_runner, config.main_port))
+                    runner.get_loop().run_forever()
+                except KeyboardInterrupt:
+                    pass
+                finally:
+                    with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
+                        runner.run(app_runner.cleanup())
+        else:
+            loop = asyncio.new_event_loop()
+            runner = loop.run_until_complete(create_main_app(config, app_factory))
+            try:
+                loop.run_until_complete(start_main_app(runner, config.main_port))
+                loop.run_forever()
+            except KeyboardInterrupt:  # pragma: no cover
+                pass
+            finally:
+                with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
+                    loop.run_until_complete(runner.cleanup())
 
 
 async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRunner:
