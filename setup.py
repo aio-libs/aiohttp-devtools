@@ -65,7 +65,7 @@ setup(
     install_requires=[
         'aiohttp>=3.8.0',
         'click>=6.6',
-        'devtools>=0.5',
+        'devtools>=0.6',
         'Pygments>=2.2.0',
         'watchfiles>=0.10',
         'typing_extensions >= 3.7.4; python_version<"3.8"'
