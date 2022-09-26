@@ -133,7 +133,8 @@ class Config:
         sys.path.append(str(self.python_path))
         module = import_module(module_path)
         # Rewrite the package name, so it will appear the same as running the app.
-        __main__.__package__ = module.__package__
+        if module.__package__:
+            __main__.__package__ = module.__package__
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
