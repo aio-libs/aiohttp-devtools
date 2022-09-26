@@ -16,7 +16,8 @@ else:
 
 import pygments
 from devtools import pformat
-from devtools.ansi import isatty, sformat
+from devtools.ansi import sformat
+from devtools.utils import isatty
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
@@ -51,9 +52,9 @@ class DefaultFormatter(logging.Formatter):
         log_color = LOG_FORMATS.get(record.levelno, sformat.red)
         if m:
             time = sformat(m.groups()[0], sformat.magenta)
-            return time + sformat(msg[m.end():], log_color)  # type: ignore[no-any-return]
+            return time + sformat(msg[m.end():], log_color)
 
-        return sformat(msg, log_color)  # type: ignore[no-any-return]
+        return sformat(msg, log_color)
 
 
 class AccessFormatter(logging.Formatter):
