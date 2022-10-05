@@ -9,7 +9,7 @@ pytest==6.2.5
 pytest-aiohttp==1.0.4
 pytest-cov==4.0.0
 pytest-forked==1.4.0
-pytest-mock==3.9.0
+pytest-mock==3.10.0
 pytest-sugar==0.9.5
 pytest-timeout==2.1.0
 pytest-toolbox==0.4
