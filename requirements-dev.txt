@@ -4,7 +4,7 @@ coverage==6.5.0
 docutils==0.17.1
 flake8==5.0.4
 grablib==0.8
-mypy==0.990
+mypy==0.991
 pytest==6.2.5
 pytest-aiohttp==1.0.4
 pytest-cov==4.0.0
