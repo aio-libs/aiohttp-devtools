@@ -1,6 +1,6 @@
 -e .
 click==8.1.3
-coverage==6.5.0
+coverage==7.0.1
 docutils==0.17.1
 flake8==5.0.4
 grablib==0.8
