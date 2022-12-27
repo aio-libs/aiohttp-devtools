@@ -3,7 +3,7 @@ aiohttp-devtools
 
 |Coverage| |pypi| |license|
 
-Dev tools for `aiohttp`_.
+Developer tools for `aiohttp`_.
 
 **aiohttp-devtools** provides a number of tools useful when developing applications with aiohttp and associated
 libraries.
