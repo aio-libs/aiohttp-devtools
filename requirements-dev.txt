@@ -2,5 +2,5 @@
 
 flake8==6.0.0
 mypy==0.991
-Sphinx==4.3.2
+Sphinx==6.0.0
 types-pygments==2.14.0.0
