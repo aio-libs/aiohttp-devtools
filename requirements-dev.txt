@@ -3,4 +3,4 @@
 flake8==6.0.0
 mypy==0.991
 Sphinx==4.3.2
-types-pygments==2.13.1.1
+types-pygments==2.14.0.0
