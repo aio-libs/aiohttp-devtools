@@ -84,7 +84,7 @@ jobs:
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
       with:
-        path: requirements-dev.txt
+        path: requirements.txt
     - name: Install JS dependencies
       run: grablib
       env:
