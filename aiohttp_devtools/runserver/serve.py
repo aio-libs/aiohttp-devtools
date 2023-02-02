@@ -363,4 +363,8 @@ class CustomStaticResource(StaticResource):
         else:
             # Inject CORS headers to allow webfonts to load correctly
             response.headers['Access-Control-Allow-Origin'] = '*'
+
+        # Add no-cache header to avoid browser caching in local development.
+        response.headers["Cache-Control"] = "no-cache"
+
         return response
