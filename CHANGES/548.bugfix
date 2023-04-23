@@ -1,0 +1,1 @@
+Fix issue with shutdown handlers not being called on Windows
