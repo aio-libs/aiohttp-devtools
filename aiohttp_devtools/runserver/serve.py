@@ -39,7 +39,7 @@ def _change_static_url(app: web.Application, url: str) -> None:
         _change_static_url(subapp, url)
 
 
-def modify_main_app(app: web.Application, config: Config) -> None:
+def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
     """
     Modify the app we're serving to make development easier, eg.
     * modify responses to add the livereload snippet
@@ -81,7 +81,8 @@ def modify_main_app(app: web.Application, config: Config) -> None:
 
     if config.shutdown_endpoint:  # a workaround for singals not working on Windows
         from aiohttp.web_runner import GracefulExit
-        async def get_shutdown(request):
+
+        async def get_shutdown(request: web.Request) -> web.Response:
             request.app.logger.info('shutting down due to request at endpoint')
             raise GracefulExit()
         path = config.path_prefix+"/shutdown"
