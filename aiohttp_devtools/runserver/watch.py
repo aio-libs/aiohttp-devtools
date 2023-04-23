@@ -130,8 +130,9 @@ class AppTask(WatchTask):
                 try:
                     # these errors are expected because the request kills the server *immediately*
                     with suppress(ServerDisconnectedError, ClientConnectorError):
-                        async with self._session.get(url):
-                            pass
+                        async with ClientSession() as session:
+                            async with session.get(url):
+                                pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():
                         logger.warning("shutdown endpoint caused an error (will try signals next): {}".format(ex))
