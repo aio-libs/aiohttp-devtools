@@ -79,6 +79,15 @@ def modify_main_app(app: web.Application, config: Config) -> None:
 
         app.middlewares.insert(0, static_middleware)
 
+    if config.shutdown_endpoint:  # a workaround for singals not working on Windows
+        from aiohttp.web_runner import GracefulExit
+        async def get_shutdown(request):
+            request.app.logger.info('shutting down due to request at endpoint')
+            raise GracefulExit()
+        path = config.path_prefix+"/shutdown"
+        app.router.add_route("GET", path, get_shutdown, name="devtools.shutdown")
+        dft_logger.debug('set up shutdown endpoint at http://{}:{}{}'.format(config.host, config.main_port, path))
+
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
