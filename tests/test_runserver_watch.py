@@ -1,3 +1,4 @@
+import sys
 import asyncio
 from functools import partial
 from platform import system as get_os_family
@@ -14,6 +15,10 @@ from .conftest import create_future
 non_windows_test = pytest.mark.skipif(
     get_os_family() == 'Windows',
     reason='This only works under UNIX-based OS and gets stuck under Windows',
+)
+needs_py38_test = pytest.mark.skipif(
+    sys.version_info < (3, 8),
+    reason="This only works on Python >=3.8 because otherwise MagicMock can't be used in 'await' expression",
 )
 
 
@@ -75,6 +80,7 @@ async def test_multiple_file_change(event_loop, mocker):
     await app_task._session.close()
 
 
+@needs_py38_test
 @non_windows_test
 async def test_python_no_server(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
