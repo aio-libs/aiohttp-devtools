@@ -80,7 +80,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         app.middlewares.insert(0, static_middleware)
 
     # Fallback option to shutdown the application if signals don't work (e.g. Windows).
-    if config.shutdown_endpoint:
+    if config.shutdown_by_url:
         from aiohttp.web_runner import GracefulExit
 
         async def get_shutdown(request: web.Request) -> web.Response:

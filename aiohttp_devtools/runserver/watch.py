@@ -124,7 +124,7 @@ class AppTask(WatchTask):
     async def _stop_dev_server(self) -> None:
         if self._process.is_alive():
             logger.debug('stopping server process...')
-            if self._config.shutdown_endpoint:  # a workaround for singals not working on Windows
+            if self._config.shutdown_by_url:  # a workaround for singals not working on Windows
                 url = 'http://localhost:{}{}/shutdown'.format(self._config.main_port, self._config.path_prefix)
                 logger.debug('attempting to stop process via shutdown endpoint {}'.format(url))
                 try:
