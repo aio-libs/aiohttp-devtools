@@ -110,7 +110,7 @@ app.router.add_get('/', hello)
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert len(aux_app.on_startup) == 1
-    assert len(aux_app.on_shutdown) == 2
+    assert len(aux_app.on_shutdown) == 1
     assert len(aux_app.cleanup_ctx) == 1
 
 
