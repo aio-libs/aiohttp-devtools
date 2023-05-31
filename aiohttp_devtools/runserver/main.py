@@ -50,7 +50,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
     main_manager = AppTask(config)
     aux_app.cleanup_ctx.append(main_manager.cleanup_ctx)
     async def do_shutdown(_):
-        main_manager._stop_dev_server()
+        await main_manager._stop_dev_server()
     aux_app.on_shutdown.append(do_shutdown)
 
     if config.static_path:
