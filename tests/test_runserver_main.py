@@ -115,11 +115,6 @@ app.router.add_get('/', hello)
     assert len(aux_app.cleanup_ctx) == 1
 
 
-def kill_parent_soon(pid):
-    time.sleep(0.2)
-    os.kill(pid, signal.SIGINT)
-
-
 @forked
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
