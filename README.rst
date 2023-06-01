@@ -75,7 +75,7 @@ First let's create a clean python environment to work in and install aiohttp-dev
 .. code:: shell
 
     mkdir my_new_app && cd my_new_app
-    virtualenv -p `which python3.7` env
+    virtualenv -p `which python3.8` env
     . env/bin/activate
     pip install aiohttp-devtools create-aio-app
 
