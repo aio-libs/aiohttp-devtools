@@ -1,11 +1,14 @@
 import asyncio
 from aiohttp import ClientSession, ClientTimeout
 from pytest_toolbox import mktree
+import pytest
 from aiohttp_devtools.runserver import runserver
 from .conftest import forked
 from tempfile import NamedTemporaryFile
 
 
+# TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
+@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
 def test_server_cleanup(tmpworkdir, smart_caplog):
     tempf = NamedTemporaryFile(dir=tmpworkdir, delete=False)
