@@ -70,6 +70,7 @@ app.on_shutdown.append(shutdown)
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
+        loop.run_until_complete(aux_app.cleanup())
     assert (
         "adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n"
         "adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n"
