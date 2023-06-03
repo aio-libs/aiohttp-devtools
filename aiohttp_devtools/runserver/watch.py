@@ -8,7 +8,7 @@ from typing import AsyncIterator, Iterable, Optional, Tuple, Union
 from contextlib import suppress
 
 from aiohttp import ClientSession, web
-from aiohttp.client_exceptions import ClientError, ServerDisconnectedError, ClientConnectorError
+from aiohttp.client_exceptions import ClientError, ServerDisconnectedError, ClientConnectorError, ClientOSError
 from watchfiles import awatch
 
 from ..exceptions import AiohttpDevException
@@ -128,16 +128,18 @@ class AppTask(WatchTask):
                 url = 'http://localhost:{}{}/shutdown'.format(self._config.main_port, self._config.path_prefix)
                 logger.debug('attempting to stop process via shutdown endpoint {}'.format(url))
                 try:
-                    # these errors are expected because the request kills the server *immediately*
-                    with suppress(ServerDisconnectedError, ClientConnectorError):
+                    # these errors are expected because the request kills the server
+                    with suppress(ServerDisconnectedError, ClientConnectorError, ClientOSError):
                         async with ClientSession() as session:
                             async with session.get(url):
                                 pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():
-                        logger.warning("shutdown endpoint caused an error (will try signals next): {}".format(ex))
+                        logger.warning("shutdown endpoint caused an error (will try signals next): {} {}"
+                                       .format(type(ex), ex))
                     else:
-                        logger.warning("process stopped (despite error at shutdown endpoint: {})".format(ex))
+                        logger.warning("process stopped (despite error at shutdown endpoint): {} {}"
+                                       .format(type(ex), ex))
                         return
                 else:
                     self._process.join(5)

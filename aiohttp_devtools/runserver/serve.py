@@ -5,7 +5,7 @@ import mimetypes
 import sys
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, NoReturn
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -83,12 +83,14 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
     if config.shutdown_by_url:
         from aiohttp.web_runner import GracefulExit
 
-        async def get_shutdown(request: web.Request) -> web.Response:
-            request.app.logger.info('shutting down due to request at endpoint')
-            raise GracefulExit()
-        path = config.path_prefix+"/shutdown"
-        app.router.add_route("GET", path, get_shutdown, name="devtools.shutdown")
-        dft_logger.debug('set up shutdown endpoint at http://{}:{}{}'.format(config.host, config.main_port, path))
+        async def do_shutdown(request: web.Request) -> web.Response:
+            def shutdown() -> NoReturn:
+                raise GracefulExit()
+            asyncio.get_running_loop().call_soon(shutdown)
+            return web.Response()
+        path = config.path_prefix + "/shutdown"
+        app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
+        dft_logger.debug("Created shutdown endpoint at http://{}:{}{}".format(config.host, config.main_port, path))
 
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)

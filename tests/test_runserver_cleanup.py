@@ -7,9 +7,10 @@ from .conftest import forked
 from tempfile import NamedTemporaryFile
 
 
+# Note this code is heavily based on test_start_runserver from test_runserver_main.py
 # TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
-@forked  # forked doesn't run on Windows and is skipped
+@forked  # forked doesn't run on Windows and is skipped - see cleanup_app.py instead
 def test_server_cleanup(tmpworkdir, smart_caplog):
     tempf = NamedTemporaryFile(dir=tmpworkdir, delete=False)
     tempf.close()
