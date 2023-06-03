@@ -12,10 +12,7 @@ from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
 
-non_windows_test = pytest.mark.skipif(
-    get_os_family() == 'Windows',
-    reason='This only works under UNIX-based OS and gets stuck under Windows',
-)
+
 needs_py38_test = pytest.mark.skipif(
     sys.version_info < (3, 8),
     reason="This only works on Python >=3.8 because otherwise MagicMock can't be used in 'await' expression",
@@ -81,7 +78,6 @@ async def test_multiple_file_change(event_loop, mocker):
 
 
 @needs_py38_test
-@non_windows_test
 async def test_python_no_server(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})
