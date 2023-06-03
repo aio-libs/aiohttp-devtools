@@ -1,7 +1,6 @@
 import json
 import pathlib
 import socket
-from platform import system as get_os_family
 from typing import Dict
 from unittest.mock import MagicMock
 

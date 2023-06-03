@@ -1,7 +1,6 @@
 import sys
 import asyncio
 from functools import partial
-from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
 import pytest
