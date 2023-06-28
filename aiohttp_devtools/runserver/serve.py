@@ -11,6 +11,7 @@ from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
 from aiohttp.typedefs import Handler
 from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
+from aiohttp.web_runner import GracefulExit
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import URL
 
@@ -81,13 +82,12 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
     # Fallback option to shutdown the application if signals don't work (e.g. Windows).
     if config.shutdown_by_url:
-        from aiohttp.web_runner import GracefulExit
-
         async def do_shutdown(request: web.Request) -> web.Response:
             def shutdown() -> NoReturn:
                 raise GracefulExit()
             asyncio.get_running_loop().call_soon(shutdown)
             return web.Response()
+
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
         dft_logger.debug("Created shutdown endpoint at http://{}:{}{}".format(config.host, config.main_port, path))
