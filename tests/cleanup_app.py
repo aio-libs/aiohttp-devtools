@@ -1,6 +1,8 @@
 """
-Manual test for checking if cleanup/shutdown handlers are called.
-This test has proved to be quite difficult to automate in Windows.
+Test script for checking if cleanup/shutdown handlers are called.
+This test has proved to be quite difficult to automate in Windows
+(see discussion at https://github.com/aio-libs/aiohttp-devtools/pull/549)
+so it must be done manually as per the protocol below.
 On Linux, it is handled via test_runserver_cleanup.py.
 
 Test Protocol:
