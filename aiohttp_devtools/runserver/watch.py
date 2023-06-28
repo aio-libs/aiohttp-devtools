@@ -8,7 +8,7 @@ from typing import AsyncIterator, Iterable, Optional, Tuple, Union
 from contextlib import suppress
 
 from aiohttp import ClientSession, web
-from aiohttp.client_exceptions import ClientError, ServerDisconnectedError, ClientConnectorError, ClientOSError
+from aiohttp.client_exceptions import ClientError, ClientConnectionError
 from watchfiles import awatch
 
 from ..exceptions import AiohttpDevException
