@@ -1,6 +1,6 @@
+import sys
 import asyncio
 from functools import partial
-from platform import system as get_os_family
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -11,9 +11,10 @@ from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
 
-non_windows_test = pytest.mark.skipif(
-    get_os_family() == 'Windows',
-    reason='This only works under UNIX-based OS and gets stuck under Windows',
+
+needs_py38_test = pytest.mark.skipif(
+    sys.version_info < (3, 8),
+    reason="This only works on Python >=3.8 because otherwise MagicMock can't be used in 'await' expression",
 )
 
 
@@ -75,7 +76,7 @@ async def test_multiple_file_change(event_loop, mocker):
     await app_task._session.close()
 
 
-@non_windows_test
+@needs_py38_test
 async def test_python_no_server(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})
@@ -159,7 +160,7 @@ class FakeProcess:
         pass
 
 
-def test_stop_process_dead(smart_caplog, mocker):
+async def test_stop_process_dead(smart_caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocker.patch('asyncio.Event')
@@ -167,12 +168,12 @@ def test_stop_process_dead(smart_caplog, mocker):
     app_task._process = MagicMock()
     app_task._process.is_alive = MagicMock(return_value=False)
     app_task._process.exitcode = 123
-    app_task._stop_dev_server()
+    await app_task._stop_dev_server()
     assert 'server process already dead, exit code: 123' in smart_caplog
     assert mock_kill.called is False
 
 
-def test_stop_process_clean(mocker):
+async def test_stop_process_clean(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocker.patch('asyncio.Event')
@@ -181,11 +182,10 @@ def test_stop_process_clean(mocker):
     app_task._process.is_alive = MagicMock(return_value=True)
     app_task._process.pid = 321
     app_task._process.exitcode = 123
-    app_task._stop_dev_server()
+    await app_task._stop_dev_server()
     assert mock_kill.called_once_with(321, 2)
 
 
-@non_windows_test  # There's no signals in Windows
 async def test_stop_process_dirty(mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
@@ -195,6 +195,6 @@ async def test_stop_process_dirty(mocker):
     process_mock.is_alive = MagicMock(return_value=True)
     process_mock.pid = 321
     process_mock.exitcode = None
-    app_task._stop_dev_server()
+    await app_task._stop_dev_server()
     assert mock_kill.call_args_list == [call(321, 2)]
     assert process_mock.kill.called_once()

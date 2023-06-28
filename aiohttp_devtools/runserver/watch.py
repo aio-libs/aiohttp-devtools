@@ -5,8 +5,10 @@ import sys
 from multiprocessing import Process
 from pathlib import Path
 from typing import AsyncIterator, Iterable, Optional, Tuple, Union
+from contextlib import suppress
 
 from aiohttp import ClientSession, web
+from aiohttp.client_exceptions import ClientError, ClientConnectionError
 from watchfiles import awatch
 
 from ..exceptions import AiohttpDevException
@@ -71,7 +73,7 @@ class AppTask(WatchTask):
                 self._reloads += 1
                 if any(f.endswith('.py') for _, f in changes):
                     logger.debug('%d changes, restarting server', len(changes))
-                    self._stop_dev_server()
+                    await self._stop_dev_server()
                     self._start_dev_server()
                     await self._src_reload_when_live(live_checks)
                 elif len(changes) == 1 and is_static(changes):
@@ -119,10 +121,34 @@ class AppTask(WatchTask):
         self._process = Process(target=serve_main_app, args=(self._config, tty_path))
         self._process.start()
 
-    def _stop_dev_server(self) -> None:
+    async def _stop_dev_server(self) -> None:
         if self._process.is_alive():
             logger.debug('stopping server process...')
+            if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
+                url = "http://localhost:{}{}/shutdown".format(self._config.main_port, self._config.path_prefix)
+                logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
+                try:
+                    with suppress(ClientConnectionError):
+                        async with ClientSession() as session:
+                            async with session.get(url):
+                                pass
+                except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
+                    if self._process.is_alive():
+                        msg = "shutdown endpoint caused an error (will try signals next)"
+                        logger.warning(msg.format(type(ex), ex), exc_info=True)
+                    else:
+                        msg = "process stopped (despite error at shutdown endpoint)"
+                        logger.warning(msg.format(type(ex), ex), exc_info=True)
+                        return
+                else:
+                    self._process.join(5)
+                    if self._process.exitcode is None:
+                        logger.warning("shutdown endpoint did not terminate process, trying signals")
+                    else:
+                        logger.debug("process stopped via shutdown endpoint")
+                        return
             if self._process.pid:
+                logger.debug("sending SIGINT")
                 os.kill(self._process.pid, signal.SIGINT)
             self._process.join(5)
             if self._process.exitcode is None:
@@ -136,7 +162,7 @@ class AppTask(WatchTask):
 
     async def close(self, *args: object) -> None:
         self.stopper.set()
-        self._stop_dev_server()
+        await self._stop_dev_server()
         if self._session is None:
             raise RuntimeError("Object not started correctly before calling .close()")
         await asyncio.gather(super().close(), self._session.close())
