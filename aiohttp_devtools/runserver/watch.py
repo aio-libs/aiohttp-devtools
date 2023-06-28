@@ -125,31 +125,30 @@ class AppTask(WatchTask):
         if self._process.is_alive():
             logger.debug('stopping server process...')
             if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
-                url = 'http://localhost:{}{}/shutdown'.format(self._config.main_port, self._config.path_prefix)
-                logger.debug('attempting to stop process via shutdown endpoint {}'.format(url))
+                url = "http://localhost:{}{}/shutdown".format(self._config.main_port, self._config.path_prefix)
+                logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
                 try:
-                    # these errors are expected because the request kills the server
-                    with suppress(ServerDisconnectedError, ClientConnectorError, ClientOSError):
+                    with suppress(ClientConnectionError):
                         async with ClientSession() as session:
                             async with session.get(url):
                                 pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():
-                        logger.warning("shutdown endpoint caused an error (will try signals next): {} {}"
-                                       .format(type(ex), ex))
+                        msg = "shutdown endpoint caused an error (will try signals next)"
+                        logger.warning(msg.format(type(ex), ex), exc_info=True)
                     else:
-                        logger.warning("process stopped (despite error at shutdown endpoint): {} {}"
-                                       .format(type(ex), ex))
+                        msg = "process stopped (despite error at shutdown endpoint)"
+                        logger.warning(msg.format(type(ex), ex), exc_info=True)
                         return
                 else:
                     self._process.join(5)
                     if self._process.exitcode is None:
-                        logger.warning('shutdown endpoint did not terminate process, trying signals')
+                        logger.warning("shutdown endpoint did not terminate process, trying signals")
                     else:
-                        logger.debug('process stopped via shutdown endpoint')
+                        logger.debug("process stopped via shutdown endpoint")
                         return
             if self._process.pid:
-                logger.debug('sending SIGINT')
+                logger.debug("sending SIGINT")
                 os.kill(self._process.pid, signal.SIGINT)
             self._process.join(5)
             if self._process.exitcode is None:
