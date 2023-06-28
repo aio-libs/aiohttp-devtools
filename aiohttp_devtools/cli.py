@@ -46,9 +46,9 @@ root_help = ('Root directory project used to qualify other paths. '
              'This can be used to watch a parent directory for changes in a more complex application. '
              'env variable: AIO_ROOT')
 static_url_help = 'URL path to serve static files from, default "/static/". env variable: AIO_STATIC_URL'
-shutdown_by_url_help = ('The development server will be shut down via a request to an additional endpoint that is '
-                        'added to the server, instead of via signals (this is the default on Windows). '
-                        'env variable: AIO_SHUTDOWN_BY_URL')
+shutdown_by_url_help = ("The development server will be stopped via a request to an endpoint that is "
+                        "added to the server, instead of via signals (this is the default on Windows). "
+                        "env variable: AIO_SHUTDOWN_BY_URL")
 host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
              'with default of localhost. env variable AIO_HOST')
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, if missing default app-factory '
@@ -65,8 +65,8 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('-s', '--static', 'static_path', envvar='AIO_STATIC_PATH', type=_dir_existing, help=static_help)
 @click.option('--root', 'root_path', envvar='AIO_ROOT', type=_dir_existing, help=root_help)
 @click.option('--static-url', envvar='AIO_STATIC_URL', help=static_url_help)
-@click.option('--shutdown-by-url/--no-shutdown-by-url', default=sys.platform.startswith("win32"),
-              envvar='AIO_SHUTDOWN_BY_URL', help=shutdown_by_url_help)
+@click.option("--shutdown-by-url/--no-shutdown-by-url", default=sys.platform.startswith("win32"),
+              envvar="AIO_SHUTDOWN_BY_URL", help=shutdown_by_url_help)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--host', default=INFER_HOST, help=host_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
