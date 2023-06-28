@@ -1,9 +1,10 @@
 """
 Test script for checking if cleanup/shutdown handlers are called.
+Used in test_runserver_cleanup.py.
+
 This test has proved to be quite difficult to automate in Windows
 (see discussion at https://github.com/aio-libs/aiohttp-devtools/pull/549)
 so it must be done manually as per the protocol below.
-On Linux, it is handled via test_runserver_cleanup.py.
 
 Test Protocol:
 
@@ -18,26 +19,22 @@ Test Protocol:
 """
 from aiohttp import web
 
-
 async def hello(_request):
-    return web.Response(text='hello, world')
-
-app = web.Application()
-app.router.add_get('/', hello)
-
+    return web.Response(text="hello, world")
 
 async def startup(_app):
     print("====> STARTUP")
-app.on_startup.append(startup)
-
 
 async def context(_app):
     print("====> CTX BEFORE")
     yield
     print("====> CTX AFTER")
-app.cleanup_ctx.append(context)
-
 
 async def shutdown(_app):
     print("====> SHUTDOWN")
+
+app = web.Application()
+app.router.add_get("/", hello)
+app.on_startup.append(startup)
+app.cleanup_ctx.append(context)
 app.on_shutdown.append(shutdown)
