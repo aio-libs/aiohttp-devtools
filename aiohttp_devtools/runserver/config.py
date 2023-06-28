@@ -187,7 +187,6 @@ class Config:
         return app
 
     def __str__(self) -> str:
-        fields = ('py_file', 'static_path', 'static_url', 'livereload',
-                  'shutdown_by_url', 'path_prefix',
-                  'app_factory_name', 'host', 'main_port', 'aux_port')
+        fields = ("py_file", "static_path", "static_url", "livereload", "shutdown_by_url",
+                  "path_prefix", "app_factory_name", "host", "main_port", "aux_port")
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
