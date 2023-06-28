@@ -8,7 +8,7 @@ from .conftest import forked
 
 
 @forked  # forked doesn't run on Windows and is skipped - see cleanup_app.py instead
-async def test_server_cleanup_byurl() -> None:
+async def test_server_cleanup_by_url() -> None:
     async def is_server_running() -> bool:
         async with ClientSession(timeout=ClientTimeout(total=1)) as session:
             for i in range(30):
@@ -31,7 +31,7 @@ async def test_server_cleanup_byurl() -> None:
         stderr=asyncio.subprocess.PIPE,
     )
     try:
-        assert await check_server_running()
+        assert await is_server_running()
     finally:
         proc.terminate()
 
