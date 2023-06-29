@@ -68,6 +68,16 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
             response.headers[CONTENT_LENGTH] = str(len(response.body))
         app.on_response_prepare.append(on_prepare)
 
+    if not config.browser_cache:
+        @web.middleware
+        async def no_cache_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
+            """Add no-cache header to avoid browser caching in local development."""
+            response = await handler(request)
+            response.headers["Cache-Control"] = "no-cache"
+            return response
+
+        app.middlewares.append(no_cache_middleware)
+
     static_path = config.static_url.strip('/')
     if config.infer_host and config.static_path is not None:
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
@@ -226,7 +236,8 @@ async def cleanup_aux_app(app: web.Application) -> None:
 
 
 def create_auxiliary_app(
-        *, static_path: Optional[str], static_url: str = "/", livereload: bool = True) -> web.Application:
+        *, static_path: Optional[str], static_url: str = "/", livereload: bool = True,
+        browser_cache: bool = False) -> web.Application:
     app = web.Application()
     app[WS] = set()
     app.update(
@@ -248,7 +259,8 @@ def create_auxiliary_app(
             static_path + '/',
             name='static-router',
             add_tail_snippet=livereload,
-            follow_symlinks=True
+            follow_symlinks=True,
+            browser_cache=browser_cache
         )
         app.router.register_resource(route)
 
@@ -315,8 +327,10 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
 
 
 class CustomStaticResource(StaticResource):
-    def __init__(self, *args: Any, add_tail_snippet: bool = False, **kwargs: Any):
+    def __init__(self, *args: Any, add_tail_snippet: bool = False,
+                 browser_cache: bool = False, **kwargs: Any):
         self._add_tail_snippet = add_tail_snippet
+        self._browser_cache = browser_cache
         super().__init__(*args, **kwargs)
         self._show_index = True
 
@@ -377,7 +391,8 @@ class CustomStaticResource(StaticResource):
             # Inject CORS headers to allow webfonts to load correctly
             response.headers['Access-Control-Allow-Origin'] = '*'
 
-        # Add no-cache header to avoid browser caching in local development.
-        response.headers["Cache-Control"] = "no-cache"
+        if not self._browser_cache:
+            # Add no-cache header to avoid browser caching in local development.
+            response.headers["Cache-Control"] = "no-cache"
 
         return response

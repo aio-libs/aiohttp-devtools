@@ -136,7 +136,8 @@ class DummyApplication(Dict[str, object]):
 
 def test_modify_main_app_all_off(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', livereload=False, host='foobar.com', static_path='.')
+    config = Config(app_path="app.py", livereload=False, host="foobar.com",
+                    static_path=".", browser_cache=True)
     app = DummyApplication()
     subapp = DummyApplication()
     app.add_subapp("/sub/", subapp)
@@ -156,7 +157,7 @@ def test_modify_main_app_all_on(tmpworkdir):
     app.add_subapp("/sub/", subapp)
     modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 1
-    assert len(app.middlewares) == 1
+    assert len(app.middlewares) == 2
     assert app['static_root_url'] == 'http://localhost:8001/static'
     assert subapp['static_root_url'] == "http://localhost:8001/static"
     assert app._debug is True

@@ -21,6 +21,7 @@ async def test_simple_serve(cli, tmpworkdir):
     assert r.status == 200
     assert r.headers['content-type'] == 'application/octet-stream'
     assert 'Access-Control-Allow-Origin' in r.headers and r.headers['Access-Control-Allow-Origin'] == '*'
+    assert r.headers["Cache-Control"] == "no-cache"
     text = await r.text()
     assert text == 'hello world'
 
@@ -30,6 +31,16 @@ async def test_file_missing(cli):
     assert r.status == 404
     text = await r.text()
     assert '404: Not Found\n' in text
+
+
+async def test_browser_cache(event_loop, aiohttp_client, tmpworkdir):
+    args = serve_static(static_path=str(tmpworkdir), browser_cache=True)
+    assert args["port"] == 8000
+    cli = await aiohttp_client(args["app"])
+    mktree(tmpworkdir, {"foo": "hello world"})
+    r = await cli.get("/foo")
+    assert r.status == 200
+    assert "Cache-Control" not in r.headers
 
 
 async def test_html_file_livereload(event_loop, aiohttp_client, tmpworkdir):
