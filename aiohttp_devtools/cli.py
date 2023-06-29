@@ -42,7 +42,8 @@ def serve(path: str, livereload: bool, port: int, verbose: bool, browser_cache: 
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    run_app(**serve_static(static_path=path, livereload=livereload, port=port))
+    run_app(**serve_static(static_path=path, livereload=livereload, port=port,
+                           browser_cache=browser_cache))
 
 
 static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
