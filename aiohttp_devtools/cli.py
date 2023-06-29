@@ -37,7 +37,7 @@ browser_cache_help = ("When disabled (the default), sends no-cache headers to "
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.option("--browser-cache/--no-browser-cache", envvar="AIO_BROWSER_CACHE", default=False,
               help=browser_cache_help)
-def serve(path: str, livereload: bool, port: int, verbose: bool) -> None:
+def serve(path: str, livereload: bool, port: int, verbose: bool, browser_cache: bool) -> None:
     """
     Serve static files from a directory.
     """

@@ -123,8 +123,22 @@ async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     cli = await aiohttp_client(app)
     r = await cli.get('/')
     assert r.status == 200
+    assert r.headers["Cache-Control"] == "no-cache"
     text = await r.text()
     assert text == 'hello world'
+
+
+@forked
+async def test_run_app_browser_cache(tmpworkdir, aiohttp_client):
+    mktree(tmpworkdir, SIMPLE_APP)
+    config = Config(app_path="app.py", browser_cache=True)
+    app_factory = config.import_app_factory()
+    app = await config.load_app(app_factory)
+    modify_main_app(app, config)
+    cli = await aiohttp_client(app)
+    r = await cli.get("/")
+    assert r.status == 200
+    assert "Cache-Control" not in r.headers
 
 
 async def test_aux_app(tmpworkdir, aiohttp_client):
