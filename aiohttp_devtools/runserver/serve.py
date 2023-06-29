@@ -67,6 +67,15 @@ def modify_main_app(app: web.Application, config: Config) -> None:
             response.headers[CONTENT_LENGTH] = str(len(response.body))
         app.on_response_prepare.append(on_prepare)
 
+    @web.middleware
+    async def no_cache_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
+        """Add no-cache header to avoid browser caching in local development."""
+        response = await handler(request)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+    app.middlewares.append(no_cache_middleware)
+
     static_path = config.static_url.strip('/')
     if config.infer_host and config.static_path is not None:
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
