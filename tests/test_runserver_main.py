@@ -1,8 +1,5 @@
 import asyncio
 import json
-import os
-import signal
-import time
 from unittest import mock
 
 import aiohttp
@@ -83,6 +80,7 @@ def create_app():
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
+        loop.run_until_complete(aux_app.cleanup())
     assert (
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
@@ -112,11 +110,6 @@ app.router.add_get('/', hello)
     assert len(aux_app.on_startup) == 1
     assert len(aux_app.on_shutdown) == 1
     assert len(aux_app.cleanup_ctx) == 1
-
-
-def kill_parent_soon(pid):
-    time.sleep(0.2)
-    os.kill(pid, signal.SIGINT)
 
 
 @forked

@@ -38,6 +38,8 @@ class Config:
                  python_path: Optional[str] = None,
                  static_url: str = '/static/',
                  livereload: bool = True,
+                 shutdown_by_url: bool = sys.platform.startswith("win32"),
+                 path_prefix: str = "/_devtools",
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  main_port: int = 8000,
@@ -66,6 +68,8 @@ class Config:
         self.static_path = self._resolve_path(static_path, "is_dir", "static-path") if static_path else None
         self.static_url = static_url
         self.livereload = livereload
+        self.shutdown_by_url = shutdown_by_url
+        self.path_prefix = path_prefix
         self.app_factory_name = app_factory_name
         self.infer_host = host == INFER_HOST
         self.host = 'localhost' if self.infer_host else host
@@ -183,6 +187,6 @@ class Config:
         return app
 
     def __str__(self) -> str:
-        fields = ('py_file', 'static_path', 'static_url', 'livereload',
-                  'app_factory_name', 'host', 'main_port', 'aux_port')
+        fields = ("py_file", "static_path", "static_url", "livereload", "shutdown_by_url",
+                  "path_prefix", "app_factory_name", "host", "main_port", "aux_port")
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
