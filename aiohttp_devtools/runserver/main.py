@@ -66,10 +66,12 @@ def runserver(**config_kwargs: Any) -> RunServer:
             "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
-def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000) -> RunServer:
+def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000,
+                 browser_cache: bool = False) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    app = create_auxiliary_app(static_path=static_path, livereload=livereload)
+    app = create_auxiliary_app(static_path=static_path, livereload=livereload,
+                               browser_cache=browser_cache)
 
     if livereload:
         livereload_manager = LiveReloadTask(static_path)

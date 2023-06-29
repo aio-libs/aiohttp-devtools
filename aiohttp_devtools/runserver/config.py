@@ -43,7 +43,8 @@ class Config:
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  main_port: int = 8000,
-                 aux_port: Optional[int] = None):
+                 aux_port: Optional[int] = None,
+                 browser_cache: bool = False):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
@@ -75,6 +76,7 @@ class Config:
         self.host = 'localhost' if self.infer_host else host
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
+        self.browser_cache = browser_cache
         logger.debug('config loaded:\n%s', self)
 
     @property
