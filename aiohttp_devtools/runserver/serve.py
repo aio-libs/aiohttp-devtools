@@ -384,9 +384,9 @@ class CustomStaticResource(StaticResource):
         except HTTPNotFound:
             while not raw_path.is_dir():
                 raw_path = raw_path.parent
-            paths = "\n".join(" {}{}".format(p.relative_to(self._directory),
-                                             "/" if p.is_dir() else "")
-                               for p in raw_path.iterdir())
+            paths = "\n".join(
+                " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
+                for p in raw_path.iterdir())
             msg = "404: Not Found\n\nAvailable files under '{}/':\n{}".format(
                 raw_path.relative_to(self._directory), paths)
             response = web.Response(text=msg, status=404, content_type="text/plain")
