@@ -334,15 +334,15 @@ class CustomStaticResource(StaticResource):
         super().__init__(*args, **kwargs)
         self._show_index = True
 
-    def modify_request(self, request: web.Request) -> None:
+    def modify_request(self, request: web.Request) -> Path:
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
         filename = URL.build(path=request.match_info['filename'], encoded=True).path
-        raw_path = self._directory.joinpath(filename)
+        raw_path = self._directory / filename
         try:
             filepath = raw_path.resolve(strict=True)
-        except FileNotFoundError:
+        except (FileNotFoundError, NotADirectoryError):
             try:
                 html_file = raw_path.with_name(raw_path.name + '.html').resolve().relative_to(self._directory)
             except (FileNotFoundError, ValueError):
@@ -358,6 +358,7 @@ class CustomStaticResource(StaticResource):
                     except ValueError:
                         # path is not not relative to self._directory
                         pass
+        return raw_path
 
     def _insert_footer(self, response: web.StreamResponse) -> web.StreamResponse:
         if not isinstance(response, web.FileResponse) or not self._add_tail_snippet:
@@ -377,17 +378,20 @@ class CustomStaticResource(StaticResource):
         return resp
 
     async def _handle(self, request: web.Request) -> web.StreamResponse:
-        self.modify_request(request)
+        raw_path = self.modify_request(request)
         try:
             response = await super()._handle(request)
-            response = self._insert_footer(response)
-        except HTTPNotModified:
-            raise
         except HTTPNotFound:
-            # TODO include list of files in 404 body
-            _404_msg = '404: Not Found\n'
-            response = web.Response(body=_404_msg.encode(), status=404, content_type='text/plain')
+            while not raw_path.is_dir():
+                raw_path = raw_path.parent
+            paths = "\n".join(
+                " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
+                for p in raw_path.iterdir())
+            msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
+                raw_path.relative_to(self._directory), paths)
+            response = web.Response(text=msg, status=404, content_type="text/plain")
         else:
+            response = self._insert_footer(response)
             # Inject CORS headers to allow webfonts to load correctly
             response.headers['Access-Control-Allow-Origin'] = '*'
 
