@@ -3,7 +3,6 @@ import logging
 import logging.config
 import platform
 import re
-import sys
 import traceback
 from io import StringIO
 from types import TracebackType

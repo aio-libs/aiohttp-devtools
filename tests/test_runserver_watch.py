@@ -1,9 +1,7 @@
-import sys
 import asyncio
 from functools import partial
 from unittest.mock import MagicMock, call
 
-import pytest
 from aiohttp import ClientSession
 from aiohttp.web import Application
 

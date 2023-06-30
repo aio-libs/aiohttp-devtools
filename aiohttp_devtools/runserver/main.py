@@ -1,6 +1,5 @@
 import asyncio
 import os
-import sys
 from multiprocessing import set_start_method
 from typing import Any, Type, TypedDict
 
