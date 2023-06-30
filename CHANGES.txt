@@ -1,5 +1,16 @@
 .. towncrier release notes start
 
+1.1 (2023-06-30)
+================
+
+* Display a list of available files in the static handler when serving a 404 error.
+* Add ``no-cache`` headers to disable browser caching (can be disabled with ``--browser-cache``).
+* Improved reliability of live reload by waiting up to 15 seconds (previously 2) for the app to restart and allowing the browser to reconnect when multiple files change quickly.
+* Fixed unclean shutdowns on Windows by introducing a shutdown by endpoint method (Windows doesn't work with the default signals method).
+* Changed to run with ``asyncio.Runner`` on Python 3.11+ (apparently fixing an issue with reloads on Windows).
+* Rewrote the package name dynamically to match the app's name (e.g. used in aiohttp-admin as a default admin title).
+* Migrated from ``watchdog`` dependency to the newer ``watchfiles``.
+
 1.0.post0 (2021-12-31)
 ======================
 
