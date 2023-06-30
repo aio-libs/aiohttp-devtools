@@ -27,10 +27,16 @@ async def test_simple_serve(cli, tmpworkdir):
 
 
 async def test_file_missing(cli):
+    mktree(tmpworkdir, {
+        'bar': 'hello world',
+        'baz/foo': 'hello world',
+    })
     r = await cli.get('/foo')
     assert r.status == 404
     text = await r.text()
     assert '404: Not Found\n' in text
+    assert "bar\n" in text
+    assert "baz/\n" in text
 
 
 async def test_browser_cache(event_loop, aiohttp_client, tmpworkdir):
