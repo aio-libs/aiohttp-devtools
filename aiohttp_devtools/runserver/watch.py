@@ -57,7 +57,7 @@ class AppTask(WatchTask):
         assert self._config.watch_path
         super().__init__(self._config.watch_path)
 
-    async def _run(self, live_checks: int = 20) -> None:
+    async def _run(self, live_checks: int = 150) -> None:
         assert self._app is not None
 
         self._session = ClientSession()
@@ -76,6 +76,9 @@ class AppTask(WatchTask):
                     await self._stop_dev_server()
                     self._start_dev_server()
                     await self._src_reload_when_live(live_checks)
+                    # Pause to allow the browser to reload and reconnect. This avoids
+                    # multiple changes causing the app to restart before WS reconnection.
+                    await asyncio.sleep(1)
                 elif len(changes) == 1 and is_static(changes):
                     # a single (static) file has changed, reload a single file.
                     await src_reload(self._app, changes.pop()[1])
@@ -87,7 +90,7 @@ class AppTask(WatchTask):
             await self._session.close()
             raise AiohttpDevException('error running dev server')
 
-    async def _src_reload_when_live(self, checks: int = 20) -> None:
+    async def _src_reload_when_live(self, checks: int) -> None:
         assert self._app is not None and self._session is not None
 
         if self._app[WS]:
