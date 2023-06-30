@@ -26,7 +26,7 @@ async def test_simple_serve(cli, tmpworkdir):
     assert text == 'hello world'
 
 
-async def test_file_missing(cli):
+async def test_file_missing(cli, tmpworkdir):
     mktree(tmpworkdir, {
         'bar': 'hello world',
         'baz/foo': 'hello world',
