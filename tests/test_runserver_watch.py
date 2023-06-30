@@ -1,21 +1,13 @@
-import sys
 import asyncio
 from functools import partial
 from unittest.mock import MagicMock, call
 
-import pytest
 from aiohttp import ClientSession
 from aiohttp.web import Application
 
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
-
-
-needs_py38_test = pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason="This only works on Python >=3.8 because otherwise MagicMock can't be used in 'await' expression",
-)
 
 
 def create_awatch_mock(*results_):
@@ -76,7 +68,6 @@ async def test_multiple_file_change(event_loop, mocker):
     await app_task._session.close()
 
 
-@needs_py38_test
 async def test_python_no_server(event_loop, mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})

@@ -26,7 +26,7 @@ async def test_server_cleanup_by_url() -> None:
 
     proc = await asyncio.create_subprocess_exec(
         sys.executable, "-c", "from aiohttp_devtools.cli import runserver; runserver()",  # same as `adev runserver`
-        str(Path(__file__).parent / "cleanup_app.py"), "--shutdown-by-url", "-v",  # TODO(PY38): Remove str()
+        Path(__file__).parent / "cleanup_app.py", "--shutdown-by-url", "-v",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

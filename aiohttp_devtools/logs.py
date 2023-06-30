@@ -3,16 +3,10 @@ import logging
 import logging.config
 import platform
 import re
-import sys
 import traceback
 from io import StringIO
 from types import TracebackType
-from typing import Dict, Optional, Tuple, Type, Union
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Literal
-else:
-    from typing import Literal
+from typing import Dict, Literal, Optional, Tuple, Type, Union
 
 import pygments
 from devtools import pformat

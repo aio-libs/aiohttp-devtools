@@ -22,10 +22,10 @@ setup(
         'Environment :: Console',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        "Programming Language :: Python :: 3.11",
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
@@ -67,8 +67,7 @@ setup(
         'click>=6.6',
         'devtools>=0.6',
         'Pygments>=2.2.0',
-        'watchfiles>=0.10',
-        'typing_extensions >= 3.7.4; python_version<"3.8"'
+        "watchfiles>=0.10"
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.8",
 )
