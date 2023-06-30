@@ -387,7 +387,7 @@ class CustomStaticResource(StaticResource):
             paths = "\n".join(
                 " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
                 for p in raw_path.iterdir())
-            msg = "404: Not Found\n\nAvailable files under '{}/':\n{}".format(
+            msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
                 raw_path.relative_to(self._directory), paths)
             response = web.Response(text=msg, status=404, content_type="text/plain")
         else:
