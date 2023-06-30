@@ -334,7 +334,7 @@ class CustomStaticResource(StaticResource):
         super().__init__(*args, **kwargs)
         self._show_index = True
 
-    def modify_request(self, request: web.Request) -> str:
+    def modify_request(self, request: web.Request) -> Path:
         """
         Apply common path conventions eg. / > /index.html, /foobar > /foobar.html
         """
