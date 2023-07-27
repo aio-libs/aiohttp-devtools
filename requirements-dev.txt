@@ -3,5 +3,5 @@
 docutils==0.20.1
 flake8==6.0.0
 mypy==1.4.1
-Sphinx==7.1.0
+Sphinx==7.1.1
 types-pygments==2.15.0.2
