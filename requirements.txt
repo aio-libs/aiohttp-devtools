@@ -1,5 +1,5 @@
 aiohttp==3.8.5
-click==8.1.6
+click==8.1.7
 coverage==7.3.0
 devtools==0.11.0
 grablib==0.8
