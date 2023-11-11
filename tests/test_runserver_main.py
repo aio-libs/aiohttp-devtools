@@ -9,8 +9,8 @@ from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
-from aiohttp_devtools.runserver.serve import (create_auxiliary_app, create_main_app, modify_main_app, src_reload,
-                                              start_main_app)
+from aiohttp_devtools.runserver.serve import (
+    WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 
 from .conftest import SIMPLE_APP, forked
 
@@ -218,12 +218,12 @@ async def test_websocket_hello(aux_cli, smart_caplog):
 
 
 async def test_websocket_info(aux_cli, event_loop):
-    assert len(aux_cli.server.app['websockets']) == 0
+    assert len(aux_cli.server.app[WS]) == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
         await ws.send_json({'command': 'info', 'url': 'foobar', 'plugins': 'bang'})
         await asyncio.sleep(0.05)
-        assert len(aux_cli.server.app['websockets']) == 1
+        assert len(aux_cli.server.app[WS]) == 1
     finally:
         await ws.close()
 

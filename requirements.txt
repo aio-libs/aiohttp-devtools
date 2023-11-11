@@ -1,4 +1,5 @@
 aiohttp==3.8.5
+aiohttp-jinja2==1.6
 click==8.1.7
 coverage==7.3.2
 devtools==0.12.2
