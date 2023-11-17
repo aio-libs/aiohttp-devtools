@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import sys
+from contextlib import suppress
 from multiprocessing import Process
 from pathlib import Path
 from typing import AsyncIterator, Iterable, Optional, Tuple, Union
@@ -36,9 +37,9 @@ class WatchTask:
     async def close(self, *args: object) -> None:
         if self._task:
             self.stopper.set()
-            if self._task.done():
-                self._task.result()
             self._task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._task
 
     async def cleanup_ctx(self, app: web.Application) -> AsyncIterator[None]:
         await self.start(app)
