@@ -5,7 +5,7 @@ from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
-from aiohttp.web import Application, Request, Response
+from aiohttp.web import Application, AppKey, Request, Response
 from aiohttp_jinja2 import static_root_key
 from pytest_toolbox import mktree
 
@@ -115,7 +115,7 @@ def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
 
 
-class DummyApplication(Dict[web.AppKey[Any], object]):
+class DummyApplication(Dict[AppKey[Any], object]):
     _debug = False
 
     def __init__(self):
