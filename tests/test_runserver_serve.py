@@ -1,7 +1,7 @@
 import json
 import pathlib
 import socket
-from typing import Dict
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -115,7 +115,7 @@ def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
 
 
-class DummyApplication(Dict[str, object]):
+class DummyApplication(Dict[web.AppKey[Any], object]):
     _debug = False
 
     def __init__(self):
