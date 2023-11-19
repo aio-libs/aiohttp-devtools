@@ -14,7 +14,7 @@ from watchfiles import awatch
 from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import WS, serve_main_app, src_reload
+from .serve import STATIC_PATH, WS, serve_main_app, src_reload
 
 
 class WatchTask:
@@ -64,7 +64,7 @@ class AppTask(WatchTask):
         try:
             self._start_dev_server()
 
-            static_path = str(self._app['static_path'])
+            static_path = self._app[STATIC_PATH]
 
             def is_static(changes: Iterable[Tuple[object, str]]) -> bool:
                 return all(str(c[1]).startswith(static_path) for c in changes)

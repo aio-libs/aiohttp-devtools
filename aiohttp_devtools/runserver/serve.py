@@ -3,9 +3,10 @@ import contextlib
 import json
 import mimetypes
 import sys
+import warnings
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, Optional, NoReturn
+from typing import Any, Iterator, NoReturn, Optional, Set, Tuple
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -23,19 +24,37 @@ from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
+try:
+    from aiohttp_jinja2 import static_root_key
+except ImportError:
+    static_root_key = None  # type: ignore[assignment]
+
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 HOST = '0.0.0.0'
 
+LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
+STATIC_PATH = web.AppKey("STATIC_PATH", str)
+STATIC_URL = web.AppKey("STATIC_URL", str)
+WS = web.AppKey("WS", Set[Tuple[web.WebSocketResponse, str]])
+
 
 def _set_static_url(app: web.Application, url: str) -> None:
-    app["static_root_url"] = MutableValue(url)
+    if static_root_key is None:  # TODO: Remove fallback
+        with warnings.catch_warnings():  # type: ignore[unreachable]
+            app["static_root_url"] = MutableValue(url)
+    else:
+        app[static_root_key] = MutableValue(url)  # type: ignore[misc]
     for subapp in app._subapps:
         _set_static_url(subapp, url)
 
 
 def _change_static_url(app: web.Application, url: str) -> None:
-    app["static_root_url"].change(url)
+    if static_root_key is None:  # TODO: Remove fallback
+        with warnings.catch_warnings():  # type: ignore[unreachable]
+            app["static_root_url"].change(url)
+    else:
+        app[static_root_key].change(url)  # type: ignore[attr-defined]
     for subapp in app._subapps:
         _change_static_url(subapp, url)
 
@@ -174,23 +193,20 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     modify_main_app(app, config)
 
     await check_port_open(config.main_port)
-    return web.AppRunner(app, access_log_class=AccessLogger)
+    return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
 async def start_main_app(runner: web.AppRunner, port: int) -> None:
     await runner.setup()
-    site = web.TCPSite(runner, host=HOST, port=port, shutdown_timeout=0.1)
+    site = web.TCPSite(runner, host=HOST, port=port)
     await site.start()
-
-
-WS = 'websockets'
 
 
 async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
     """
     prompt each connected browser to reload by sending websocket message.
 
-    :param path: if supplied this must be a path relative to app['static_path'],
+    :param path: if supplied this must be a path relative to `static_path`,
         eg. reload of a single file is only supported for static resources.
     :return: number of sources reloaded
     """
@@ -200,7 +216,7 @@ async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
 
     is_html = None
     if path:
-        path = str(Path(app['static_url']) / Path(path).relative_to(app['static_path']))
+        path = str(Path(app[STATIC_URL]) / Path(path).relative_to(app[STATIC_PATH]))
         is_html = mimetypes.guess_type(path)[0] == 'text/html'
 
     reloads = 0
@@ -239,16 +255,15 @@ def create_auxiliary_app(
         *, static_path: Optional[str], static_url: str = "/", livereload: bool = True,
         browser_cache: bool = False) -> web.Application:
     app = web.Application()
-    app[WS] = set()
-    app.update(
-        static_path=static_path,
-        static_url=static_url,
-    )
+    ws: Set[Tuple[web.WebSocketResponse, str]] = set()
+    app[STATIC_PATH] = static_path or ""
+    app[STATIC_URL] = static_url
+    app[WS] = ws
     app.on_shutdown.append(cleanup_aux_app)
 
     if livereload:
         lr_path = Path(__file__).resolve().parent / 'livereload.js'
-        app['livereload_script'] = lr_path.read_bytes()
+        app[LIVERELOAD_SCRIPT] = lr_path.read_bytes()
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         aux_logger.debug('enabling livereload on auxiliary app')
@@ -271,7 +286,7 @@ async def livereload_js(request: web.Request) -> web.Response:
     if request.if_modified_since:
         raise HTTPNotModified()
 
-    lr_script = request.app['livereload_script']
+    lr_script = request.app[LIVERELOAD_SCRIPT]
     return web.Response(body=lr_script, content_type='application/javascript',
                         headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
 

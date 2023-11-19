@@ -1,10 +1,12 @@
 import asyncio
 from functools import partial
+from typing import Set, Tuple
 from unittest.mock import MagicMock, call
 
 from aiohttp import ClientSession
-from aiohttp.web import Application
+from aiohttp.web import Application, WebSocketResponse
 
+from aiohttp_devtools.runserver.serve import STATIC_PATH, WS
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
@@ -39,7 +41,7 @@ async def test_single_file_change(event_loop, mocker):
     stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
     app = MagicMock()
     await app_task.start(app)
-    d = {'static_path': '/path/to/'}
+    d = {STATIC_PATH: "/path/to/"}
     app.__getitem__.side_effect = d.__getitem__
     assert app_task._task is not None
     await app_task._task
@@ -79,13 +81,13 @@ async def test_python_no_server(event_loop, mocker):
     stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
     mocker.patch.object(app_task, "_run", partial(app_task._run, live_checks=2))
     app = Application()
-    app['static_path'] = '/path/to/'
+    app[STATIC_PATH] = "/path/to/"
     app.src_reload = MagicMock()
     mock_ws = MagicMock()
     f: asyncio.Future[int] = asyncio.Future()
     f.set_result(1)
     mock_ws.send_str = MagicMock(return_value=f)
-    app['websockets'] = [(mock_ws, '/')]
+    app[WS] = set(((mock_ws, "/"),))  # type: ignore[misc]
     await app_task.start(app)
     assert app_task._task is not None
     await app_task._task
@@ -98,7 +100,8 @@ async def test_python_no_server(event_loop, mocker):
 
 async def test_reload_server_running(event_loop, aiohttp_client, mocker):
     app = Application()
-    app['websockets'] = [None]
+    ws: Set[Tuple[WebSocketResponse, str]] = set(((MagicMock(), "/foo"),))
+    app[WS] = ws
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
     cli = await aiohttp_client(app)
     config = MagicMock()
