@@ -122,7 +122,7 @@ class DummyApplication(Dict[AppKey[Any], object]):
         self.on_response_prepare = []
         self.middlewares = []
         self.router = MagicMock()
-        self['static_root_url'] = '/static/'
+        self[static_root_key] = '/static/'
         self._subapps = []
 
     def add_subapp(self, path, app):
