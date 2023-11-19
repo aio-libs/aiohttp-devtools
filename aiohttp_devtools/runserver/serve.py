@@ -27,7 +27,7 @@ from .utils import MutableValue
 try:
     from aiohttp_jinja2 import static_root_key
 except ImportError:
-    static_root_key = None
+    static_root_key = None  # type: ignore[assignment]
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
@@ -41,20 +41,20 @@ WS = web.AppKey("WS", Set[Tuple[web.WebSocketResponse, str]])
 
 def _set_static_url(app: web.Application, url: str) -> None:
     if static_root_key is None:  # TODO: Remove fallback
-        with warnings.catch_warnings():
+        with warnings.catch_warnings():  # type: ignore[unreachable]
             app["static_root_url"] = MutableValue(url)
     else:
-        app[static_root_key] = MutableValue(url)
+        app[static_root_key] = MutableValue(url)  # type: ignore[misc]
     for subapp in app._subapps:
         _set_static_url(subapp, url)
 
 
 def _change_static_url(app: web.Application, url: str) -> None:
     if static_root_key is None:  # TODO: Remove fallback
-        with warnings.catch_warnings():
+        with warnings.catch_warnings():  # type: ignore[unreachable]
             app["static_root_url"].change(url)
     else:
-        app[static_root_key].change(url)
+        app[static_root_key].change(url)  # type: ignore[attr-defined]
     for subapp in app._subapps:
         _change_static_url(subapp, url)
 

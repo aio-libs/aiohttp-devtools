@@ -80,7 +80,7 @@ class AccessFormatter(logging.Formatter):
 
     def formatException(self, ei: _Ei) -> str:
         sio = StringIO()
-        traceback.print_exception(*ei, file=sio)
+        traceback.print_exception(*ei, file=sio)  # type: ignore[misc]
         stack = sio.getvalue()
         sio.close()
         if self.stream_is_tty and pyg_lexer:
