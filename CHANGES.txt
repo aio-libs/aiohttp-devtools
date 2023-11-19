@@ -1,5 +1,10 @@
 .. towncrier release notes start
 
+1.1.1 (2023-11-19)
+==================
+
+* Use ``aiohttp.web.AppKey`` to avoid warnings on aiohttp 3.9.
+
 1.1 (2023-06-30)
 ================
 
