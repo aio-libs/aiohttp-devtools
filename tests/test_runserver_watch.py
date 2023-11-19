@@ -87,7 +87,7 @@ async def test_python_no_server(event_loop, mocker):
     f: asyncio.Future[int] = asyncio.Future()
     f.set_result(1)
     mock_ws.send_str = MagicMock(return_value=f)
-    app[WS] = set(((mock_ws, '/'),))  # type: ignore[misc]
+    app[WS] = set(((mock_ws, "/"),))  # type: ignore[misc]
     await app_task.start(app)
     assert app_task._task is not None
     await app_task._task

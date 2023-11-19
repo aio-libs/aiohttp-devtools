@@ -38,7 +38,7 @@ async def test_aux_reload(smart_caplog):
     ws.send_str = MagicMock(return_value=create_future())
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, '/foo/bar'),))  # type: ignore[misc]
+    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
     assert 1 == await src_reload(aux_app, '/path/to/static_files/the_file.js')
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
@@ -58,7 +58,7 @@ async def test_aux_reload_no_path():
     ws.send_str = MagicMock(return_value=create_future())
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, '/foo/bar'),))  # type: ignore[misc]
+    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
     assert 1 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
@@ -76,7 +76,7 @@ async def test_aux_reload_html_different():
     ws.send_str = MagicMock(return_value=create_future())
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, '/foo/bar'),))  # type: ignore[misc]
+    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
     assert 0 == await src_reload(aux_app, '/path/to/static_files/foo/bar.html')
     assert ws.send_str.call_count == 0
 
@@ -88,7 +88,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     ws.send_str = MagicMock(side_effect=RuntimeError('foobar'))
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, '/foo/bar'),))  # type: ignore[misc]
+    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
     assert 0 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == smart_caplog
@@ -99,7 +99,7 @@ async def test_aux_cleanup(event_loop):
     aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()
     ws.close = MagicMock(return_value=create_future())
-    aux_app[WS] = set(((ws, '/foo/bar'),))  # type: ignore[misc]
+    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
     aux_app.freeze()
     await aux_app.cleanup()
     assert ws.close.call_count == 1
@@ -139,7 +139,7 @@ def test_modify_main_app_all_off(tmpworkdir):
     modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 0
     assert len(app.middlewares) == 0
-    assert app[static_root_key] == 'http://foobar.com:8001/static'
+    assert app[static_root_key] == "http://foobar.com:8001/static"
     assert subapp[static_root_key] == "http://foobar.com:8001/static"
     assert app._debug is True
 
@@ -153,7 +153,7 @@ def test_modify_main_app_all_on(tmpworkdir):
     modify_main_app(app, config)  # type: ignore[arg-type]
     assert len(app.on_response_prepare) == 1
     assert len(app.middlewares) == 2
-    assert app[static_root_key] == 'http://localhost:8001/static'
+    assert app[static_root_key] == "http://localhost:8001/static"
     assert subapp[static_root_key] == "http://localhost:8001/static"
     assert app._debug is True
 
