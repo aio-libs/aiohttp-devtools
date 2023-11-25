@@ -37,6 +37,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet',
         'Framework :: AsyncIO',
+        "Framework :: aiohttp",
     ],
     author='Samuel Colvin',
     author_email='s@muelcolvin.com',
