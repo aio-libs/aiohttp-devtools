@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, call
 from aiohttp import ClientSession
 from aiohttp.web import Application, WebSocketResponse
 
-from aiohttp_devtools.runserver.serve import STATIC_PATH, WS
+from aiohttp_devtools.runserver.serve import LAST_RELOAD, STATIC_PATH, WS
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
@@ -81,6 +81,7 @@ async def test_python_no_server(event_loop, mocker):
     stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
     mocker.patch.object(app_task, "_run", partial(app_task._run, live_checks=2))
     app = Application()
+    app[LAST_RELOAD] = [0, 0.]
     app[STATIC_PATH] = "/path/to/"
     app.src_reload = MagicMock()
     mock_ws = MagicMock()

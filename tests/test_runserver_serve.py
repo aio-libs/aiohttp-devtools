@@ -13,7 +13,7 @@ from aiohttp_devtools.exceptions import AiohttpDevException
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.log_handlers import fmt_size
 from aiohttp_devtools.runserver.serve import (
-    STATIC_PATH, STATIC_URL, WS, check_port_open, cleanup_aux_app,
+    LAST_RELOAD, STATIC_PATH, STATIC_URL, WS, check_port_open, cleanup_aux_app,
     modify_main_app, src_reload)
 
 from .conftest import SIMPLE_APP, create_future
@@ -36,6 +36,7 @@ async def test_aux_reload(smart_caplog):
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
+    aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
@@ -56,6 +57,7 @@ async def test_aux_reload_no_path():
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
+    aux_appapp[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
@@ -74,6 +76,7 @@ async def test_aux_reload_html_different():
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
+    aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
@@ -86,6 +89,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
     ws.send_str = MagicMock(side_effect=RuntimeError('foobar'))
+    app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
