@@ -1,5 +1,11 @@
 .. towncrier release notes start
 
+1.1.2 (2023-12-07)
+==================
+
+* Improved reliability of reloads by delaying multiple reloads until the browser has
+  reconnected, and increasing the period of time to gather filesystem changes.
+
 1.1.1 (2023-11-19)
 ==================
 
