@@ -57,7 +57,7 @@ async def test_aux_reload_no_path():
     aux_app = Application()
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
-    aux_appapp[LAST_RELOAD] = [0, 0.]
+    aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
@@ -89,7 +89,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     ws = MagicMock()
     ws.send_str = MagicMock(return_value=create_future())
     ws.send_str = MagicMock(side_effect=RuntimeError('foobar'))
-    app[LAST_RELOAD] = [0, 0.]
+    aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
     aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
