@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import sys
+import time
 from contextlib import suppress
 from multiprocessing import Process
 from pathlib import Path
@@ -14,7 +15,7 @@ from watchfiles import awatch
 from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
-from .serve import STATIC_PATH, WS, serve_main_app, src_reload
+from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
 
 
 class WatchTask:
@@ -27,7 +28,7 @@ class WatchTask:
     async def start(self, app: web.Application) -> None:
         self._app = app
         self.stopper = asyncio.Event()
-        self._awatch = awatch(self._path, stop_event=self.stopper)
+        self._awatch = awatch(self._path, stop_event=self.stopper, step=250)
         self._task = asyncio.create_task(self._run())
 
     async def _run(self) -> None:
@@ -71,8 +72,20 @@ class AppTask(WatchTask):
 
             async for changes in self._awatch:
                 self._reloads += 1
+                logger.debug("file changes: %s", changes)
                 if any(f.endswith('.py') for _, f in changes):
                     logger.debug('%d changes, restarting server', len(changes))
+
+                    count, t = self._app[LAST_RELOAD]
+                    if len(self._app[WS]) < count:
+                        wait_delay = max(t + 5 - time.time(), 0)
+                        logger.debug("waiting upto %s seconds before restarting", wait_delay)
+
+                        for i in range(int(wait_delay / 0.1)):
+                            await asyncio.sleep(0.1)
+                            if len(self._app[WS]) >= count:
+                                break
+
                     await self._stop_dev_server()
                     self._start_dev_server()
                     await self._src_reload_when_live(live_checks)
