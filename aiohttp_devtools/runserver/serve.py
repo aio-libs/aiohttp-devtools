@@ -3,10 +3,11 @@ import contextlib
 import json
 import mimetypes
 import sys
+import time
 import warnings
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, NoReturn, Optional, Set, Tuple
+from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -33,6 +34,7 @@ LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 HOST = '0.0.0.0'
 
+LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
 STATIC_PATH = web.AppKey("STATIC_PATH", str)
 STATIC_URL = web.AppKey("STATIC_URL", str)
@@ -240,6 +242,8 @@ async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
         else:
             reloads += 1
 
+    app[LAST_RELOAD][0] = len(app[WS])
+    app[LAST_RELOAD][1] = time.time()
     if reloads:
         s = '' if reloads == 1 else 's'
         aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
@@ -256,6 +260,7 @@ def create_auxiliary_app(
         browser_cache: bool = False) -> web.Application:
     app = web.Application()
     ws: Set[Tuple[web.WebSocketResponse, str]] = set()
+    app[LAST_RELOAD] = [0, 0.]
     app[STATIC_PATH] = static_path or ""
     app[STATIC_URL] = static_url
     app[WS] = ws
