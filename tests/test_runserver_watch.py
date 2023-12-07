@@ -1,7 +1,7 @@
 import asyncio
 import time
 from functools import partial
-from typing import Set, Tuple
+from typing import Any, Set, Tuple
 from unittest.mock import AsyncMock, MagicMock, call
 
 from aiohttp import ClientSession
@@ -206,11 +206,12 @@ async def test_restart_after_connection_loss(mocker):
 
     app = mocker.create_autospec(Application, spec_set=True, instance=True)
     # Simulate connection lost from recent restart.
-    d = {WS: set(), LAST_RELOAD: [1, time.time()]}
+    ws: Set[Any] = set()
+    d = {WS: ws, LAST_RELOAD: [1, time.time()]}
     app.__getitem__.side_effect = lambda k: d.get(k, MagicMock())
 
     def update_ws(i):
-        d[WS].add(MagicMock(spec_set=()))
+        ws.add(MagicMock(spec_set=()))
         return AsyncMock()
 
     sleep_mock = mocker.patch("asyncio.sleep", autospec=True, spec_set=True)
