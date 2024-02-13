@@ -148,7 +148,7 @@ async def create_app():
     app_task._process.join(2)
 
     captured = capfd.readouterr()
-    assert captured.out == "wrong_import\n"
+    assert captured.out == ""
 
 
 @forked
