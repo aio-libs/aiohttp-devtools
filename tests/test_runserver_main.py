@@ -143,7 +143,7 @@ async def create_app():
     config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
     config.import_app_factory()
     app_task = AppTask(config)
-    
+
     app_task._start_dev_server()
     app_task._process.join(2)
 
