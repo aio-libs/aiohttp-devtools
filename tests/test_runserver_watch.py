@@ -143,19 +143,6 @@ async def test_livereload_task_multiple(event_loop, mocker):
     mock_src_reload.assert_called_once_with(app)
 
 
-class FakeProcess:
-    def __init__(self, is_alive=True, exitcode=1, pid=123):
-        self._is_alive = is_alive
-        self.exitcode = exitcode
-        self.pid = pid
-
-    def is_alive(self):
-        return self._is_alive
-
-    def join(self, wait):
-        pass
-
-
 async def test_stop_process_dead(smart_caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
