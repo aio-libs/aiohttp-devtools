@@ -21,7 +21,7 @@ from .conftest import SIMPLE_APP, forked
 async def check_server_running(check_callback):
     port_open = False
     async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
-        for i in range(50):
+        for i in range(50):  # pragma: no branch
             try:
                 async with session.get('http://localhost:8000/'):
                     pass
