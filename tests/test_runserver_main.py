@@ -118,17 +118,17 @@ app.router.add_get('/', hello)
 @forked
 def test_start_runserver_with_multi_app_modules(tmpworkdir, event_loop, capfd):
     mktree(tmpworkdir, {
-        'app.py': f"""\
+        "app.py": f"""\
 from aiohttp import web
 import sys
-sys.path.insert(0, '{tmpworkdir}/libs/l1')
+sys.path.insert(0, "{tmpworkdir}/libs/l1")
 
 async def hello(request):
-    return web.Response(text='<h1>hello world</h1>', content_type='text/html')
+    return web.Response(text="<h1>hello world</h1>", content_type="text/html")
 
 async def create_app():
     a = web.Application()
-    a.router.add_get('/', hello)
+    a.router.add_get("/", hello)
     return a
 """,
         "libs": {
@@ -139,7 +139,7 @@ async def create_app():
         }
     })
 
-    set_start_method('spawn')
+    set_start_method("spawn")
     config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
     config.import_app_factory()
     app_task = AppTask(config)
