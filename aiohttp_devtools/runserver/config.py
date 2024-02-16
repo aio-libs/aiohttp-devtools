@@ -136,7 +136,7 @@ class Config:
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = '.'.join(rel_py_file.with_suffix('').parts)
 
-        sys.path.append(str(self.python_path))
+        sys.path.insert(0, str(self.python_path))
         module = import_module(module_path)
         # Rewrite the package name, so it will appear the same as running the app.
         if module.__package__:

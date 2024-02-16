@@ -7,10 +7,13 @@ import pytest
 from aiohttp import ClientTimeout
 from pytest_toolbox import mktree
 
+from multiprocessing import set_start_method
+
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (
     WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
+from aiohttp_devtools.runserver.watch import AppTask
 
 from .conftest import SIMPLE_APP, forked
 
@@ -110,6 +113,42 @@ app.router.add_get('/', hello)
     assert len(aux_app.on_startup) == 1
     assert len(aux_app.on_shutdown) == 1
     assert len(aux_app.cleanup_ctx) == 1
+
+
+@forked
+def test_start_runserver_with_multi_app_modules(tmpworkdir, event_loop, capfd):
+    mktree(tmpworkdir, {
+        "app.py": f"""\
+from aiohttp import web
+import sys
+sys.path.insert(0, "{tmpworkdir}/libs/l1")
+
+async def hello(request):
+    return web.Response(text="<h1>hello world</h1>", content_type="text/html")
+
+async def create_app():
+    a = web.Application()
+    a.router.add_get("/", hello)
+    return a
+""",
+        "libs": {
+            "l1": {
+                "__init__.py": "",
+                "app.py": "print('wrong_import')"
+            }
+        }
+    })
+
+    set_start_method("spawn")
+    config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
+    config.import_app_factory()
+    app_task = AppTask(config)
+
+    app_task._start_dev_server()
+    app_task._process.join(2)
+
+    captured = capfd.readouterr()
+    assert captured.out == ""
 
 
 @forked
