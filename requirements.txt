@@ -5,7 +5,7 @@ coverage==7.4.3
 devtools==0.12.2
 grablib==0.8
 Pygments==2.17.2
-pytest==6.2.5
+pytest==8.1.1
 pytest-aiohttp==1.0.5
 pytest-asyncio==0.20.3
 pytest-cov==4.1.0
