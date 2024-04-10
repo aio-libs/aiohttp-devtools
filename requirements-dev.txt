@@ -1,6 +1,6 @@
 -r requirements.txt
 
-docutils==0.20.1
+docutils==0.21.1
 flake8==7.0.0
 mypy==1.9.0
 Sphinx==7.2.6
