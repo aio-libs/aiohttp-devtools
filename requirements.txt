@@ -14,4 +14,4 @@ pytest-mock==3.14.0
 pytest-sugar==0.9.7
 pytest-timeout==2.2.0
 pytest-toolbox==0.4
-watchfiles==0.21.0
+watchfiles==0.23.0
