@@ -353,7 +353,6 @@ class CustomStaticResource(StaticResource):
         self._browser_cache = browser_cache
         super().__init__(*args, **kwargs)
         self._show_index = True
-        self._loop = asyncio.get_running_loop()
 
     def modify_request(self, request: web.Request) -> Path:
         """
@@ -420,18 +419,19 @@ class CustomStaticResource(StaticResource):
         return web.Response(text=msg, status=404, content_type="text/plain")
 
     async def _handle(self, request: web.Request) -> web.StreamResponse:
-        raw_path = await self._loop.run_in_executor(None, self.modify_request, request)
+        loop = asyncio.get_running_loop()
+        raw_path = await loop.run_in_executor(None, self.modify_request, request)
         try:
             response = await super()._handle(request)
         except HTTPNotFound:
-            response = await self._loop.run_in_executor(
+            response = await loop.run_in_executor(
                 None, self._make_not_found_response, raw_path
             )
         else:
             # With aiohttp 3.10+, we need to also check if the file actually
             # exists since the base class does not check this anymore as its
             # done in the response to enable handling various compressed files.
-            response = await self._loop.run_in_executor(
+            response = await loop.run_in_executor(
                 None, self._insert_footer_if_exists, response, raw_path
             )
             # Inject CORS headers to allow webfonts to load correctly
