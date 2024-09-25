@@ -398,7 +398,10 @@ class CustomStaticResource(StaticResource):
         resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
-    def _insert_footer_if_exists(self, response: web.StreamResponse, raw_path: Path) -> web.StreamResponse:
+
+    def _insert_footer_if_exists(
+        self, response: web.StreamResponse, raw_path: Path
+    ) -> web.StreamResponse:
         """Insert the footer if the file exists, otherwise return a 404 response."""
         if not raw_path.is_file():
             return self._make_not_found_response(raw_path)
@@ -410,9 +413,11 @@ class CustomStaticResource(StaticResource):
             raw_path = raw_path.parent
         paths = "\n".join(
             " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
-            for p in raw_path.iterdir())
+            for p in raw_path.iterdir()
+        )
         msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
-            raw_path.relative_to(self._directory), paths)
+            raw_path.relative_to(self._directory), paths
+        )
         return web.Response(text=msg, status=404, content_type="text/plain")
 
     async def _handle(self, request: web.Request) -> web.StreamResponse:
@@ -420,14 +425,18 @@ class CustomStaticResource(StaticResource):
         try:
             response = await super()._handle(request)
         except HTTPNotFound:
-            response = await self._loop.run_in_executor(None, self._make_not_found_response, raw_path)
+            response = await self._loop.run_in_executor(
+                None, self._make_not_found_response, raw_path
+            )
         else:
             # With aiohttp 3.10+, we need to also check if the file actually
             # exists since the base class does not check this anymore as its
             # done in the response to enable handling various compressed files.
-            response = await self._loop.run_in_executor(None, self._insert_footer_if_exists, response, raw_path)
+            response = await self._loop.run_in_executor(
+                None, self._insert_footer_if_exists, response, raw_path
+            )
             # Inject CORS headers to allow webfonts to load correctly
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers["Access-Control-Allow-Origin"] = "*"
 
         if not self._browser_cache:
             # Add no-cache header to avoid browser caching in local development.
