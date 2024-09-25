@@ -14,7 +14,7 @@ async def test_load_simple_app(tmpworkdir):
 
 
 @forked
-async def test_create_app_wrong_name(tmpworkdir, event_loop):
+async def test_create_app_wrong_name(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
     with pytest.raises(AiohttpDevConfigError) as excinfo:
