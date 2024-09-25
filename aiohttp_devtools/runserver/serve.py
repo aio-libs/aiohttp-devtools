@@ -398,11 +398,12 @@ class CustomStaticResource(StaticResource):
         return resp
 
     def _insert_footer_if_exists(
-        self, response: web.StreamResponse, raw_path: Path
+        self, filename: str, response: web.StreamResponse
     ) -> web.StreamResponse:
         """Insert the footer if the file exists, otherwise return a 404 response."""
-        if not raw_path.is_file():
-            return self._make_not_found_response(raw_path)
+        resolved_path = self._directory.joinpath(filename).resolve()
+        if not resolved_path.is_file():
+            return self._make_not_found_response(resolved_path)
         return self._insert_footer(response)
 
     def _make_not_found_response(self, raw_path: Path) -> web.StreamResponse:
@@ -432,7 +433,7 @@ class CustomStaticResource(StaticResource):
             # exists since the base class does not check this anymore as its
             # done in the response to enable handling various compressed files.
             response = await loop.run_in_executor(
-                None, self._insert_footer_if_exists, response, raw_path
+                None, self._insert_footer_if_exists, request.match_info['filename'], response
             )
             # Inject CORS headers to allow webfonts to load correctly
             response.headers["Access-Control-Allow-Origin"] = "*"
