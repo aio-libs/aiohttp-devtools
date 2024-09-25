@@ -353,6 +353,7 @@ class CustomStaticResource(StaticResource):
         self._browser_cache = browser_cache
         super().__init__(*args, **kwargs)
         self._show_index = True
+        self._loop = asyncio.get_running_loop()
 
     def modify_request(self, request: web.Request) -> Path:
         """
@@ -397,21 +398,34 @@ class CustomStaticResource(StaticResource):
         resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
+    def _insert_footer_if_exists(self, response: web.StreamResponse, raw_path: Path) -> web.StreamResponse:
+        """Insert the footer if the file exists, otherwise return a 404 response."""
+        if not raw_path.is_file():
+            return self._make_not_found_response(raw_path)
+        return self._insert_footer(response)
+
+    def _make_not_found_response(self, raw_path: Path) -> web.StreamResponse:
+        """Create a 404 response with a list of available files under the requested path."""
+        while not raw_path.is_dir():
+            raw_path = raw_path.parent
+        paths = "\n".join(
+            " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
+            for p in raw_path.iterdir())
+        msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
+            raw_path.relative_to(self._directory), paths)
+        return web.Response(text=msg, status=404, content_type="text/plain")
+
     async def _handle(self, request: web.Request) -> web.StreamResponse:
-        raw_path = self.modify_request(request)
+        raw_path = await self._loop.run_in_executor(None, self.modify_request, request)
         try:
             response = await super()._handle(request)
         except HTTPNotFound:
-            while not raw_path.is_dir():
-                raw_path = raw_path.parent
-            paths = "\n".join(
-                " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
-                for p in raw_path.iterdir())
-            msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
-                raw_path.relative_to(self._directory), paths)
-            response = web.Response(text=msg, status=404, content_type="text/plain")
+            response = await self._loop.run_in_executor(None, self._make_not_found_response, raw_path)
         else:
-            response = self._insert_footer(response)
+            # With aiohttp 3.10+, we need to also check if the file actually
+            # exists since the base class does not check this anymore as its
+            # done in the response to enable handling various compressed files.
+            response = await self._loop.run_in_executor(None, self._insert_footer_if_exists, response, raw_path)
             # Inject CORS headers to allow webfonts to load correctly
             response.headers['Access-Control-Allow-Origin'] = '*'
 
