@@ -70,7 +70,7 @@ def test_runserver_error_verbose(mocker):
 
 
 @forked
-async def test_runserver_no_args():
+def test_runserver_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2
