@@ -98,7 +98,7 @@ async def test_aux_reload_runtime_error(smart_caplog):
     assert 'adev.server.aux ERROR: Error broadcasting change to /foo/bar, RuntimeError: foobar\n' == smart_caplog
 
 
-async def test_aux_cleanup(event_loop):
+async def test_aux_cleanup():
     aux_app = Application()
     aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()

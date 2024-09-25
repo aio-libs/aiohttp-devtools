@@ -1,5 +1,3 @@
-import asyncio
-
 from click.testing import CliRunner
 
 from aiohttp_devtools.cli import cli
@@ -16,8 +14,7 @@ def test_cli_help():
     assert 'Serve static files from a directory.' in result.output
 
 
-def test_serve(mocker, event_loop):
-    asyncio.set_event_loop(event_loop)
+def test_serve(mocker):
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     runner = CliRunner()
     result = runner.invoke(cli, ['serve', '.'])
@@ -71,8 +68,7 @@ def test_runserver_error_verbose(mocker):
 
 
 @forked
-def test_runserver_no_args(event_loop):
-    asyncio.set_event_loop(event_loop)
+def test_runserver_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])
     assert result.exit_code == 2

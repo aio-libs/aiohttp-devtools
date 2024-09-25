@@ -93,7 +93,7 @@ def create_app():
 
 
 @forked
-def test_start_runserver_app_instance(tmpworkdir, event_loop):
+def test_start_runserver_app_instance(tmpworkdir):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -116,7 +116,7 @@ app.router.add_get('/', hello)
 
 
 @forked
-def test_start_runserver_with_multi_app_modules(tmpworkdir, event_loop, capfd):
+def test_start_runserver_with_multi_app_modules(tmpworkdir, capfd):
     mktree(tmpworkdir, {
         "app.py": f"""\
 from aiohttp import web
@@ -194,11 +194,11 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
 
 
 @forked
-async def test_serve_main_app(tmpworkdir, event_loop, mocker):
-    asyncio.set_event_loop(event_loop)
+async def test_serve_main_app(tmpworkdir, mocker):
+    loop = asyncio.get_running_loop()
     mktree(tmpworkdir, SIMPLE_APP)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
-    event_loop.call_later(0.5, event_loop.stop)
+    loop.call_later(0.5, loop.stop)
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
@@ -210,7 +210,7 @@ async def test_serve_main_app(tmpworkdir, event_loop, mocker):
 
 
 @forked
-async def test_start_main_app_app_instance(tmpworkdir, event_loop, mocker):
+async def test_start_main_app_app_instance(tmpworkdir, mocker):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
@@ -234,11 +234,10 @@ app.router.add_get('/', hello)
 
 
 @pytest.fixture
-def aux_cli(aiohttp_client, event_loop):
+async def aux_cli(aiohttp_client):
     app = create_auxiliary_app(static_path='.')
-    cli = event_loop.run_until_complete(aiohttp_client(app))
-    yield cli
-    event_loop.run_until_complete(cli.close())
+    async with await aiohttp_client(app) as cli:
+        yield cli
 
 
 async def test_websocket_hello(aux_cli, smart_caplog):
@@ -256,7 +255,7 @@ async def test_websocket_hello(aux_cli, smart_caplog):
     assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in smart_caplog
 
 
-async def test_websocket_info(aux_cli, event_loop):
+async def test_websocket_info(aux_cli):
     assert len(aux_cli.server.app[WS]) == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
     try:
@@ -282,7 +281,7 @@ async def test_websocket_bad(aux_cli, smart_caplog):
     assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in smart_caplog
 
 
-async def test_websocket_reload(aux_cli, event_loop):
+async def test_websocket_reload(aux_cli):
     reloads = await src_reload(aux_cli.server.app, 'foobar')
     assert reloads == 0
     ws = await aux_cli.session.ws_connect(aux_cli.make_url('/livereload'))
