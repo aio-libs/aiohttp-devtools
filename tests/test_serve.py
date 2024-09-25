@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from pytest_toolbox import mktree
 
