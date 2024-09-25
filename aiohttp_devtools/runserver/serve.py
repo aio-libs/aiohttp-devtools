@@ -433,7 +433,10 @@ class CustomStaticResource(StaticResource):
             # exists since the base class does not check this anymore as its
             # done in the response to enable handling various compressed files.
             response = await loop.run_in_executor(
-                None, self._insert_footer_if_exists, request.match_info['filename'], response
+                None,
+                self._insert_footer_if_exists,
+                request.match_info["filename"],
+                response,
             )
             # Inject CORS headers to allow webfonts to load correctly
             response.headers["Access-Control-Allow-Origin"] = "*"
