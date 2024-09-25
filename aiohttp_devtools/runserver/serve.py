@@ -398,7 +398,6 @@ class CustomStaticResource(StaticResource):
         resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
-
     def _insert_footer_if_exists(
         self, response: web.StreamResponse, raw_path: Path
     ) -> web.StreamResponse:
