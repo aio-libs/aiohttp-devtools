@@ -1,4 +1,4 @@
-aiohttp==3.10.6
+aiohttp==3.10.8
 aiohttp-jinja2==1.6
 click==8.1.7
 coverage==7.4.4
