@@ -46,7 +46,7 @@ def serve(path: str, livereload: bool, port: int, verbose: bool, browser_cache: 
                            browser_cache=browser_cache))
 
 
-static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
+static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_PATH"
 root_help = ('Root directory project used to qualify other paths. '
              'This can be used to watch a parent directory for changes in a more complex application. '
              'env variable: AIO_ROOT')
