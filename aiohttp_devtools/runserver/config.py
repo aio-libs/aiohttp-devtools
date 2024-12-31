@@ -42,6 +42,7 @@ class Config:
                  path_prefix: str = "/_devtools",
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
+                 bind_address: str = "localhost",
                  main_port: int = 8000,
                  aux_port: Optional[int] = None,
                  browser_cache: bool = False):
@@ -73,7 +74,8 @@ class Config:
         self.path_prefix = path_prefix
         self.app_factory_name = app_factory_name
         self.infer_host = host == INFER_HOST
-        self.host = 'localhost' if self.infer_host else host
+        self.host = bind_address if self.infer_host else host
+        self.bind_address = bind_address
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.browser_cache = browser_cache
@@ -190,5 +192,5 @@ class Config:
 
     def __str__(self) -> str:
         fields = ("py_file", "static_path", "static_url", "livereload", "shutdown_by_url",
-                  "path_prefix", "app_factory_name", "host", "main_port", "aux_port")
+                  "path_prefix", "app_factory_name", "host", "bind_address", "main_port", "aux_port")
         return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
