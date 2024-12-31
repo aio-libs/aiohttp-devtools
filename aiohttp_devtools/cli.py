@@ -34,7 +34,7 @@ bind_address_help = "Network address to listen, default localhost. env variable:
 @cli.command()
 @click.argument('path', type=_dir_existing, required=True)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=True, help=livereload_help)
-@click.option('-b', '--bind', "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
+@click.option("-b", "--bind", "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
 @click.option('-p', '--port', default=8000, type=int)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.option("--browser-cache/--no-browser-cache", envvar="AIO_BROWSER_CACHE", default=False,
@@ -57,7 +57,7 @@ shutdown_by_url_help = ("The development server will be stopped via a request to
                         "added to the server, instead of via signals (this is the default on Windows). "
                         "env variable: AIO_SHUTDOWN_BY_URL")
 host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
-             'with default of bind network address. env variable AIO_HOST')
+             "with default of bind network address. env variable AIO_HOST")
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, if missing default app-factory '
                     'names are tried. This can be either a function with signature '
                     '"def create_app(loop): -> Application" or "def create_app(): -> Application" '
@@ -77,7 +77,7 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--host', default=INFER_HOST, help=host_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
-@click.option('-b', '--bind', "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
+@click.option("-b", "--bind", "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
