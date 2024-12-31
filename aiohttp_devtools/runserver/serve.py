@@ -138,7 +138,7 @@ async def check_port_open(port: int, host: str = "0.0.0.0", delay: float = 1) ->
         except OSError as e:
             if e.errno != EADDRINUSE:
                 raise
-            dft_logger.warning('%s:%d is already in use, waiting %d...', host, port, i)
+            dft_logger.warning("%s:%d is already in use, waiting %d...", host, port, i)
             await asyncio.sleep(delay)
         else:
             server.close()
