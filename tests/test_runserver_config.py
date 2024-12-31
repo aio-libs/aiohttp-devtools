@@ -18,6 +18,9 @@ def test_infer_host(tmpworkdir):
     bind_config = Config(app_path='app.py', bind_address='192.168.1.1')
     assert bind_config.infer_host is True
     assert bind_config.host == "192.168.1.1"
+    bind_any = Config(app_path='app.py', bind_address='0.0.0.0')
+    assert bind_any.infer_host is True
+    assert bind_any.host == "localhost"
 
 
 def test_host_override_addr(tmpworkdir):

@@ -74,7 +74,14 @@ class Config:
         self.path_prefix = path_prefix
         self.app_factory_name = app_factory_name
         self.infer_host = host == INFER_HOST
-        self.host = bind_address if self.infer_host else host
+
+        if not self.infer_host:
+            self.host = host
+        elif bind_address == "0.0.0.0":
+            self.host = "localhost"
+        else:
+            self.host = bind_address
+
         self.bind_address = bind_address
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
