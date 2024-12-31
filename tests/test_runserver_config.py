@@ -15,17 +15,17 @@ async def test_load_simple_app(tmpworkdir):
 
 def test_infer_host(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    bind_config = Config(app_path='app.py', bind_address='192.168.1.1')
+    bind_config = Config(app_path="app.py", bind_address="192.168.1.1")
     assert bind_config.infer_host is True
     assert bind_config.host == "192.168.1.1"
-    bind_any = Config(app_path='app.py', bind_address='0.0.0.0')
+    bind_any = Config(app_path="app.py", bind_address="0.0.0.0")
     assert bind_any.infer_host is True
     assert bind_any.host == "localhost"
 
 
 def test_host_override_addr(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
-    config = Config(app_path='app.py', host='foobar.com', bind_address='192.168.1.1')
+    config = Config(app_path="app.py", host="foobar.com", bind_address="192.168.1.1")
     assert config.infer_host is False
     assert config.host == "foobar.com"
     assert config.bind_address == "192.168.1.1"
