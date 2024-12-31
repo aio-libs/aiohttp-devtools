@@ -61,8 +61,10 @@ def create_app():
     args = runserver(app_path='app.py', static_path='static_dir')
     aux_app = args["app"]
     aux_port = args["port"]
+    runapp_host = args.get("host", "")
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
+    assert runapp_host == "localhost"
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
@@ -108,8 +110,10 @@ app.router.add_get('/', hello)
     args = runserver(app_path="app.py", host="foobar.com", main_port=0, aux_port=8001)
     aux_app = args["app"]
     aux_port = args["port"]
+    runapp_host = args.get("host", "")
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
+    assert runapp_host == "localhost"
     assert len(aux_app.on_startup) == 1
     assert len(aux_app.on_shutdown) == 1
     assert len(aux_app.cleanup_ctx) == 1
