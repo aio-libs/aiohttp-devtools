@@ -107,6 +107,7 @@ async def test_reload_server_running(aiohttp_client, mocker):
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
     cli = await aiohttp_client(app)
     config = MagicMock()
+    config.host = "localhost"
     config.main_port = cli.server.port
 
     app_task = AppTask(config)
