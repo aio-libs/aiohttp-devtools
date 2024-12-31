@@ -202,7 +202,7 @@ async def test_serve_main_app(tmpworkdir, mocker):
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
-    await start_main_app(runner, config.main_port)
+    await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
@@ -226,7 +226,7 @@ app.router.add_get('/', hello)
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
-    await start_main_app(runner, config.main_port)
+    await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
