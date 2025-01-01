@@ -58,11 +58,13 @@ def create_app():
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    args = runserver(app_path='app.py', static_path='static_dir')
+    args = runserver(app_path="app.py", static_path="static_dir", bind_address="0.0.0.0")
     aux_app = args["app"]
     aux_port = args["port"]
+    runapp_host = args["host"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
+    assert runapp_host == "0.0.0.0"
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
@@ -108,8 +110,10 @@ app.router.add_get('/', hello)
     args = runserver(app_path="app.py", host="foobar.com", main_port=0, aux_port=8001)
     aux_app = args["app"]
     aux_port = args["port"]
+    runapp_host = args["host"]
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
+    assert runapp_host == "localhost"
     assert len(aux_app.on_startup) == 1
     assert len(aux_app.on_shutdown) == 1
     assert len(aux_app.cleanup_ctx) == 1
@@ -202,7 +206,7 @@ async def test_serve_main_app(tmpworkdir, mocker):
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
-    await start_main_app(runner, config.main_port)
+    await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 
@@ -226,7 +230,7 @@ app.router.add_get('/', hello)
 
     config = Config(app_path="app.py", main_port=0)
     runner = await create_main_app(config, config.import_app_factory())
-    await start_main_app(runner, config.main_port)
+    await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
 

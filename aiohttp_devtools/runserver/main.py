@@ -9,7 +9,7 @@ from aiohttp.web import Application
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .log_handlers import AuxAccessLogger
-from .serve import HOST, check_port_open, create_auxiliary_app
+from .serve import check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
 
 
@@ -33,7 +33,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
     config = Config(**config_kwargs)
     config.import_app_factory()
 
-    asyncio.run(check_port_open(config.main_port))
+    asyncio.run(check_port_open(config.main_port, host=config.bind_address))
 
     aux_app = create_auxiliary_app(
         static_path=config.static_path_str,
@@ -56,11 +56,11 @@ def runserver(**config_kwargs: Any) -> RunServer:
         rel_path = config.static_path.relative_to(os.getcwd())
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
-    return {"app": aux_app, "host": HOST, "port": config.aux_port,
+    return {"app": aux_app, "host": config.bind_address, "port": config.aux_port,
             "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
 
 
-def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000,
+def serve_static(*, static_path: str, livereload: bool = True, bind_address: str = "localhost", port: int = 8000,
                  browser_cache: bool = False) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
@@ -73,6 +73,6 @@ def serve_static(*, static_path: str, livereload: bool = True, port: int = 8000,
         app.cleanup_ctx.append(livereload_manager.cleanup_ctx)
 
     livereload_status = 'ON' if livereload else 'OFF'
-    logger.info('Serving "%s" at http://localhost:%d, livereload %s', static_path, port, livereload_status)
-    return {"app": app, "host": HOST, "port": port,
+    logger.info('Serving "%s" at http://%s:%d, livereload %s', static_path, bind_address, port, livereload_status)
+    return {"app": app, "host": bind_address, "port": port,
             "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}

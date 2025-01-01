@@ -107,7 +107,7 @@ class AppTask(WatchTask):
         assert self._app is not None and self._session is not None
 
         if self._app[WS]:
-            url = 'http://localhost:{.main_port}/?_checking_alive=1'.format(self._config)
+            url = "http://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
                 await asyncio.sleep(0.1)
@@ -141,7 +141,7 @@ class AppTask(WatchTask):
         if self._process.is_alive():
             logger.debug('stopping server process...')
             if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
-                url = "http://localhost:{}{}/shutdown".format(self._config.main_port, self._config.path_prefix)
+                url = "http://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
                 logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
                 try:
                     with suppress(ClientConnectionError):

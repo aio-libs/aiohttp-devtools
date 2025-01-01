@@ -32,7 +32,6 @@ except ImportError:
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
-HOST = '0.0.0.0'
 
 LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
@@ -129,17 +128,17 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         _set_static_url(app, static_url)
 
 
-async def check_port_open(port: int, delay: float = 1) -> None:
+async def check_port_open(port: int, host: str = "0.0.0.0", delay: float = 1) -> None:
     loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
         try:
-            server = await loop.create_server(asyncio.Protocol, host=HOST, port=port)
+            server = await loop.create_server(asyncio.Protocol, host=host, port=port)
         except OSError as e:
             if e.errno != EADDRINUSE:
                 raise
-            dft_logger.warning('port %d is already in use, waiting %d...', port, i)
+            dft_logger.warning("%s:%d is already in use, waiting %d...", host, port, i)
             await asyncio.sleep(delay)
         else:
             server.close()
@@ -170,7 +169,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             with asyncio.Runner() as runner:
                 app_runner = runner.run(create_main_app(config, app_factory))
                 try:
-                    runner.run(start_main_app(app_runner, config.main_port))
+                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port))
                     runner.get_loop().run_forever()
                 except KeyboardInterrupt:
                     pass
@@ -181,7 +180,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             loop = asyncio.new_event_loop()
             runner = loop.run_until_complete(create_main_app(config, app_factory))
             try:
-                loop.run_until_complete(start_main_app(runner, config.main_port))
+                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port))
                 loop.run_forever()
             except KeyboardInterrupt:  # pragma: no cover
                 pass
@@ -194,13 +193,13 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
 
-    await check_port_open(config.main_port)
+    await check_port_open(config.main_port, host=config.bind_address)
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, port: int) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int) -> None:
     await runner.setup()
-    site = web.TCPSite(runner, host=HOST, port=port)
+    site = web.TCPSite(runner, host=host, port=port)
     await site.start()
 
 
