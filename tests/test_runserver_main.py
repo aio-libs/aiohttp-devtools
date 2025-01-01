@@ -58,7 +58,7 @@ def create_app():
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    args = runserver(app_path='app.py', static_path='static_dir', bind_address="0.0.0.0")
+    args = runserver(app_path="app.py", static_path="static_dir", bind_address="0.0.0.0")
     aux_app = args["app"]
     aux_port = args["port"]
     runapp_host = args["host"]
