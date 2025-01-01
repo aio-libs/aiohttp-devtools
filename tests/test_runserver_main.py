@@ -58,13 +58,13 @@ def create_app():
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    args = runserver(app_path='app.py', static_path='static_dir')
+    args = runserver(app_path='app.py', static_path='static_dir', bind_address="0.0.0.0")
     aux_app = args["app"]
     aux_port = args["port"]
     runapp_host = args.get("host", "")
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
-    assert runapp_host == "localhost"
+    assert runapp_host == "0.0.0.0"
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
