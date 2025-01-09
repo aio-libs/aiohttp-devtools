@@ -120,7 +120,7 @@ app.router.add_get('/', hello)
 
 
 @forked
-def test_start_runserver_with_multi_app_modules(tmpworkdir, capfd):
+async def test_start_runserver_with_multi_app_modules(tmpworkdir, capfd):
     mktree(tmpworkdir, {
         "app.py": f"""\
 from aiohttp import web
@@ -149,10 +149,13 @@ async def create_app():
     app_task = AppTask(config)
 
     app_task._start_dev_server()
-    app_task._process.join(2)
+    try:
+        app_task._process.join(2)
 
-    captured = capfd.readouterr()
-    assert captured.out == ""
+        captured = capfd.readouterr()
+        assert captured.out == ""
+    finally:
+        await app_task._stop_dev_server()
 
 
 @forked
