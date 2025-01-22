@@ -145,7 +145,7 @@ async def create_app():
 
     set_start_method("spawn")
     config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
-    config.import_app_factory()
+    config.get_app_factory()
     app_task = AppTask(config)
 
     app_task._start_dev_server()
@@ -162,7 +162,7 @@ async def create_app():
 async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py')
-    app_factory = config.import_app_factory()
+    app_factory = config.get_app_factory()
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
     assert isinstance(app, aiohttp.web.Application)
@@ -178,7 +178,7 @@ async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
 async def test_run_app_browser_cache(tmpworkdir, aiohttp_client):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path="app.py", browser_cache=True)
-    app_factory = config.import_app_factory()
+    app_factory = config.get_app_factory()
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
     cli = await aiohttp_client(app)
@@ -208,7 +208,7 @@ async def test_serve_main_app(tmpworkdir, mocker):
     loop.call_later(0.5, loop.stop)
 
     config = Config(app_path="app.py", main_port=0)
-    runner = await create_main_app(config, config.import_app_factory())
+    runner = await create_main_app(config, config.get_app_factory())
     await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)
@@ -232,7 +232,7 @@ app.router.add_get('/', hello)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
 
     config = Config(app_path="app.py", main_port=0)
-    runner = await create_main_app(config, config.import_app_factory())
+    runner = await create_main_app(config, config.get_app_factory())
     await start_main_app(runner, config.bind_address, config.main_port)
 
     mock_modify_main_app.assert_called_with(mock.ANY, config)

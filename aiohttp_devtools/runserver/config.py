@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Optional, Union
 
 from aiohttp import web
+import ssl
 
 import __main__
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
@@ -43,9 +44,10 @@ class Config:
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  bind_address: str = "localhost",
-                 main_port: int = 8000,
+                 main_port: Optional[int] = None,
                  aux_port: Optional[int] = None,
-                 browser_cache: bool = False):
+                 browser_cache: bool = False,
+                 ssl_context_factory_name: Optional[str] = None):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
@@ -83,9 +85,13 @@ class Config:
             self.host = bind_address
 
         self.bind_address = bind_address
+        if main_port is None:
+            main_port = 8000 if ssl_context_factory_name == None else 8443
+        self.protocol = 'http'
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.browser_cache = browser_cache
+        self.ssl_context_factory_name = ssl_context_factory_name
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -135,15 +141,20 @@ class Config:
             if not path.is_dir():
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
-
-    def import_app_factory(self) -> AppFactory:
-        """Import and return attribute/class from a python module.
+    
+    def import_module(self):
+        """Import and return python module.
 
         Raises:
             AdevConfigError - If the import failed.
         """
         rel_py_file = self.py_file.relative_to(self.python_path)
         module_path = '.'.join(rel_py_file.with_suffix('').parts)
+        sys.path.insert(0, str(self.python_path))
+        module = import_module(module_path)
+        # Rewrite the package name, so it will appear the same as running the app.
+        if module.__package__:
+            __main__.__package__ = module.__package__
 
         sys.path.insert(0, str(self.python_path))
         module = import_module(module_path)
@@ -152,6 +163,16 @@ class Config:
             __main__.__package__ = module.__package__
 
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
+
+        self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
+        return module
+
+    def get_app_factory(self, module) -> AppFactory:
+        """Import and return attribute/class from a python module.
+
+        Raises:
+            AdevConfigError - If the import failed.
+        """
 
         if self.app_factory_name is None:
             try:
@@ -179,8 +200,24 @@ class Config:
                 raise AdevConfigError("'{}.{}' should not have required arguments.".format(
                     self.py_file.name, self.app_factory_name))
 
-        self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
         return attr  # type: ignore[no-any-return]
+    
+    def get_ssl_context(self, module) -> ssl.SSLContext:
+        if self.ssl_context_factory_name is None:
+            return None
+        else:      
+            try:
+                attr = getattr(module, self.ssl_context_factory_name)
+            except AttributeError:
+                raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
+                    self.py_file.name, self.ssl_context_factory_name))  
+        ssl_context = attr()
+        if isinstance(ssl_context, ssl.SSLContext):
+            self.protocol = 'https'
+            return ssl_context
+        else:
+           raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
+                self.ssl_context_factory_name, self.py_file.name)) 
 
     async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):

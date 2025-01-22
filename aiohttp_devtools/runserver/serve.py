@@ -25,6 +25,8 @@ from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
+import ssl
+
 try:
     from aiohttp_jinja2 import static_root_key
 except ImportError:
@@ -103,7 +105,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
         @web.middleware
         async def static_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
-            static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
+            static_url = '{}://{}:{}/{}'.format(config.protocol, get_host(request), config.aux_port, static_path)
             dft_logger.debug('setting app static_root_url to "%s"', static_url)
             _change_static_url(request.app, static_url)
             return await handler(request)
@@ -120,10 +122,10 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
-        dft_logger.debug("Created shutdown endpoint at http://{}:{}{}".format(config.host, config.main_port, path))
+        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(config.protocol, config.host, config.main_port, path))
 
     if config.static_path is not None:
-        static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
+        static_url = '{}://{}:{}/{}'.format(config.protocol, config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         _set_static_url(app, static_url)
 
@@ -164,7 +166,9 @@ def set_tty(tty_path: Optional[str]) -> Iterator[None]:
 def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
-        app_factory = config.import_app_factory()
+        module = config.import_module()
+        app_factory = config.get_app_factory(module)
+        ssl_context = config.get_ssl_context(module)
         if sys.version_info >= (3, 11):
             with asyncio.Runner() as runner:
                 app_runner = runner.run(create_main_app(config, app_factory))
@@ -180,7 +184,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             loop = asyncio.new_event_loop()
             runner = loop.run_until_complete(create_main_app(config, app_factory))
             try:
-                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port))
+                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port, ssl_context))
                 loop.run_forever()
             except KeyboardInterrupt:  # pragma: no cover
                 pass
@@ -197,9 +201,9 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, host: str, port: int) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: ssl.SSLContext) -> None:
     await runner.setup()
-    site = web.TCPSite(runner, host=host, port=port)
+    site = web.TCPSite(runner, host=host, port=port, ssl_context=ssl_context)
     await site.start()
 
 
