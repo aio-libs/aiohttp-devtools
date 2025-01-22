@@ -40,6 +40,8 @@ or ``main.py``) or to a specific file. The ``--app-factory`` option can be used 
 from the app path file, if not supplied some default method names are tried
 (namely `app`, `app_factory`, `get_app` and `create_app`, which can be
 variables, functions, or coroutines).
+The ``--ssl-context-factory`` option can be used to define method from the app path file, which returns ssl.SSLContext
+for ssl support.
 
 All ``runserver`` arguments can be set via environment variables.
 
