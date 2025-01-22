@@ -36,7 +36,8 @@ async def test_create_app_wrong_name(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        config.get_app_factory()
+        module = config.import_module
+        config.get_app_factory(module)
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
 
@@ -56,7 +57,8 @@ async def app_factory():
 """
     })
     config = Config(app_path='app.py')
-    app = await config.load_app(config.get_app_factory())
+    module = config.import_module()
+    app = await config.load_app(config.get_app_factory(module))
     assert isinstance(app, web.Application)
 
 
@@ -69,9 +71,10 @@ def app_factory():
 """
     })
     config = Config(app_path='app.py')
+    module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
                        match=r"'app_factory' returned 'int' not an aiohttp\.web\.Application"):
-        await config.load_app(config.get_app_factory())
+        await config.load_app(config.get_app_factory(module))
 
 
 @forked
@@ -83,6 +86,7 @@ def app_factory(foo):
 """
     })
     config = Config(app_path='app.py')
+    module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
                        match=r"'app\.py\.app_factory' should not have required arguments"):
-        await config.load_app(config.get_app_factory())
+        await config.load_app(config.get_app_factory(module))

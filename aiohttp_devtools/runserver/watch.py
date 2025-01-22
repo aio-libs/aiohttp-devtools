@@ -107,7 +107,7 @@ class AppTask(WatchTask):
         assert self._app is not None and self._session is not None
 
         if self._app[WS]:
-            url = "{0.protocol}}://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
+            url = "{0.protocol}://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
                 await asyncio.sleep(0.1)
