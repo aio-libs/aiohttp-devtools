@@ -7,7 +7,7 @@ import time
 import warnings
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple
+from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -25,7 +25,7 @@ from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
-import ssl
+from ssl import SSLContext
 
 try:
     from aiohttp_jinja2 import static_root_key
@@ -173,7 +173,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             with asyncio.Runner() as runner:
                 app_runner = runner.run(create_main_app(config, app_factory))
                 try:
-                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port))
+                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
                     runner.get_loop().run_forever()
                 except KeyboardInterrupt:
                     pass
@@ -201,7 +201,7 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: ssl.SSLContext) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: Union[SSLContext, None]) -> None:
     await runner.setup()
     site = web.TCPSite(runner, host=host, port=port, ssl_context=ssl_context)
     await site.start()

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from multiprocessing import set_start_method
-from typing import Any, Type, TypedDict
+from typing import Any, Type, TypedDict, Union
 
 from aiohttp.abc import AbstractAccessLogger
 from aiohttp.web import Application
@@ -11,6 +11,7 @@ from .config import Config
 from .log_handlers import AuxAccessLogger
 from .serve import check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
+from ssl import SSLContext
 
 
 class RunServer(TypedDict):
@@ -19,6 +20,8 @@ class RunServer(TypedDict):
     port: int
     shutdown_timeout: float
     access_log_class: Type[AbstractAccessLogger]
+    ssl_context: Union[SSLContext, None]
+
 
 
 def runserver(**config_kwargs: Any) -> RunServer:
@@ -75,4 +78,4 @@ def serve_static(*, static_path: str, livereload: bool = True, bind_address: str
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://%s:%d, livereload %s', static_path, bind_address, port, livereload_status)
     return {"app": app, "host": bind_address, "port": port,
-            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger, "ssl_context": None}

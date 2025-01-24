@@ -4,9 +4,10 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from typing import Awaitable, Callable, Optional, Union, Literal
+from types import ModuleType
 
 from aiohttp import web
-import ssl
+from ssl import SSLContext
 
 import __main__
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
@@ -145,7 +146,7 @@ class Config:
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
     
-    def import_module(self):
+    def import_module(self) -> ModuleType:
         """Import and return python module.
 
         Raises:
@@ -164,7 +165,7 @@ class Config:
         self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
         return module
 
-    def get_app_factory(self, module) -> AppFactory:
+    def get_app_factory(self, module: ModuleType) -> AppFactory:
         """Return attribute/class from a python module.
 
         Raises:
@@ -199,7 +200,7 @@ class Config:
 
         return attr  # type: ignore[no-any-return]
     
-    def get_ssl_context(self, module) -> ssl.SSLContext:
+    def get_ssl_context(self, module: ModuleType) -> Union[SSLContext, None]:
         if self.ssl_context_factory_name is None:
             return None
         else:      
@@ -209,7 +210,7 @@ class Config:
                 raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
                     self.py_file.name, self.ssl_context_factory_name))  
         ssl_context = attr()
-        if isinstance(ssl_context, ssl.SSLContext):
+        if isinstance(ssl_context, SSLContext):
             return ssl_context
         else:
            raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
