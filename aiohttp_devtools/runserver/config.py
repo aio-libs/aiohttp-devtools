@@ -3,7 +3,7 @@ import re
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Awaitable, Callable, Optional, Union
+from typing import Awaitable, Callable, Optional, Union, Literal
 
 from aiohttp import web
 import ssl
@@ -87,12 +87,15 @@ class Config:
         self.bind_address = bind_address
         if main_port is None:
             main_port = 8000 if ssl_context_factory_name == None else 8443
-        self.protocol = 'http'
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.browser_cache = browser_cache
         self.ssl_context_factory_name = ssl_context_factory_name
         logger.debug('config loaded:\n%s', self)
+    
+    @property
+    def protocol(self) -> Literal["http", "https"]:
+        return "http" if self.ssl_context_factory_name is None else "https"
 
     @property
     def static_path_str(self) -> Optional[str]:
@@ -156,19 +159,13 @@ class Config:
         if module.__package__:
             __main__.__package__ = module.__package__
 
-        sys.path.insert(0, str(self.python_path))
-        module = import_module(module_path)
-        # Rewrite the package name, so it will appear the same as running the app.
-        if module.__package__:
-            __main__.__package__ = module.__package__
-
         logger.debug('successfully loaded "%s" from "%s"', module_path, self.python_path)
 
         self.watch_path = self.watch_path or Path(module.__file__ or ".").parent
         return module
 
     def get_app_factory(self, module) -> AppFactory:
-        """Import and return attribute/class from a python module.
+        """Return attribute/class from a python module.
 
         Raises:
             AdevConfigError - If the import failed.
@@ -213,7 +210,6 @@ class Config:
                     self.py_file.name, self.ssl_context_factory_name))  
         ssl_context = attr()
         if isinstance(ssl_context, ssl.SSLContext):
-            self.protocol = 'https'
             return ssl_context
         else:
            raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(

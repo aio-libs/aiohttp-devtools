@@ -32,8 +32,6 @@ def runserver(**config_kwargs: Any) -> RunServer:
     config = Config(**config_kwargs)
     module = config.import_module()
     ssl_context = config.get_ssl_context(module)
-    # config.get_app_factory(module)
-    # config.get_ssl_context_factory(module)
 
     asyncio.run(check_port_open(config.main_port, host=config.bind_address))
 
