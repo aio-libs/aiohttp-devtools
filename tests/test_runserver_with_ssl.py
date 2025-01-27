@@ -1,6 +1,4 @@
 import asyncio
-import json
-from unittest import mock
 
 import aiohttp
 import pytest
@@ -12,7 +10,6 @@ from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
-
 
 from .conftest import forked
 
