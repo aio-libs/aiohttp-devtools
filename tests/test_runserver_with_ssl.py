@@ -40,7 +40,7 @@ async def check_server_running(check_callback, sslcontext):
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
 @pytest.mark.datafiles('tests/test_certs', keep_top_dir = True)
-def test_start_runserver(datafiles, tmpworkdir, smart_caplog):
+def test_start_runserver_ssl(datafiles, tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
 from aiohttp import web
