@@ -36,7 +36,7 @@ async def test_create_app_wrong_name(tmpworkdir):
     mktree(tmpworkdir, SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
     with pytest.raises(AiohttpDevConfigError) as excinfo:
-        module = config.import_module
+        module = config.import_module()
         config.get_app_factory(module)
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
