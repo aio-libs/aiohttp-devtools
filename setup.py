@@ -22,10 +22,11 @@ setup(
         'Environment :: Console',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
@@ -70,5 +71,5 @@ setup(
         'Pygments>=2.2.0',
         "watchfiles>=0.10"
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
 )
