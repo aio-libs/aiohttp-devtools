@@ -21,6 +21,7 @@ async def test_load_invalid_app(tmpworkdir):
     with pytest.raises(AiohttpDevConfigError):
         Config(app_path='invalid')
 
+
 async def check_server_running(check_callback, sslcontext):
     port_open = False
     async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
@@ -37,9 +38,10 @@ async def check_server_running(check_callback, sslcontext):
         await check_callback(session, sslcontext)
     await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
+
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
-@pytest.mark.datafiles('tests/test_certs', keep_top_dir = True)
+@pytest.mark.datafiles('tests/test_certs', keep_top_dir=True)
 def test_start_runserver_ssl(datafiles, tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
         'app.py': """\
@@ -66,7 +68,8 @@ def get_ssl_context():
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    args = runserver(app_path="app.py", static_path="static_dir", bind_address="0.0.0.0", ssl_context_factory_name='get_ssl_context')
+    args = runserver(app_path="app.py", static_path="static_dir",
+                     bind_address="0.0.0.0", ssl_context_factory_name='get_ssl_context')
     aux_app = args["app"]
     aux_port = args["port"]
     runapp_host = args["host"]
@@ -75,7 +78,9 @@ def get_ssl_context():
     assert runapp_host == "0.0.0.0"
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
+
     sslcontext = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+
     async def check_callback(session, sslcontext):
         print(session, sslcontext)
         async with session.get('https://localhost:8443/', ssl=sslcontext) as r:
@@ -102,5 +107,3 @@ def get_ssl_context():
         'adev.server.dft INFO: Starting dev server at https://localhost:8443 ●\n'
     ) in smart_caplog
     loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
-
-

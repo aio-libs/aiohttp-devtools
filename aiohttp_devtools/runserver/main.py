@@ -23,7 +23,6 @@ class RunServer(TypedDict):
     ssl_context: Union[SSLContext, None]
 
 
-
 def runserver(**config_kwargs: Any) -> RunServer:
     """Prepare app ready to run development server.
 

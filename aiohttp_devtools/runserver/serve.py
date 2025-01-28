@@ -122,7 +122,8 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
-        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(config.protocol, config.host, config.main_port, path))
+        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(
+            config.protocol, config.host, config.main_port, path))
 
     if config.static_path is not None:
         static_url = '{}://{}:{}/{}'.format(config.protocol, config.host, config.aux_port, static_path)

@@ -87,13 +87,13 @@ class Config:
 
         self.bind_address = bind_address
         if main_port is None:
-            main_port = 8000 if ssl_context_factory_name == None else 8443
+            main_port = 8000 if ssl_context_factory_name is None else 8443
         self.main_port = main_port
         self.aux_port = aux_port or (main_port + 1)
         self.browser_cache = browser_cache
         self.ssl_context_factory_name = ssl_context_factory_name
         logger.debug('config loaded:\n%s', self)
-    
+
     @property
     def protocol(self) -> Literal["http", "https"]:
         return "http" if self.ssl_context_factory_name is None else "https"
@@ -145,7 +145,7 @@ class Config:
             if not path.is_dir():
                 raise AdevConfigError('{} is not a directory'.format(path))
         return path
-    
+
     def import_module(self) -> ModuleType:
         """Import and return python module.
 
@@ -199,22 +199,22 @@ class Config:
                     self.py_file.name, self.app_factory_name))
 
         return attr  # type: ignore[no-any-return]
-    
+
     def get_ssl_context(self, module: ModuleType) -> Union[SSLContext, None]:
         if self.ssl_context_factory_name is None:
             return None
-        else:      
+        else:
             try:
                 attr = getattr(module, self.ssl_context_factory_name)
             except AttributeError:
                 raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
-                    self.py_file.name, self.ssl_context_factory_name))  
+                    self.py_file.name, self.ssl_context_factory_name))
         ssl_context = attr()
         if isinstance(ssl_context, SSLContext):
             return ssl_context
         else:
-           raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
-                self.ssl_context_factory_name, self.py_file.name)) 
+            raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
+                self.ssl_context_factory_name, self.py_file.name))
 
     async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):
