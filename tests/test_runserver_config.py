@@ -103,8 +103,8 @@ def app_factory(foo):
     config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context')
     module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
-                       match=r"Module 'app.py' does not define a 'get_ssl_context' attribute/class"):
-        await config.get_ssl_context(module)
+                       match="Module 'app.py' does not define a 'get_ssl_context' attribute/class"):
+        config.get_ssl_context(module)
 
 
 @forked
@@ -121,6 +121,5 @@ def get_ssl_context():
     config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context')
     module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
-                       match=r"ssl-context-factory 'get_ssl_context' in \
-                       module 'app.py' didn't return valid SSLContext"):
-        await config.get_ssl_context(module)
+                       match="ssl-context-factory 'get_ssl_context' in module 'app.py' didn't return valid SSLContext"):
+        config.get_ssl_context(module)
