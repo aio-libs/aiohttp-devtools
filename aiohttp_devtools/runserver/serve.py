@@ -32,7 +32,7 @@ try:
 except ImportError:
     static_root_key = None  # type: ignore[assignment]
 
-LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n'
+LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 
 LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
@@ -84,7 +84,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
                     or request.path.startswith("/_debugtoolbar")
                     or "text/html" not in response.content_type):
                 return
-            lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(config.protocol, get_host(request), config.aux_port)
+            lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
             dft_logger.debug("appending live reload snippet '%s' to body", lr_snippet)
             response.body += lr_snippet.encode()
             response.headers[CONTENT_LENGTH] = str(len(response.body))
@@ -105,7 +105,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
         @web.middleware
         async def static_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
-            static_url = '{}://{}:{}/{}'.format(config.protocol, get_host(request), config.aux_port, static_path)
+            static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
             dft_logger.debug('setting app static_root_url to "%s"', static_url)
             _change_static_url(request.app, static_url)
             return await handler(request)
@@ -126,7 +126,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
             config.protocol, config.host, config.main_port, path))
 
     if config.static_path is not None:
-        static_url = '{}://{}:{}/{}'.format(config.protocol, config.host, config.aux_port, static_path)
+        static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         _set_static_url(app, static_url)
 

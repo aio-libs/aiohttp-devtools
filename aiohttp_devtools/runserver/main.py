@@ -32,8 +32,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
     # force a full reload in sub processes so they load an updated version of code, this must be called only once
     set_start_method('spawn')
     config = Config(**config_kwargs)
-    module = config.import_module()
-    ssl_context = config.get_ssl_context(module)
+    config.import_module()
 
     asyncio.run(check_port_open(config.main_port, host=config.bind_address))
 
@@ -51,7 +50,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.cleanup_ctx.append(static_manager.cleanup_ctx)
 
-    url = '{0.protocol}://{0.host}:{0.aux_port}'.format(config)
+    url = 'http://{0.host}:{0.aux_port}'.format(config)
     logger.info('Starting aux server at %s ◆', url)
 
     if config.static_path:
@@ -59,7 +58,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
     return {"app": aux_app, "host": config.bind_address, "port": config.aux_port,
-            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger, "ssl_context": ssl_context}
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger, "ssl_context": None}
 
 
 def serve_static(*, static_path: str, livereload: bool = True, bind_address: str = "localhost", port: int = 8000,

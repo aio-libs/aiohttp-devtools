@@ -16,6 +16,7 @@ from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
+import ssl
 
 
 class WatchTask:
@@ -55,7 +56,9 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session: Optional[ClientSession] = None
         self._runner = None
+        self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH) if config.protocol == 'https' else None
         assert self._config.watch_path
+
         super().__init__(self._config.watch_path)
 
     async def _run(self, live_checks: int = 150) -> None:
@@ -112,7 +115,7 @@ class AppTask(WatchTask):
             for i in range(checks):
                 await asyncio.sleep(0.1)
                 try:
-                    async with self._session.get(url):
+                    async with self._session.get(url, ssl=self.ssl_context):
                         pass
                 except OSError as e:
                     logger.debug('try %d | OSError %d app not running', i, e.errno)
@@ -142,12 +145,12 @@ class AppTask(WatchTask):
         if self._process.is_alive():
             logger.debug('stopping server process...')
             if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
-                url = "http://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
+                url = "{0.protocol}://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
                 logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
                 try:
                     with suppress(ClientConnectionError):
                         async with ClientSession() as session:
-                            async with session.get(url):
+                            async with session.get(url, ssl=self.ssl_context):
                                 pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():
