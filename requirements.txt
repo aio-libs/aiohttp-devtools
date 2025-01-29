@@ -1,6 +1,6 @@
 aiohttp==3.11.11
 aiohttp-jinja2==1.6
-click==8.1.7
+click==8.1.8
 coverage==7.6.10
 devtools==0.12.2
 grablib==0.8
