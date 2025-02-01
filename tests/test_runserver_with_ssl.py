@@ -11,8 +11,6 @@ from aiohttp_devtools.runserver.config import Config
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 
-from .conftest import forked
-
 
 async def test_load_invalid_app(tmpworkdir):
     mktree(tmpworkdir, {
@@ -40,7 +38,6 @@ async def check_server_running(check_callback, sslcontext):
 
 
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
-@forked
 @pytest.mark.datafiles('tests/test_certs', keep_top_dir=True)
 def test_start_runserver_ssl(datafiles, tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {

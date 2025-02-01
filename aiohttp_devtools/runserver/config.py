@@ -108,6 +108,20 @@ class Config:
     def static_path_str(self) -> Optional[str]:
         return str(self.static_path) if self.static_path else None
 
+    @property
+    def client_ssl_context(self) -> Union[SSLContext, None]:
+        client_ssl_context = None
+        if self.protocol == 'https':
+            client_ssl_context = create_default_ssl_context()
+            if self.ssl_rootcert_file_path:
+                try:
+                    client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
+                except FileNotFoundError as e:
+                    raise AdevConfigError('{}: {}'.format(e.strerror, self.ssl_rootcert_file_path))
+                except Exception:
+                    raise AdevConfigError('invalid root cert file: {}'.format(self.ssl_rootcert_file_path))
+        return client_ssl_context
+
     def _find_app_path(self, app_path: str) -> Path:
         # for backwards compatibility try this first
         path = (self.root_path / app_path).resolve()
@@ -221,19 +235,6 @@ class Config:
         else:
             raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
                 self.ssl_context_factory_name, self.py_file.name))
-
-    def get_client_ssl_context(self) -> Union[SSLContext, None]:
-        client_ssl_context = None
-        if self.protocol == 'https':
-            client_ssl_context = create_default_ssl_context()
-            if self.ssl_rootcert_file_path:
-                try:
-                    client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
-                except FileNotFoundError as e:
-                    raise AdevConfigError('{}: {}'.format(e.strerror, self.ssl_rootcert_file_path))
-                except Exception:
-                    raise AdevConfigError('invalid root cert file: {}'.format(self.ssl_rootcert_file_path))
-        return client_ssl_context
 
     async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):

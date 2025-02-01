@@ -56,7 +56,7 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session: Optional[ClientSession] = None
         self._runner = None
-        self._client_ssl_context: Optional[SSLContext] = self._config.get_client_ssl_context()
+        self._client_ssl_context: Union[None, SSLContext] = None
         assert self._config.watch_path
 
         super().__init__(self._config.watch_path)
@@ -65,6 +65,8 @@ class AppTask(WatchTask):
         assert self._app is not None
 
         self._session = ClientSession()
+        self._client_ssl_context = self._config.client_ssl_context
+  
         try:
             self._start_dev_server()
 
