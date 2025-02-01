@@ -66,7 +66,7 @@ class AppTask(WatchTask):
 
         self._session = ClientSession()
         self._client_ssl_context = self._config.client_ssl_context
-  
+
         try:
             self._start_dev_server()
 
