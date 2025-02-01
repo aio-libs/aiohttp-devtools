@@ -76,7 +76,7 @@ def get_ssl_context():
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
-    ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+    ssl_context = ssl.create_default_context()
     ssl_context.load_verify_locations('test_certs/rootCA.pem')
 
     async def check_callback(session, ssl_context):
