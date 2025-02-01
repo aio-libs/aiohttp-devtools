@@ -79,11 +79,12 @@ def get_ssl_context():
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
-    sslcontext = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+    ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+    ssl_context.load_verify_locations('test_certs/rootCA.pem')
 
-    async def check_callback(session, sslcontext):
-        print(session, sslcontext)
-        async with session.get('https://localhost:8443/', ssl=sslcontext) as r:
+    async def check_callback(session, ssl_context):
+        print(session, ssl_context)
+        async with session.get('https://localhost:8443/', ssl=ssl_context) as r:
             assert r.status == 200
             assert r.headers['content-type'].startswith('text/html')
             text = await r.text()
@@ -91,12 +92,12 @@ def get_ssl_context():
             assert '<h1>hello world</h1>' in text
             assert '<script src="http://localhost:8001/livereload.js"></script>' in text
 
-        async with session.get('https://localhost:8443/error', ssl=sslcontext) as r:
+        async with session.get('https://localhost:8443/error', ssl=ssl_context) as r:
             assert r.status == 500
             assert 'raise ValueError()' in (await r.text())
 
     try:
-        loop.run_until_complete(check_server_running(check_callback, sslcontext))
+        loop.run_until_complete(check_server_running(check_callback, ssl_context))
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))

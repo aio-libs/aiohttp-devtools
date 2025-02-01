@@ -7,7 +7,7 @@ from typing import Awaitable, Callable, Optional, Union, Literal
 from types import ModuleType
 
 from aiohttp import web
-from ssl import SSLContext
+from ssl import SSLContext, create_default_context as create_default_ssl_context
 
 import __main__
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
@@ -50,7 +50,8 @@ class Config:
                  main_port: Optional[int] = None,
                  aux_port: Optional[int] = None,
                  browser_cache: bool = False,
-                 ssl_context_factory_name: Optional[str] = None):
+                 ssl_context_factory_name: Optional[str] = None,
+                 ssl_rootcert_file_path: Optional[str] = None):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
@@ -96,6 +97,7 @@ class Config:
         self.aux_port = aux_port
         self.browser_cache = browser_cache
         self.ssl_context_factory_name = ssl_context_factory_name
+        self.ssl_rootcert_file_path = ssl_rootcert_file_path
         logger.debug('config loaded:\n%s', self)
 
     @property
@@ -219,6 +221,19 @@ class Config:
         else:
             raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
                 self.ssl_context_factory_name, self.py_file.name))
+
+    def get_client_ssl_context(self) -> Union[SSLContext, None]:
+        client_ssl_context = None
+        if self.protocol == 'https':
+            client_ssl_context = create_default_ssl_context()
+            if self.ssl_rootcert_file_path:
+                try:
+                    client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
+                except FileNotFoundError as e:
+                    raise AdevConfigError('{}: {}'.format(e.strerror, self.ssl_rootcert_file_path))
+                except Exception:
+                    raise AdevConfigError('invalid root cert file: {}'.format(self.ssl_rootcert_file_path))
+        return client_ssl_context
 
     async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):

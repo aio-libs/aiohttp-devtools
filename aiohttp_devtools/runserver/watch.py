@@ -16,7 +16,7 @@ from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
-import ssl
+from ssl import SSLContext
 
 
 class WatchTask:
@@ -56,7 +56,7 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session: Optional[ClientSession] = None
         self._runner = None
-        self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH) if config.protocol == 'https' else None
+        self._client_ssl_context: Optional[SSLContext] = self._config.get_client_ssl_context()
         assert self._config.watch_path
 
         super().__init__(self._config.watch_path)
@@ -115,7 +115,7 @@ class AppTask(WatchTask):
             for i in range(checks):
                 await asyncio.sleep(0.1)
                 try:
-                    async with self._session.get(url, ssl=self.ssl_context):
+                    async with self._session.get(url, ssl=self._client_ssl_context):
                         pass
                 except OSError as e:
                     logger.debug('try %d | OSError %d app not running', i, e.errno)
@@ -150,7 +150,7 @@ class AppTask(WatchTask):
                 try:
                     with suppress(ClientConnectionError):
                         async with ClientSession() as session:
-                            async with session.get(url, ssl=self.ssl_context):
+                            async with session.get(url, ssl=self._client_ssl_context):
                                 pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():
