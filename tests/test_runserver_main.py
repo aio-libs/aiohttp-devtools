@@ -16,7 +16,7 @@ from aiohttp_devtools.runserver.serve import (
 from aiohttp_devtools.runserver.watch import AppTask
 import ssl
 
-from .conftest import SIMPLE_APP, forked, linux_forked  
+from .conftest import SIMPLE_APP, forked, linux_forked
 
 
 async def check_server_running(check_callback):
