@@ -12,7 +12,7 @@ if sys.platform == 'linux':
     linux_forked = pytest.mark.forked
 else:
     def linux_forked(func):
-        return func    
+        return func
 
 SIMPLE_APP = {
     'app.py': """\

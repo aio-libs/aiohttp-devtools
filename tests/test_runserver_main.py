@@ -311,12 +311,15 @@ async def test_websocket_reload(aux_cli):
         await ws.close()
 
 
-async def check_ssl_server_running(check_callback, sslcontext):
+async def check_ssl_server_running(check_callback):
     port_open = False
+    ssl_context = ssl.create_default_context()
+    ssl_context.load_verify_locations('test_certs/rootCA.pem')
+
     async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
         for i in range(50):  # pragma: no branch
             try:
-                async with session.get('https://localhost:8443/', ssl=sslcontext):
+                async with session.get('https://localhost:8443/', ssl=ssl_context):
                     pass
             except OSError:
                 await asyncio.sleep(0.1)
@@ -324,7 +327,7 @@ async def check_ssl_server_running(check_callback, sslcontext):
                 port_open = True
                 break
         assert port_open
-        await check_callback(session, sslcontext)
+        await check_callback(session, ssl_context)
     await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
@@ -368,9 +371,6 @@ def get_ssl_context():
     for startup in aux_app.on_startup:
         loop.run_until_complete(startup(aux_app))
 
-    ssl_context = ssl.create_default_context()
-    ssl_context.load_verify_locations('test_certs/rootCA.pem')
-
     async def check_callback(session, ssl_context):
         print(session, ssl_context)
         async with session.get('https://localhost:8443/', ssl=ssl_context) as r:
@@ -386,7 +386,7 @@ def get_ssl_context():
             assert 'raise ValueError()' in (await r.text())
 
     try:
-        loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
+        loop.run_until_complete(check_ssl_server_running(check_callback))
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
