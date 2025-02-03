@@ -8,6 +8,12 @@ if sys.platform == "win32":
 else:
     forked = pytest.mark.forked
 
+if sys.platform == 'linux':
+    linux_forked = pytest.mark.forked
+else:
+    def linux_forked(func):
+        return func    
+
 SIMPLE_APP = {
     'app.py': """\
 from aiohttp import web

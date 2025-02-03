@@ -16,7 +16,7 @@ from aiohttp_devtools.runserver.serve import (
 from aiohttp_devtools.runserver.watch import AppTask
 import ssl
 
-from .conftest import SIMPLE_APP, forked
+from .conftest import SIMPLE_APP, forked, linux_forked  
 
 
 async def check_server_running(check_callback):
@@ -329,6 +329,7 @@ async def check_ssl_server_running(check_callback, sslcontext):
 
 
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
+@linux_forked
 @pytest.mark.datafiles('tests/test_certs', keep_top_dir=True)
 def test_start_runserver_ssl(datafiles, tmpworkdir, smart_caplog):
     mktree(tmpworkdir, {
