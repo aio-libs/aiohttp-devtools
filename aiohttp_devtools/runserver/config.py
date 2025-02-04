@@ -28,8 +28,6 @@ APP_FACTORY_NAMES = [
     'create_app',
 ]
 
-DEFAULT_PORT = 8000
-
 INFER_HOST = '<inference>'
 
 
@@ -47,7 +45,7 @@ class Config:
                  app_factory_name: Optional[str] = None,
                  host: str = INFER_HOST,
                  bind_address: str = "localhost",
-                 main_port: Optional[int] = None,
+                 main_port: int = 8000,
                  aux_port: Optional[int] = None,
                  browser_cache: bool = False,
                  ssl_context_factory_name: Optional[str] = None,
@@ -89,12 +87,8 @@ class Config:
             self.host = bind_address
 
         self.bind_address = bind_address
-        if main_port is None:
-            main_port = DEFAULT_PORT if ssl_context_factory_name is None else DEFAULT_PORT + 443
         self.main_port = main_port
-        if aux_port is None:
-            aux_port = main_port + 1 if ssl_context_factory_name is None else DEFAULT_PORT + 1
-        self.aux_port = aux_port
+        self.aux_port = aux_port or (main_port + 1)
         self.browser_cache = browser_cache
         self.ssl_context_factory_name = ssl_context_factory_name
         self.ssl_rootcert_file_path = ssl_rootcert_file_path
