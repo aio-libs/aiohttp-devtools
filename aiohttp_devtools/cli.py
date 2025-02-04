@@ -64,8 +64,10 @@ app_factory_help = ('name of the app factory to create an aiohttp.web.Applicatio
                     'or just an instance of aiohttp.Application. env variable AIO_APP_FACTORY')
 port_help = 'Port to serve app from, default 8000. env variable: AIO_PORT'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default port + 1. env variable: AIO_AUX_PORT'
-ssl_context_factory_help = 'name of the ssl context factory to create ssl.SSLContext with'
-ssl_rootcert_file_help = 'path to a rootCA certificate file for self-signed cert chain (if needed)'
+ssl_context_factory_help = ('name of the ssl context factory to create ssl.SSLContext with. '
+                            'env variable: AIO_SSL_CONTEXT_FACTORY')
+ssl_rootcert_file_help = ('path to a rootCA certificate file for self-signed cert chain (if needed). '
+                          'env variable: AIO_SSL_ROOTCERT')
 
 
 # defaults are all None here so default settings are defined in one place: DEV_DICT validation
@@ -85,8 +87,10 @@ ssl_rootcert_file_help = 'path to a rootCA certificate file for self-signed cert
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.option("--browser-cache/--no-browser-cache", envvar="AIO_BROWSER_CACHE", default=None,
               help=browser_cache_help)
-@click.option('--ssl-context-factory', 'ssl_context_factory_name', default=None, help=ssl_context_factory_help)
-@click.option('--ssl-rootcert', 'ssl_rootcert_file_path', default=None, help=ssl_rootcert_file_help)
+@click.option('--ssl-context-factory', 'ssl_context_factory_name', envvar="AIO_SSL_CONTEXT_FACTORY", default=None,
+              help=ssl_context_factory_help)
+@click.option('--ssl-rootcert', 'ssl_rootcert_file_path', envvar="AIO_SSL_ROOTCERT", default=None,
+              help=ssl_rootcert_file_help)
 @click.argument('project_args', nargs=-1)
 def runserver(**config: Any) -> None:
     """
