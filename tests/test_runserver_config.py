@@ -95,12 +95,12 @@ def app_factory(foo):
 @forked
 async def test_no_ssl_context_factory(tmpworkdir):
     mktree(tmpworkdir, {
-        'app.py': """\
+        "app.py": """\
 def app_factory(foo):
     return web.Application()
 """
     })
-    config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context')
+    config = Config(app_path="app.py", ssl_context_factory_name="get_ssl_context")
     module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
                        match="Module 'app.py' does not define a 'get_ssl_context' attribute/class"):
@@ -110,7 +110,7 @@ def app_factory(foo):
 @forked
 async def test_invalid_ssl_context(tmpworkdir):
     mktree(tmpworkdir, {
-        'app.py': """\
+        "app.py": """\
 def app_factory(foo):
     return web.Application()
 
@@ -118,7 +118,7 @@ def get_ssl_context():
     return 'invalid ssl_context'
 """
     })
-    config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context')
+    config = Config(app_path="app.py", ssl_context_factory_name="get_ssl_context")
     module = config.import_module()
     with pytest.raises(AiohttpDevConfigError,
                        match="ssl-context-factory 'get_ssl_context' in module 'app.py' didn't return valid SSLContext"):
@@ -127,12 +127,12 @@ def get_ssl_context():
 
 async def test_rootcert_file_notfound(tmpworkdir):
     mktree(tmpworkdir, {
-        'app.py': """\
+        "app.py": """\
 def app_factory(foo):
     return web.Application()
 """
     })
-    config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context', ssl_rootcert_file_path='rootCA.pem')
+    config = Config(app_path="app.py", ssl_context_factory_name="get_ssl_context", ssl_rootcert_file_path="rootCA.pem")
     with pytest.raises(AiohttpDevConfigError,
                        match="No such file or directory: rootCA.pem"):
         config.client_ssl_context
@@ -140,13 +140,13 @@ def app_factory(foo):
 
 async def test_invalid_rootcert_file(tmpworkdir):
     mktree(tmpworkdir, {
-        'app.py': """\
+        "app.py": """\
 def app_factory(foo):
     return web.Application()
 """,
-        'rootCA.pem': 'invalid X509 certificate'
+        "rootCA.pem": "invalid X509 certificate"
     })
-    config = Config(app_path='app.py', ssl_context_factory_name='get_ssl_context', ssl_rootcert_file_path='rootCA.pem')
+    config = Config(app_path="app.py", ssl_context_factory_name="get_ssl_context", ssl_rootcert_file_path="rootCA.pem")
     with pytest.raises(AiohttpDevConfigError,
                        match="invalid root cert file: rootCA.pem"):
         config.client_ssl_context
