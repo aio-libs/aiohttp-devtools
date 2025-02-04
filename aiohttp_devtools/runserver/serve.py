@@ -7,7 +7,7 @@ import time
 import warnings
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple
+from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -24,6 +24,8 @@ from ..logs import setup_logging
 from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
+
+from ssl import SSLContext
 
 try:
     from aiohttp_jinja2 import static_root_key
@@ -120,7 +122,8 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
-        dft_logger.debug("Created shutdown endpoint at http://{}:{}{}".format(config.host, config.main_port, path))
+        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(
+            config.protocol, config.host, config.main_port, path))
 
     if config.static_path is not None:
         static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
@@ -164,12 +167,14 @@ def set_tty(tty_path: Optional[str]) -> Iterator[None]:
 def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
-        app_factory = config.import_app_factory()
+        module = config.import_module()
+        app_factory = config.get_app_factory(module)
+        ssl_context = config.get_ssl_context(module)
         if sys.version_info >= (3, 11):
             with asyncio.Runner() as runner:
                 app_runner = runner.run(create_main_app(config, app_factory))
                 try:
-                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port))
+                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
                     runner.get_loop().run_forever()
                 except KeyboardInterrupt:
                     pass
@@ -180,7 +185,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             loop = asyncio.new_event_loop()
             runner = loop.run_until_complete(create_main_app(config, app_factory))
             try:
-                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port))
+                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port, ssl_context))
                 loop.run_forever()
             except KeyboardInterrupt:  # pragma: no cover
                 pass
@@ -197,9 +202,9 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, host: str, port: int) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: Union[SSLContext, None]) -> None:
     await runner.setup()
-    site = web.TCPSite(runner, host=host, port=port)
+    site = web.TCPSite(runner, host=host, port=port, ssl_context=ssl_context)
     await site.start()
 
 

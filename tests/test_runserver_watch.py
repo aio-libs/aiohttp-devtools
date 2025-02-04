@@ -77,6 +77,9 @@ async def test_python_no_server(mocker):
 
     config = MagicMock()
     config.main_port = 8000
+    config.protocol = "http"
+    config.client_ssl_context = None
+
     app_task = AppTask(config)
     start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True)
     stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
@@ -109,6 +112,8 @@ async def test_reload_server_running(aiohttp_client, mocker):
     config = MagicMock()
     config.host = "localhost"
     config.main_port = cli.server.port
+    config.protocol = "http"
+    config.client_ssl_context = None
 
     app_task = AppTask(config)
     app_task._app = app

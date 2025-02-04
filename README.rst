@@ -48,6 +48,11 @@ All ``runserver`` arguments can be set via environment variables.
 * **livereload** will reload resources in the browser as your code changes without having to hit refresh, see `livereload`_ for more details.
 * **static files** are served separately from your main app (generally on ``8001`` while your app is on ``8000``) so you don't have to contaminate your application to serve static files you only need locally.
 
+The ``--ssl-context-factory`` option can be used to define method from the app path file, which returns ssl.SSLContext
+for ssl support. 
+If You are going to use self-signed certificate for your dev server, you should install proper rootCA certificate to your system.
+Or you can use ``--ssl-rootcert`` option. If proper rootCA certificate is not installed or specified by option, livereload feature will not work.
+
 For more options see ``adev runserver --help``.
 
 serve

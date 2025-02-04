@@ -1,7 +1,7 @@
 import asyncio
 import os
 from multiprocessing import set_start_method
-from typing import Any, Type, TypedDict
+from typing import Any, Type, TypedDict, Union
 
 from aiohttp.abc import AbstractAccessLogger
 from aiohttp.web import Application
@@ -11,6 +11,7 @@ from .config import Config
 from .log_handlers import AuxAccessLogger
 from .serve import check_port_open, create_auxiliary_app
 from .watch import AppTask, LiveReloadTask
+from ssl import SSLContext
 
 
 class RunServer(TypedDict):
@@ -19,6 +20,7 @@ class RunServer(TypedDict):
     port: int
     shutdown_timeout: float
     access_log_class: Type[AbstractAccessLogger]
+    ssl_context: Union[SSLContext, None]
 
 
 def runserver(**config_kwargs: Any) -> RunServer:
@@ -29,9 +31,8 @@ def runserver(**config_kwargs: Any) -> RunServer:
     """
     # force a full reload in sub processes so they load an updated version of code, this must be called only once
     set_start_method('spawn')
-
     config = Config(**config_kwargs)
-    config.import_app_factory()
+    config.import_module()
 
     asyncio.run(check_port_open(config.main_port, host=config.bind_address))
 
@@ -57,7 +58,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
         logger.info('serving static files from ./%s/ at %s%s', rel_path, url, config.static_url)
 
     return {"app": aux_app, "host": config.bind_address, "port": config.aux_port,
-            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger, "ssl_context": None}
 
 
 def serve_static(*, static_path: str, livereload: bool = True, bind_address: str = "localhost", port: int = 8000,
@@ -75,4 +76,4 @@ def serve_static(*, static_path: str, livereload: bool = True, bind_address: str
     livereload_status = 'ON' if livereload else 'OFF'
     logger.info('Serving "%s" at http://%s:%d, livereload %s', static_path, bind_address, port, livereload_status)
     return {"app": app, "host": bind_address, "port": port,
-            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger}
+            "shutdown_timeout": 0.01, "access_log_class": AuxAccessLogger, "ssl_context": None}
