@@ -41,7 +41,9 @@ from the app path file, if not supplied some default method names are tried
 (namely `app`, `app_factory`, `get_app` and `create_app`, which can be
 variables, functions, or coroutines).
 The ``--ssl-context-factory`` option can be used to define method from the app path file, which returns ssl.SSLContext
-for ssl support.
+for ssl support. 
+If You are going to use self-signed certificate for your dev server, you should install proper rootCA certificate to your system.
+Or you can use ``--ssl-rootcert`` option. If proper rootCA certificate is not installed or specified by option, livereload feature will not work.
 
 All ``runserver`` arguments can be set via environment variables.
 
