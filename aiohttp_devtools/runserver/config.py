@@ -3,7 +3,7 @@ import re
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Awaitable, Callable, Optional, Union, Literal
+from typing import Awaitable, Callable, Literal, Optional, Union
 from types import ModuleType
 
 from aiohttp import web
@@ -105,15 +105,15 @@ class Config:
     @property
     def client_ssl_context(self) -> Union[SSLContext, None]:
         client_ssl_context = None
-        if self.protocol == 'https':
+        if self.protocol == "https":
             client_ssl_context = create_default_ssl_context()
             if self.ssl_rootcert_file_path:
                 try:
                     client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
                 except FileNotFoundError:
-                    raise AdevConfigError('No such file or directory: {}'.format(self.ssl_rootcert_file_path))
+                    raise AdevConfigError("No such file or directory: {}".format(self.ssl_rootcert_file_path))
                 except SSLError:
-                    raise AdevConfigError('invalid root cert file: {}'.format(self.ssl_rootcert_file_path))
+                    raise AdevConfigError("invalid root cert file: {}".format(self.ssl_rootcert_file_path))
         return client_ssl_context
 
     def _find_app_path(self, app_path: str) -> Path:
