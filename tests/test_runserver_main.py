@@ -319,7 +319,7 @@ async def check_ssl_server_running(check_callback):
     async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
         for i in range(50):  # pragma: no branch
             try:
-                async with session.get('https://localhost:8443/', ssl=ssl_context):
+                async with session.get('https://localhost:8000/', ssl=ssl_context):
                     pass
             except OSError:
                 await asyncio.sleep(0.1)
@@ -373,7 +373,7 @@ def get_ssl_context():
 
     async def check_callback(session, ssl_context):
         print(session, ssl_context)
-        async with session.get('https://localhost:8443/', ssl=ssl_context) as r:
+        async with session.get('https://localhost:8000/', ssl=ssl_context) as r:
             assert r.status == 200
             assert r.headers['content-type'].startswith('text/html')
             text = await r.text()
@@ -381,7 +381,7 @@ def get_ssl_context():
             assert '<h1>hello world</h1>' in text
             assert '<script src="http://localhost:8001/livereload.js"></script>' in text
 
-        async with session.get('https://localhost:8443/error', ssl=ssl_context) as r:
+        async with session.get('https://localhost:8000/error', ssl=ssl_context) as r:
             assert r.status == 500
             assert 'raise ValueError()' in (await r.text())
 
@@ -394,6 +394,6 @@ def get_ssl_context():
     assert (
         'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
         'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
-        'adev.server.dft INFO: Starting dev server at https://localhost:8443 ●\n'
+        'adev.server.dft INFO: Starting dev server at https://localhost:8000 ●\n'
     ) in smart_caplog
     loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
