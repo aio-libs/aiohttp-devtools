@@ -128,7 +128,7 @@ class AppTask(WatchTask):
 
     def _start_dev_server(self) -> None:
         act = 'Start' if self._reloads == 0 else 'Restart'
-        logger.info('%sing dev server at %s://%s:%s ●',
+        logger.info("%sing dev server at %s://%s:%s ●",
                     act, self._config.protocol, self._config.host, self._config.main_port)
 
         try:
