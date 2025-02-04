@@ -7,7 +7,7 @@ from typing import Awaitable, Callable, Optional, Union, Literal
 from types import ModuleType
 
 from aiohttp import web
-from ssl import SSLContext, create_default_context as create_default_ssl_context
+from ssl import SSLContext, SSLError, create_default_context as create_default_ssl_context
 
 import __main__
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
@@ -116,9 +116,9 @@ class Config:
             if self.ssl_rootcert_file_path:
                 try:
                     client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
-                except FileNotFoundError as e:
-                    raise AdevConfigError('{}: {}'.format(e.strerror, self.ssl_rootcert_file_path))
-                except Exception:
+                except FileNotFoundError:
+                    raise AdevConfigError('No such file or directory: {}'.format(self.ssl_rootcert_file_path))
+                except SSLError:
                     raise AdevConfigError('invalid root cert file: {}'.format(self.ssl_rootcert_file_path))
         return client_ssl_context
 
