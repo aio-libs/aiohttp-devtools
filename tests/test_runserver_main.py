@@ -379,7 +379,7 @@ def get_ssl_context():
             text = await r.text()
             print(text)
             assert "<h1>hello world</h1>" in text
-            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
+            assert '<script src="https://localhost:8001/livereload.js"></script>' in text
 
         async with session.get("https://localhost:8000/error", ssl=ssl_context) as r:
             assert r.status == 500
@@ -392,8 +392,8 @@ def get_ssl_context():
             loop.run_until_complete(shutdown(aux_app))
         loop.run_until_complete(aux_app.cleanup())
     assert (
-        "adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n"
-        "adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n"
+        "adev.server.dft INFO: Starting aux server at https://localhost:8001 ◆\n"
+        "adev.server.dft INFO: serving static files from ./static_dir/ at https://localhost:8001/static/\n"
         "adev.server.dft INFO: Starting dev server at https://localhost:8000 ●\n"
     ) in smart_caplog
     loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
