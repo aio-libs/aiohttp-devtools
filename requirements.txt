@@ -16,3 +16,7 @@ pytest-timeout==2.2.0
 pytest-toolbox==0.4
 pytest-datafiles==3.0.0
 watchfiles==1.0.4
+
+# Temp fix
+anyio==3.0.0
+aiosignal==1.1.2
