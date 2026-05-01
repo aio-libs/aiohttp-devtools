@@ -73,6 +73,8 @@ class AppTask(WatchTask):
             static_path = self._app[STATIC_PATH]
 
             def is_static(changes: Iterable[Tuple[object, str]]) -> bool:
+                if not static_path:
+                    return False
                 return all(str(c[1]).startswith(static_path) for c in changes)
 
             async for changes in self._awatch:
