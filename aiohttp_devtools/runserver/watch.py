@@ -62,7 +62,7 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session: Optional[ClientSession] = None
         self._runner = None
-        self._client_ssl_context: Union[None, SSLContext] = None
+        self._client_ssl_context: Union[bool, SSLContext] = False
         assert self._config.watch_path
 
         super().__init__(self._config.watch_path)
