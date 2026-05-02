@@ -16,6 +16,13 @@ from ..exceptions import AiohttpDevException
 from ..logs import rs_dft_logger as logger
 from .config import Config
 from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
+from ssl import SSLContext
+
+
+def is_static(static_path: str, changes: Iterable[Tuple[object, str]]) -> bool:
+    if not static_path:
+        return False
+    return all(str(c[1]).startswith(static_path) for c in changes)
 
 
 class WatchTask:
@@ -55,20 +62,19 @@ class AppTask(WatchTask):
         self._reloads = 0
         self._session: Optional[ClientSession] = None
         self._runner = None
+        self._client_ssl_context: Union[None, SSLContext] = None
         assert self._config.watch_path
+
         super().__init__(self._config.watch_path)
 
     async def _run(self, live_checks: int = 150) -> None:
         assert self._app is not None
 
         self._session = ClientSession()
+        self._client_ssl_context = self._config.client_ssl_context
+
         try:
             self._start_dev_server()
-
-            static_path = self._app[STATIC_PATH]
-
-            def is_static(changes: Iterable[Tuple[object, str]]) -> bool:
-                return all(str(c[1]).startswith(static_path) for c in changes)
 
             async for changes in self._awatch:
                 self._reloads += 1
@@ -92,7 +98,7 @@ class AppTask(WatchTask):
                     # Pause to allow the browser to reload and reconnect. This avoids
                     # multiple changes causing the app to restart before WS reconnection.
                     await asyncio.sleep(1)
-                elif len(changes) == 1 and is_static(changes):
+                elif len(changes) == 1 and is_static(self._app[STATIC_PATH], changes):
                     # a single (static) file has changed, reload a single file.
                     await src_reload(self._app, changes.pop()[1])
                 else:
@@ -107,12 +113,12 @@ class AppTask(WatchTask):
         assert self._app is not None and self._session is not None
 
         if self._app[WS]:
-            url = "http://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
+            url = "{0.protocol}://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
                 await asyncio.sleep(0.1)
                 try:
-                    async with self._session.get(url):
+                    async with self._session.get(url, ssl=self._client_ssl_context):
                         pass
                 except OSError as e:
                     logger.debug('try %d | OSError %d app not running', i, e.errno)
@@ -123,7 +129,8 @@ class AppTask(WatchTask):
 
     def _start_dev_server(self) -> None:
         act = 'Start' if self._reloads == 0 else 'Restart'
-        logger.info('%sing dev server at http://%s:%s ●', act, self._config.host, self._config.main_port)
+        logger.info("%sing dev server at %s://%s:%s ●",
+                    act, self._config.protocol, self._config.host, self._config.main_port)
 
         try:
             tty_path = os.ttyname(sys.stdin.fileno())
@@ -141,12 +148,12 @@ class AppTask(WatchTask):
         if self._process.is_alive():
             logger.debug('stopping server process...')
             if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
-                url = "http://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
+                url = "{0.protocol}://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
                 logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
                 try:
                     with suppress(ClientConnectionError):
                         async with ClientSession() as session:
-                            async with session.get(url):
+                            async with session.get(url, ssl=self._client_ssl_context):
                                 pass
                 except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
                     if self._process.is_alive():

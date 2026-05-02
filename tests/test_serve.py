@@ -62,7 +62,7 @@ async def test_html_file_livereload(aiohttp_client, tmpworkdir):
     assert r.status == 200
     assert r.headers['content-type'] == 'application/javascript'
     text = await r.text()
-    assert text.startswith('(function e(t,n,r){')
+    assert text.startswith('(function(){function r(e,n,t)')
 
 
 async def test_serve_index(aiohttp_client, tmpworkdir):
