@@ -18,13 +18,13 @@ pytest-datafiles==3.0.0
 watchfiles==1.0.4
 
 # Temp fix
+aiohappyeyeballs==2.4.6
 anyio==4.8.0
 aiosignal==1.3.2
 executing==2.2.0
 exceptiongroup==1.2.2
 pluggy==1.5.0
 
-#aiohappyeyeballs   2.6.1
 #async-timeout      5.0.1
 #attrs              26.1.0
 #certifi            2026.4.22
