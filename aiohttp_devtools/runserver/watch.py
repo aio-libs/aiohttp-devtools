@@ -19,6 +19,12 @@ from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
 from ssl import SSLContext
 
 
+def is_static(static_path: str, changes: Iterable[Tuple[object, str]]) -> bool:
+    if not static_path:
+        return False
+    return all(str(c[1]).startswith(static_path) for c in changes)
+
+
 class WatchTask:
     _app: web.Application
     _task: "asyncio.Task[None]"
@@ -70,13 +76,6 @@ class AppTask(WatchTask):
         try:
             self._start_dev_server()
 
-            static_path = self._app[STATIC_PATH]
-
-            def is_static(changes: Iterable[Tuple[object, str]]) -> bool:
-                if not static_path:
-                    return False
-                return all(str(c[1]).startswith(static_path) for c in changes)
-
             async for changes in self._awatch:
                 self._reloads += 1
                 logger.debug("file changes: %s", changes)
@@ -99,7 +98,7 @@ class AppTask(WatchTask):
                     # Pause to allow the browser to reload and reconnect. This avoids
                     # multiple changes causing the app to restart before WS reconnection.
                     await asyncio.sleep(1)
-                elif len(changes) == 1 and is_static(changes):
+                elif len(changes) == 1 and is_static(self._app[STATIC_PATH], changes):
                     # a single (static) file has changed, reload a single file.
                     await src_reload(self._app, changes.pop()[1])
                 else:
