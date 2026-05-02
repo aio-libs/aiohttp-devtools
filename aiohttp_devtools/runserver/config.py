@@ -103,8 +103,8 @@ class Config:
         return str(self.static_path) if self.static_path else None
 
     @property
-    def client_ssl_context(self) -> Union[SSLContext, None]:
-        client_ssl_context = None
+    def client_ssl_context(self) -> Union[SSLContext, bool]:
+        client_ssl_context: Union[SSLContext, bool] = True
         if self.protocol == "https":
             client_ssl_context = create_default_ssl_context()
             if self.ssl_rootcert_file_path:
