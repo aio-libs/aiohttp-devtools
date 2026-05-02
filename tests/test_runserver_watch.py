@@ -53,6 +53,27 @@ async def test_single_file_change(mocker):
     await app_task._session.close()
 
 
+async def test_single_file_change_no_static_path(mocker):
+    mocked_awatch = mocker.patch("aiohttp_devtools.runserver.watch.awatch", autospec=True, spec_set=True)
+    mocked_awatch.side_effect = create_awatch_mock({("x", "/path/to/file")})
+    mock_src_reload = mocker.patch("aiohttp_devtools.runserver.watch.src_reload", autospec=True, spec_set=True)
+
+    app_task = AppTask(MagicMock())
+    start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True, spec_set=True)
+    mocker.patch.object(app_task, "_stop_dev_server", autospec=True, spec_set=True)
+
+    app = mocker.create_autospec(Application, spec_set=True)
+    d = {STATIC_PATH: ""}
+    app.__getitem__.side_effect = d.__getitem__
+    await app_task.start(app)
+    assert app_task._task is not None
+    await app_task._task
+    mock_src_reload.assert_called_once_with(app)
+    assert start_mock.call_count == 1
+    assert app_task._session is not None
+    await app_task._session.close()
+
+
 async def test_multiple_file_change(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
