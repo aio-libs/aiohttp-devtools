@@ -20,3 +20,4 @@ watchfiles==1.0.4
 # Temp fix
 anyio==3.0.0
 aiosignal==1.1.2
+executing==1.1.1
