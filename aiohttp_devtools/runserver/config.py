@@ -104,7 +104,7 @@ class Config:
 
     @property
     def client_ssl_context(self) -> Union[SSLContext, bool]:
-        client_ssl_context = True
+        client_ssl_context: Union[SSLContext, bool] = True
         if self.protocol == "https":
             client_ssl_context = create_default_ssl_context()
             if self.ssl_rootcert_file_path:
