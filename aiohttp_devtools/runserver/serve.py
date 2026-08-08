@@ -68,7 +68,6 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
     * modify responses to add the livereload snippet
     * set ``static_root_url`` on the app (for use with aiohttp-jinja2)
     """
-    app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
 
     def get_host(request: web.Request) -> str:
