@@ -14,7 +14,6 @@ pytest-forked==1.7.5
 pytest-mock==3.14.0
 pytest-sugar==1.0.0
 pytest-timeout==2.2.0
-pytest-toolbox==0.4
 watchfiles==1.0.4
 
 # Temp fix
