@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp.web import Application, AppKey, Request, Response
 from aiohttp_jinja2 import static_root_key
-from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevException
 from aiohttp_devtools.runserver.config import Config
@@ -16,7 +15,7 @@ from aiohttp_devtools.runserver.serve import (
     LAST_RELOAD, STATIC_PATH, STATIC_URL, WS, check_port_open, cleanup_aux_app,
     modify_main_app, src_reload)
 
-from .conftest import SIMPLE_APP, create_future
+from .conftest import SIMPLE_APP, create_future, mktree
 
 
 async def test_check_port_open(unused_tcp_port_factory):

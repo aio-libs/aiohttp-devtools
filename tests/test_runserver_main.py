@@ -6,7 +6,6 @@ from unittest import mock
 import aiohttp
 import pytest
 from aiohttp import ClientTimeout
-from pytest_toolbox import mktree
 
 from multiprocessing import set_start_method
 
@@ -16,7 +15,7 @@ from aiohttp_devtools.runserver.serve import (
     WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
-from .conftest import SIMPLE_APP, forked, linux_forked
+from .conftest import SIMPLE_APP, forked, linux_forked, mktree
 
 
 async def check_server_running(check_callback):
