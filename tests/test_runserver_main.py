@@ -87,7 +87,8 @@ def create_app():
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
         loop.run_until_complete(aux_app.cleanup())
-    assert caplog.record_tuples == [
+    # Stopping the server afterwards may log additional warnings.
+    assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at http://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at http://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at http://localhost:8000 ●"),
@@ -395,7 +396,8 @@ def get_ssl_context():
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
         loop.run_until_complete(aux_app.cleanup())
-    assert caplog.record_tuples == [
+    # Stopping the server afterwards may log additional warnings.
+    assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at https://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at https://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at https://localhost:8000 ●"),
