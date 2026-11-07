@@ -291,8 +291,10 @@ async def test_websocket_bad(aux_cli, caplog):
         await ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_bytes(b'this is bytes')
-    assert [msg for _, level, msg in caplog.record_tuples if level == logging.ERROR] == [
-        "JSON decode error: Expecting value: line 1 column 1 (char 0)",
+    errors = [msg for _, level, msg in caplog.record_tuples if level == logging.ERROR]
+    # The JSON error details differ between Python implementations.
+    assert errors[0].startswith("JSON decode error: ")
+    assert errors[1:] == [
         'live reload protocol 7 not supported by client {"command": "hello", "protocols": ["not official-7"]}',
         'Unknown ws message {"command": "boom", "url": "foobar", "plugins": "bang"}',
         "unknown websocket message type binary, data: b'this is bytes'",
