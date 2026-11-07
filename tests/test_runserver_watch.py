@@ -170,7 +170,7 @@ async def test_livereload_task_multiple(mocker):
     mock_src_reload.assert_called_once_with(app)
 
 
-async def test_stop_process_dead(smart_caplog, mocker):
+async def test_stop_process_dead(caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocker.patch('asyncio.Event')
@@ -179,7 +179,7 @@ async def test_stop_process_dead(smart_caplog, mocker):
     app_task._process.is_alive = MagicMock(return_value=False)
     app_task._process.exitcode = 123
     await app_task._stop_dev_server()
-    assert 'server process already dead, exit code: 123' in smart_caplog
+    assert 'server process already dead, exit code: 123' in caplog.messages
     assert mock_kill.called is False
 
 

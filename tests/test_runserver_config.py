@@ -1,6 +1,5 @@
 import pytest
 from aiohttp import web
-from pytest_toolbox import mktree
 
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
@@ -8,13 +7,13 @@ from aiohttp_devtools.runserver.config import Config
 from .conftest import SIMPLE_APP, forked
 
 
-async def test_load_simple_app(tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
+async def test_load_simple_app(mktree):
+    mktree(SIMPLE_APP)
     Config(app_path='app.py')
 
 
-def test_infer_host(tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
+def test_infer_host(mktree):
+    mktree(SIMPLE_APP)
     bind_config = Config(app_path="app.py", bind_address="192.168.1.1")
     assert bind_config.infer_host is True
     assert bind_config.host == "192.168.1.1"
@@ -23,8 +22,8 @@ def test_infer_host(tmpworkdir):
     assert bind_any.host == "localhost"
 
 
-def test_host_override_addr(tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
+def test_host_override_addr(mktree):
+    mktree(SIMPLE_APP)
     config = Config(app_path="app.py", host="foobar.com", bind_address="192.168.1.1")
     assert config.infer_host is False
     assert config.host == "foobar.com"
@@ -32,8 +31,8 @@ def test_host_override_addr(tmpworkdir):
 
 
 @forked
-async def test_create_app_wrong_name(tmpworkdir):
-    mktree(tmpworkdir, SIMPLE_APP)
+async def test_create_app_wrong_name(mktree):
+    mktree(SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
     with pytest.raises(AiohttpDevConfigError) as excinfo:
         module = config.import_module()
@@ -42,8 +41,8 @@ async def test_create_app_wrong_name(tmpworkdir):
 
 
 @forked
-async def test_no_loop_coroutine(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_no_loop_coroutine(mktree):
+    mktree({
         'app.py': """\
 from aiohttp import web
 
@@ -63,8 +62,8 @@ async def app_factory():
 
 
 @forked
-async def test_not_app(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_not_app(mktree):
+    mktree({
         'app.py': """\
 def app_factory():
     return 123
@@ -78,8 +77,8 @@ def app_factory():
 
 
 @forked
-async def test_wrong_function_signature(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_wrong_function_signature(mktree):
+    mktree({
         'app.py': """\
 def app_factory(foo):
     return web.Application()
@@ -93,8 +92,8 @@ def app_factory(foo):
 
 
 @forked
-async def test_no_ssl_context_factory(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_no_ssl_context_factory(mktree):
+    mktree({
         "app.py": """\
 def app_factory(foo):
     return web.Application()
@@ -108,8 +107,8 @@ def app_factory(foo):
 
 
 @forked
-async def test_invalid_ssl_context(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_invalid_ssl_context(mktree):
+    mktree({
         "app.py": """\
 def app_factory(foo):
     return web.Application()
@@ -125,8 +124,8 @@ def get_ssl_context():
         config.get_ssl_context(module)
 
 
-async def test_rootcert_file_notfound(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_rootcert_file_notfound(mktree):
+    mktree({
         "app.py": """\
 def app_factory(foo):
     return web.Application()
@@ -138,8 +137,8 @@ def app_factory(foo):
         config.client_ssl_context
 
 
-async def test_invalid_rootcert_file(tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_invalid_rootcert_file(mktree):
+    mktree({
         "app.py": """\
 def app_factory(foo):
     return web.Application()
