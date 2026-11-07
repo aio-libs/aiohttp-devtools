@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import ssl
 from unittest import mock
 
@@ -15,7 +16,7 @@ from aiohttp_devtools.runserver.serve import (
     WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
-from .conftest import SIMPLE_APP, forked, linux_forked, mktree
+from .conftest import SIMPLE_APP, forked, linux_forked
 
 
 async def check_server_running(check_callback):
@@ -38,8 +39,8 @@ async def check_server_running(check_callback):
 # TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
-def test_start_runserver(tmpworkdir, smart_caplog):
-    mktree(tmpworkdir, {
+def test_start_runserver(mktree, caplog):
+    mktree({
         'app.py': """\
 from aiohttp import web
 
@@ -86,17 +87,17 @@ def create_app():
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
         loop.run_until_complete(aux_app.cleanup())
-    assert (
-        'adev.server.dft INFO: Starting aux server at http://localhost:8001 ◆\n'
-        'adev.server.dft INFO: serving static files from ./static_dir/ at http://localhost:8001/static/\n'
-        'adev.server.dft INFO: Starting dev server at http://localhost:8000 ●\n'
-    ) in smart_caplog
+    assert caplog.record_tuples == [
+        ("adev.server.dft", logging.INFO, "Starting aux server at http://localhost:8001 ◆"),
+        ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at http://localhost:8001/static/"),
+        ("adev.server.dft", logging.INFO, "Starting dev server at http://localhost:8000 ●"),
+    ]
     loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
-def test_start_runserver_app_instance(tmpworkdir):
-    mktree(tmpworkdir, {
+def test_start_runserver_app_instance(mktree):
+    mktree({
         'app.py': """\
 from aiohttp import web
 
@@ -120,8 +121,8 @@ app.router.add_get('/', hello)
 
 
 @forked
-async def test_start_runserver_with_multi_app_modules(tmpworkdir, capfd):
-    mktree(tmpworkdir, {
+async def test_start_runserver_with_multi_app_modules(tmpworkdir, mktree, capfd):
+    mktree({
         "app.py": f"""\
 from aiohttp import web
 import sys
@@ -160,8 +161,8 @@ async def create_app():
 
 
 @forked
-async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
-    mktree(tmpworkdir, SIMPLE_APP)
+async def test_run_app_aiohttp_client(mktree, aiohttp_client):
+    mktree(SIMPLE_APP)
     config = Config(app_path='app.py')
     module = config.import_module()
     app_factory = config.get_app_factory(module)
@@ -177,8 +178,8 @@ async def test_run_app_aiohttp_client(tmpworkdir, aiohttp_client):
 
 
 @forked
-async def test_run_app_browser_cache(tmpworkdir, aiohttp_client):
-    mktree(tmpworkdir, SIMPLE_APP)
+async def test_run_app_browser_cache(mktree, aiohttp_client):
+    mktree(SIMPLE_APP)
     config = Config(app_path="app.py", browser_cache=True)
     module = config.import_module()
     app_factory = config.get_app_factory(module)
@@ -190,8 +191,8 @@ async def test_run_app_browser_cache(tmpworkdir, aiohttp_client):
     assert "Cache-Control" not in r.headers
 
 
-async def test_aux_app(tmpworkdir, aiohttp_client):
-    mktree(tmpworkdir, {
+async def test_aux_app(mktree, aiohttp_client):
+    mktree({
         'test.txt': 'test value',
     })
     app = create_auxiliary_app(static_path='.')
@@ -204,9 +205,9 @@ async def test_aux_app(tmpworkdir, aiohttp_client):
 
 
 @forked
-async def test_serve_main_app(tmpworkdir, mocker):
+async def test_serve_main_app(mktree, mocker):
     loop = asyncio.get_running_loop()
-    mktree(tmpworkdir, SIMPLE_APP)
+    mktree(SIMPLE_APP)
     mock_modify_main_app = mocker.patch('aiohttp_devtools.runserver.serve.modify_main_app')
     loop.call_later(0.5, loop.stop)
 
@@ -221,8 +222,8 @@ async def test_serve_main_app(tmpworkdir, mocker):
 
 
 @forked
-async def test_start_main_app_app_instance(tmpworkdir, mocker):
-    mktree(tmpworkdir, {
+async def test_start_main_app_app_instance(mktree, mocker):
+    mktree({
         'app.py': """\
 from aiohttp import web
 
@@ -252,7 +253,7 @@ async def aux_cli(aiohttp_client):
         yield cli
 
 
-async def test_websocket_hello(aux_cli, smart_caplog):
+async def test_websocket_hello(aux_cli, caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_json({'command': 'hello', 'protocols': ['http://livereload.com/protocols/official-7']})
         async for msg in ws:
@@ -264,7 +265,9 @@ async def test_websocket_hello(aux_cli, smart_caplog):
                 'protocols': ['http://livereload.com/protocols/official-7']
             }
             break  # noqa
-    assert 'adev.server.aux WARNING: browser disconnected, appears no websocket connection was made' in smart_caplog
+    assert (
+        "adev.server.aux", logging.WARNING, "browser disconnected, appears no websocket connection was made"
+    ) in caplog.record_tuples
 
 
 async def test_websocket_info(aux_cli):
@@ -278,7 +281,7 @@ async def test_websocket_info(aux_cli):
         await ws.close()
 
 
-async def test_websocket_bad(aux_cli, smart_caplog):
+async def test_websocket_bad(aux_cli, caplog):
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_str('not json')
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
@@ -287,10 +290,12 @@ async def test_websocket_bad(aux_cli, smart_caplog):
         await ws.send_json({'command': 'boom', 'url': 'foobar', 'plugins': 'bang'})
     async with aux_cli.session.ws_connect(aux_cli.make_url('/livereload')) as ws:
         await ws.send_bytes(b'this is bytes')
-    assert 'adev.server.aux ERROR: live reload protocol 7 not supported' in smart_caplog.log
-    assert 'adev.server.aux ERROR: JSON decode error' in smart_caplog.log
-    assert 'adev.server.aux ERROR: Unknown ws message' in smart_caplog.log
-    assert "adev.server.aux ERROR: unknown websocket message type binary, data: b'this is bytes'" in smart_caplog
+    assert [msg for _, level, msg in caplog.record_tuples if level == logging.ERROR] == [
+        "JSON decode error: Expecting value: line 1 column 1 (char 0)",
+        'live reload protocol 7 not supported by client {"command": "hello", "protocols": ["not official-7"]}',
+        'Unknown ws message {"command": "boom", "url": "foobar", "plugins": "bang"}',
+        "unknown websocket message type binary, data: b'this is bytes'",
+    ]
 
 
 async def test_websocket_reload(aux_cli):
@@ -333,8 +338,8 @@ async def check_ssl_server_running(check_callback):
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @linux_forked
 @pytest.mark.datafiles("tests/test_certs", keep_top_dir=True)
-def test_start_runserver_ssl(datafiles, tmpworkdir, smart_caplog):
-    mktree(tmpworkdir, {
+def test_start_runserver_ssl(datafiles, mktree, caplog):
+    mktree({
         "app.py": """\
 from aiohttp import web
 import ssl
@@ -390,9 +395,9 @@ def get_ssl_context():
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
         loop.run_until_complete(aux_app.cleanup())
-    assert (
-        "adev.server.dft INFO: Starting aux server at https://localhost:8001 ◆\n"
-        "adev.server.dft INFO: serving static files from ./static_dir/ at https://localhost:8001/static/\n"
-        "adev.server.dft INFO: Starting dev server at https://localhost:8000 ●\n"
-    ) in smart_caplog
+    assert caplog.record_tuples == [
+        ("adev.server.dft", logging.INFO, "Starting aux server at https://localhost:8001 ◆"),
+        ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at https://localhost:8001/static/"),
+        ("adev.server.dft", logging.INFO, "Starting dev server at https://localhost:8000 ●"),
+    ]
     loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack

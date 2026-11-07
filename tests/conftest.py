@@ -1,9 +1,9 @@
-import logging
 import sys
 from asyncio import Future
+from functools import partial
 from multiprocessing import set_start_method
 from pathlib import Path
-from typing import Mapping, Union
+from typing import Callable, Mapping, Union
 
 import pytest
 
@@ -35,8 +35,7 @@ def create_app():
 FileTree = Mapping[str, Union[str, "FileTree"]]
 
 
-def mktree(root: Path, tree: FileTree) -> None:
-    """Create a tree of files from a dictionary of name > content lookups."""
+def _mktree(root: Path, tree: FileTree) -> None:
     for name, content in tree.items():
         path = root / name
         if isinstance(content, str):
@@ -44,7 +43,7 @@ def mktree(root: Path, tree: FileTree) -> None:
             path.write_text(content, encoding="utf-8")
         else:
             path.mkdir(parents=True)
-            mktree(path, content)
+            _mktree(path, content)
 
 
 @pytest.fixture(autouse=True)
@@ -64,36 +63,10 @@ def tmpworkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-class SmartCaplog:
-    """Captured log records, formatted as ``<logger name> <level>: <message>`` lines."""
-
-    _formatter = logging.Formatter("%(name)s %(levelname)s: %(message)s")
-
-    def __init__(self, caplog: pytest.LogCaptureFixture):
-        self._caplog = caplog
-
-    @property
-    def log(self) -> str:
-        return "".join(self._formatter.format(record) + "\n" for record in self._caplog.records)
-
-    def __contains__(self, item: str) -> bool:
-        return item in self.log
-
-    def __eq__(self, other: object) -> bool:
-        return self.log == other
-
-    def __str__(self) -> str:
-        return self.log
-
-    def __repr__(self) -> str:
-        return "<SmartCaplog: {!r}>".format(self.log)
-
-
 @pytest.fixture
-def smart_caplog(caplog: pytest.LogCaptureFixture) -> SmartCaplog:
-    """Capture logs from all loggers at INFO level and above."""
-    caplog.set_level(logging.INFO)
-    return SmartCaplog(caplog)
+def mktree(tmpworkdir: Path) -> Callable[[FileTree], None]:
+    """Create a tree of files in the working directory from a dictionary of name > content lookups."""
+    return partial(_mktree, tmpworkdir)
 
 
 def create_future(result=None):
