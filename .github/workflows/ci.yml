@@ -54,7 +54,7 @@ jobs:
         pyver: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
         os: [ubuntu, macos, windows]
         include:
-          - pyver: pypy-3.10
+          - pyver: pypy-3.12
             os: ubuntu
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
