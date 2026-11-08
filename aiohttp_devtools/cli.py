@@ -28,25 +28,27 @@ livereload_help = ('Whether to inject livereload.js into html page footers to au
                    'env variable AIO_LIVERELOAD')
 browser_cache_help = ("When disabled (the default), sends no-cache headers to "
                       "disable browser caching.")
+bind_address_help = "Network address to listen, default localhost. env variable: AIO_BIND_ADDRESS"
 
 
 @cli.command()
 @click.argument('path', type=_dir_existing, required=True)
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=True, help=livereload_help)
+@click.option("-b", "--bind", "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
 @click.option('-p', '--port', default=8000, type=int)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.option("--browser-cache/--no-browser-cache", envvar="AIO_BROWSER_CACHE", default=False,
               help=browser_cache_help)
-def serve(path: str, livereload: bool, port: int, verbose: bool, browser_cache: bool) -> None:
+def serve(path: str, livereload: bool, bind_address: str, port: int, verbose: bool, browser_cache: bool) -> None:
     """
     Serve static files from a directory.
     """
     setup_logging(verbose)
-    run_app(**serve_static(static_path=path, livereload=livereload, port=port,
+    run_app(**serve_static(static_path=path, livereload=livereload, bind_address=bind_address, port=port,
                            browser_cache=browser_cache))
 
 
-static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_STATIC"
+static_help = "Path of static files to serve, if excluded static files aren't served. env variable: AIO_STATIC_PATH"
 root_help = ('Root directory project used to qualify other paths. '
              'This can be used to watch a parent directory for changes in a more complex application. '
              'env variable: AIO_ROOT')
@@ -55,13 +57,17 @@ shutdown_by_url_help = ("The development server will be stopped via a request to
                         "added to the server, instead of via signals (this is the default on Windows). "
                         "env variable: AIO_SHUTDOWN_BY_URL")
 host_help = ('host used when referencing livereload and static files, if blank host is taken from the request header '
-             'with default of localhost. env variable AIO_HOST')
+             "with default of bind network address. env variable AIO_HOST")
 app_factory_help = ('name of the app factory to create an aiohttp.web.Application with, if missing default app-factory '
                     'names are tried. This can be either a function with signature '
                     '"def create_app(loop): -> Application" or "def create_app(): -> Application" '
                     'or just an instance of aiohttp.Application. env variable AIO_APP_FACTORY')
 port_help = 'Port to serve app from, default 8000. env variable: AIO_PORT'
 aux_port_help = 'Port to serve auxiliary app (reload and static) on, default port + 1. env variable: AIO_AUX_PORT'
+ssl_context_factory_help = ("name of the ssl context factory to create ssl.SSLContext with. "
+                            "env variable: AIO_SSL_CONTEXT_FACTORY")
+ssl_rootcert_file_help = ("path to a rootCA certificate file for self-signed cert chain (if needed). "
+                          "env variable: AIO_SSL_ROOTCERT")
 
 
 # defaults are all None here so default settings are defined in one place: DEV_DICT validation
@@ -75,11 +81,16 @@ aux_port_help = 'Port to serve auxiliary app (reload and static) on, default por
 @click.option('--livereload/--no-livereload', envvar='AIO_LIVERELOAD', default=None, help=livereload_help)
 @click.option('--host', default=INFER_HOST, help=host_help)
 @click.option('--app-factory', 'app_factory_name', envvar='AIO_APP_FACTORY', help=app_factory_help)
+@click.option("-b", "--bind", "bind_address", envvar="AIO_BIND_ADDRESS", default="localhost", help=bind_address_help)
 @click.option('-p', '--port', 'main_port', envvar='AIO_PORT', type=click.INT, help=port_help)
 @click.option('--aux-port', envvar='AIO_AUX_PORT', type=click.INT, help=aux_port_help)
 @click.option('-v', '--verbose', is_flag=True, help=verbose_help)
 @click.option("--browser-cache/--no-browser-cache", envvar="AIO_BROWSER_CACHE", default=None,
               help=browser_cache_help)
+@click.option("--ssl-context-factory", "ssl_context_factory_name", envvar="AIO_SSL_CONTEXT_FACTORY", default=None,
+              help=ssl_context_factory_help)
+@click.option("--ssl-rootcert", "ssl_rootcert_file_path", envvar="AIO_SSL_ROOTCERT", default=None,
+              help=ssl_rootcert_file_help)
 @click.argument('project_args', nargs=-1)
 def runserver(**config: Any) -> None:
     """

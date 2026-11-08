@@ -1,12 +1,13 @@
 import asyncio
+import time
 from functools import partial
-from typing import Set, Tuple
-from unittest.mock import MagicMock, call
+from typing import Any, Set, Tuple
+from unittest.mock import AsyncMock, MagicMock, call
 
 from aiohttp import ClientSession
 from aiohttp.web import Application, WebSocketResponse
 
-from aiohttp_devtools.runserver.serve import STATIC_PATH, WS
+from aiohttp_devtools.runserver.serve import LAST_RELOAD, STATIC_PATH, WS
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
 
 from .conftest import create_future
@@ -30,7 +31,7 @@ def create_awatch_mock(*results_):
     return awatch_mock
 
 
-async def test_single_file_change(event_loop, mocker):
+async def test_single_file_change(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -52,7 +53,28 @@ async def test_single_file_change(event_loop, mocker):
     await app_task._session.close()
 
 
-async def test_multiple_file_change(event_loop, mocker):
+async def test_single_file_change_no_static_path(mocker):
+    mocked_awatch = mocker.patch("aiohttp_devtools.runserver.watch.awatch", autospec=True, spec_set=True)
+    mocked_awatch.side_effect = create_awatch_mock({("x", "/path/to/file")})
+    mock_src_reload = mocker.patch("aiohttp_devtools.runserver.watch.src_reload", autospec=True, spec_set=True)
+
+    app_task = AppTask(MagicMock())
+    start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True, spec_set=True)
+    mocker.patch.object(app_task, "_stop_dev_server", autospec=True, spec_set=True)
+
+    app = mocker.create_autospec(Application, spec_set=True)
+    d = {STATIC_PATH: ""}
+    app.__getitem__.side_effect = d.__getitem__
+    await app_task.start(app)
+    assert app_task._task is not None
+    await app_task._task
+    mock_src_reload.assert_called_once_with(app)
+    assert start_mock.call_count == 1
+    assert app_task._session is not None
+    await app_task._session.close()
+
+
+async def test_multiple_file_change(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -70,17 +92,21 @@ async def test_multiple_file_change(event_loop, mocker):
     await app_task._session.close()
 
 
-async def test_python_no_server(event_loop, mocker):
+async def test_python_no_server(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file.py')})
 
     config = MagicMock()
     config.main_port = 8000
+    config.protocol = "http"
+    config.client_ssl_context = None
+
     app_task = AppTask(config)
     start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True)
     stop_mock = mocker.patch.object(app_task, "_stop_dev_server", autospec=True)
     mocker.patch.object(app_task, "_run", partial(app_task._run, live_checks=2))
     app = Application()
+    app[LAST_RELOAD] = [0, 0.]
     app[STATIC_PATH] = "/path/to/"
     app.src_reload = MagicMock()
     mock_ws = MagicMock()
@@ -98,14 +124,17 @@ async def test_python_no_server(event_loop, mocker):
     await app_task._session.close()
 
 
-async def test_reload_server_running(event_loop, aiohttp_client, mocker):
+async def test_reload_server_running(aiohttp_client, mocker):
     app = Application()
     ws: Set[Tuple[WebSocketResponse, str]] = set(((MagicMock(), "/foo"),))
     app[WS] = ws
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
     cli = await aiohttp_client(app)
     config = MagicMock()
+    config.host = "localhost"
     config.main_port = cli.server.port
+    config.protocol = "http"
+    config.client_ssl_context = None
 
     app_task = AppTask(config)
     app_task._app = app
@@ -115,7 +144,7 @@ async def test_reload_server_running(event_loop, aiohttp_client, mocker):
     await app_task._session.close()
 
 
-async def test_livereload_task_single(event_loop, mocker):
+async def test_livereload_task_single(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock()
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -128,7 +157,7 @@ async def test_livereload_task_single(event_loop, mocker):
     mock_src_reload.assert_called_once_with(app, '/path/to/file')
 
 
-async def test_livereload_task_multiple(event_loop, mocker):
+async def test_livereload_task_multiple(mocker):
     mocked_awatch = mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocked_awatch.side_effect = create_awatch_mock({('x', '/path/to/file'), ('x', '/path/to/file2')})
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
@@ -141,20 +170,7 @@ async def test_livereload_task_multiple(event_loop, mocker):
     mock_src_reload.assert_called_once_with(app)
 
 
-class FakeProcess:
-    def __init__(self, is_alive=True, exitcode=1, pid=123):
-        self._is_alive = is_alive
-        self.exitcode = exitcode
-        self.pid = pid
-
-    def is_alive(self):
-        return self._is_alive
-
-    def join(self, wait):
-        pass
-
-
-async def test_stop_process_dead(smart_caplog, mocker):
+async def test_stop_process_dead(caplog, mocker):
     mock_kill = mocker.patch('aiohttp_devtools.runserver.watch.os.kill')
     mocker.patch('aiohttp_devtools.runserver.watch.awatch')
     mocker.patch('asyncio.Event')
@@ -163,7 +179,7 @@ async def test_stop_process_dead(smart_caplog, mocker):
     app_task._process.is_alive = MagicMock(return_value=False)
     app_task._process.exitcode = 123
     await app_task._stop_dev_server()
-    assert 'server process already dead, exit code: 123' in smart_caplog
+    assert 'server process already dead, exit code: 123' in caplog.messages
     assert mock_kill.called is False
 
 
@@ -192,3 +208,35 @@ async def test_stop_process_dirty(mocker):
     await app_task._stop_dev_server()
     assert mock_kill.call_args_list == [call(321, 2)]
     assert process_mock.kill.called_once()
+
+
+async def test_restart_after_connection_loss(mocker):
+    mocked_awatch = mocker.patch("aiohttp_devtools.runserver.watch.awatch", autospec=True, spec_set=True)
+    mocked_awatch.side_effect = create_awatch_mock({("x", "/path/to/file.py")})
+    app_task = AppTask(MagicMock())
+    start_mock = mocker.patch.object(app_task, "_start_dev_server", autospec=True, spec_set=True)
+    mock_reload = mocker.patch.object(app_task, "_src_reload_when_live", autospec=True, spec_set=True)
+    mocker.patch.object(app_task, "_stop_dev_server", autospec=True, spec_set=True)
+
+    app = mocker.create_autospec(Application, spec_set=True, instance=True)
+    # Simulate connection lost from recent restart.
+    ws: Set[Any] = set()
+    d = {WS: ws, LAST_RELOAD: [1, time.time()]}
+    app.__getitem__.side_effect = lambda k: d.get(k, MagicMock())
+
+    def update_ws(i):
+        ws.add(MagicMock(spec_set=()))
+        return AsyncMock()
+
+    sleep_mock = mocker.patch("asyncio.sleep", autospec=True, spec_set=True)
+    sleep_mock.side_effect = update_ws
+
+    await app_task.start(app)
+    assert app_task._task is not None
+    await app_task._task
+    assert sleep_mock.call_count < 5
+    assert call(0.1) in sleep_mock.call_args_list
+    mock_reload.assert_called_once()
+    assert start_mock.call_count == 2
+    assert app_task._session is not None
+    await app_task._session.close()

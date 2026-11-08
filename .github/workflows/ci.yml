@@ -22,11 +22,11 @@ jobs:
     timeout-minutes: 5
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
-        python-version: 3.9
+        python-version: 3.11
         cache: 'pip'
         cache-dependency-path: '**/requirements*.txt'
     - name: Install dependencies
@@ -51,18 +51,18 @@ jobs:
     name: Test
     strategy:
       matrix:
-        pyver: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
+        pyver: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
         os: [ubuntu, macos, windows]
         include:
-          - pyver: pypy-3.8
+          - pyver: pypy-3.10
             os: ubuntu
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Setup Python ${{ matrix.pyver }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.pyver }}
         cache: 'pip'
@@ -81,10 +81,10 @@ jobs:
         COLOR: 'yes'
     - run: python -m coverage xml
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v7
       with:
-        file: ./coverage.xml
-        flags: unit
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   check:  # This job does nothing and is only used for the branch protection
     if: always()
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Install dependencies
       run: |
         python -m pip install -U pip wheel setuptools build twine grablib

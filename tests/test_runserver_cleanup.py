@@ -18,11 +18,11 @@ async def test_server_cleanup_by_url() -> None:
                         text = await r.text()
                         assert "hello, world" in text
                         return True
-                except OSError:
+                except OSError:  # pragma: no cover
                     await asyncio.sleep(0.5)
-                except asyncio.TimeoutError:
+                except asyncio.TimeoutError:  # pragma: no cover
                     pass
-        return False
+        return False  # pragma: no cover
 
     proc = await asyncio.create_subprocess_exec(
         sys.executable, "-c", "from aiohttp_devtools.cli import runserver; runserver()",  # same as `adev runserver`

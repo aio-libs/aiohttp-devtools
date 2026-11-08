@@ -1,20 +1,16 @@
-import asyncio
-
 import pytest
-from pytest_toolbox import mktree
 
 from aiohttp_devtools.runserver import serve_static
 
 
 @pytest.fixture
-def cli(event_loop, tmpworkdir, aiohttp_client):
-    asyncio.set_event_loop(event_loop)
+async def cli(tmpworkdir, aiohttp_client):
     args = serve_static(static_path=str(tmpworkdir), livereload=False)
-    yield event_loop.run_until_complete(aiohttp_client(args["app"]))
+    yield await aiohttp_client(args["app"])
 
 
-async def test_simple_serve(cli, tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_simple_serve(cli, mktree):
+    mktree({
         'foo': 'hello world',
     })
     r = await cli.get('/foo')
@@ -26,8 +22,8 @@ async def test_simple_serve(cli, tmpworkdir):
     assert text == 'hello world'
 
 
-async def test_file_missing(cli, tmpworkdir):
-    mktree(tmpworkdir, {
+async def test_file_missing(cli, mktree):
+    mktree({
         "bar": "hello world",
         "baz/foo": "hello world",
     })
@@ -39,21 +35,21 @@ async def test_file_missing(cli, tmpworkdir):
     assert "baz/\n" in text
 
 
-async def test_browser_cache(event_loop, aiohttp_client, tmpworkdir):
+async def test_browser_cache(aiohttp_client, tmpworkdir, mktree):
     args = serve_static(static_path=str(tmpworkdir), browser_cache=True)
     assert args["port"] == 8000
     cli = await aiohttp_client(args["app"])
-    mktree(tmpworkdir, {"foo": "hello world"})
+    mktree({"foo": "hello world"})
     r = await cli.get("/foo")
     assert r.status == 200
     assert "Cache-Control" not in r.headers
 
 
-async def test_html_file_livereload(event_loop, aiohttp_client, tmpworkdir):
+async def test_html_file_livereload(aiohttp_client, tmpworkdir, mktree):
     args = serve_static(static_path=str(tmpworkdir), livereload=True)
     assert args["port"] == 8000
     cli = await aiohttp_client(args["app"])
-    mktree(tmpworkdir, {
+    mktree({
         'foo.html': '<h1>hi</h1>',
     })
     r = await cli.get('/foo')
@@ -65,14 +61,14 @@ async def test_html_file_livereload(event_loop, aiohttp_client, tmpworkdir):
     assert r.status == 200
     assert r.headers['content-type'] == 'application/javascript'
     text = await r.text()
-    assert text.startswith('(function e(t,n,r){')
+    assert text.startswith('(function(){function r(e,n,t)')
 
 
-async def test_serve_index(event_loop, aiohttp_client, tmpworkdir):
+async def test_serve_index(aiohttp_client, tmpworkdir, mktree):
     args = serve_static(static_path=str(tmpworkdir), livereload=False)
     assert args["port"] == 8000
     cli = await aiohttp_client(args["app"])
-    mktree(tmpworkdir, {
+    mktree({
         'index.html': '<h1>hello index</h1>',
     })
     r = await cli.get('/')

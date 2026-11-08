@@ -3,10 +3,11 @@ import contextlib
 import json
 import mimetypes
 import sys
+import time
 import warnings
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, NoReturn, Optional, Set, Tuple
+from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
@@ -24,15 +25,17 @@ from .config import AppFactory, Config
 from .log_handlers import AccessLogger
 from .utils import MutableValue
 
+from ssl import SSLContext
+
 try:
     from aiohttp_jinja2 import static_root_key
 except ImportError:
     static_root_key = None  # type: ignore[assignment]
 
-LIVE_RELOAD_HOST_SNIPPET = '\n<script src="http://{}:{}/livereload.js"></script>\n'
+LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n'
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
-HOST = '0.0.0.0'
 
+LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
 STATIC_PATH = web.AppKey("STATIC_PATH", str)
 STATIC_URL = web.AppKey("STATIC_URL", str)
@@ -81,7 +84,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
                     or request.path.startswith("/_debugtoolbar")
                     or "text/html" not in response.content_type):
                 return
-            lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(get_host(request), config.aux_port)
+            lr_snippet = LIVE_RELOAD_HOST_SNIPPET.format(config.protocol, get_host(request), config.aux_port)
             dft_logger.debug("appending live reload snippet '%s' to body", lr_snippet)
             response.body += lr_snippet.encode()
             response.headers[CONTENT_LENGTH] = str(len(response.body))
@@ -102,7 +105,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
         @web.middleware
         async def static_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
-            static_url = 'http://{}:{}/{}'.format(get_host(request), config.aux_port, static_path)
+            static_url = '{}://{}:{}/{}'.format(config.protocol, get_host(request), config.aux_port, static_path)
             dft_logger.debug('setting app static_root_url to "%s"', static_url)
             _change_static_url(request.app, static_url)
             return await handler(request)
@@ -119,25 +122,26 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
-        dft_logger.debug("Created shutdown endpoint at http://{}:{}{}".format(config.host, config.main_port, path))
+        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(
+            config.protocol, config.host, config.main_port, path))
 
     if config.static_path is not None:
-        static_url = 'http://{}:{}/{}'.format(config.host, config.aux_port, static_path)
+        static_url = '{}://{}:{}/{}'.format(config.protocol, config.host, config.aux_port, static_path)
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         _set_static_url(app, static_url)
 
 
-async def check_port_open(port: int, delay: float = 1) -> None:
+async def check_port_open(port: int, host: str = "0.0.0.0", delay: float = 1) -> None:
     loop = asyncio.get_running_loop()
     # the "s = socket.socket; s.bind" approach sometimes says a port is in use when it's not
     # this approach replicates aiohttp so should always give the same answer
     for i in range(5, 0, -1):
         try:
-            server = await loop.create_server(asyncio.Protocol, host=HOST, port=port)
+            server = await loop.create_server(asyncio.Protocol, host=host, port=port)
         except OSError as e:
             if e.errno != EADDRINUSE:
                 raise
-            dft_logger.warning('port %d is already in use, waiting %d...', port, i)
+            dft_logger.warning("%s:%d is already in use, waiting %d...", host, port, i)
             await asyncio.sleep(delay)
         else:
             server.close()
@@ -163,12 +167,14 @@ def set_tty(tty_path: Optional[str]) -> Iterator[None]:
 def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
-        app_factory = config.import_app_factory()
+        module = config.import_module()
+        app_factory = config.get_app_factory(module)
+        ssl_context = config.get_ssl_context(module)
         if sys.version_info >= (3, 11):
             with asyncio.Runner() as runner:
                 app_runner = runner.run(create_main_app(config, app_factory))
                 try:
-                    runner.run(start_main_app(app_runner, config.main_port))
+                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
                     runner.get_loop().run_forever()
                 except KeyboardInterrupt:
                     pass
@@ -179,7 +185,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             loop = asyncio.new_event_loop()
             runner = loop.run_until_complete(create_main_app(config, app_factory))
             try:
-                loop.run_until_complete(start_main_app(runner, config.main_port))
+                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port, ssl_context))
                 loop.run_forever()
             except KeyboardInterrupt:  # pragma: no cover
                 pass
@@ -192,13 +198,13 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     app = await config.load_app(app_factory)
     modify_main_app(app, config)
 
-    await check_port_open(config.main_port)
+    await check_port_open(config.main_port, host=config.bind_address)
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, port: int) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: Union[SSLContext, None]) -> None:
     await runner.setup()
-    site = web.TCPSite(runner, host=HOST, port=port)
+    site = web.TCPSite(runner, host=host, port=port, ssl_context=ssl_context)
     await site.start()
 
 
@@ -240,6 +246,8 @@ async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
         else:
             reloads += 1
 
+    app[LAST_RELOAD][0] = len(app[WS])
+    app[LAST_RELOAD][1] = time.time()
     if reloads:
         s = '' if reloads == 1 else 's'
         aux_logger.info('prompted reload of %s on %d client%s', path or 'page', reloads, s)
@@ -256,6 +264,7 @@ def create_auxiliary_app(
         browser_cache: bool = False) -> web.Application:
     app = web.Application()
     ws: Set[Tuple[web.WebSocketResponse, str]] = set()
+    app[LAST_RELOAD] = [0, 0.]
     app[STATIC_PATH] = static_path or ""
     app[STATIC_URL] = static_url
     app[WS] = ws
@@ -392,23 +401,49 @@ class CustomStaticResource(StaticResource):
         resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
         return resp
 
+    def _insert_footer_if_exists(
+        self, filename: str, response: web.StreamResponse
+    ) -> web.StreamResponse:
+        """Insert the footer if the file exists, otherwise return a 404 response."""
+        resolved_path = self._directory.joinpath(filename).resolve()
+        if not resolved_path.is_file():
+            return self._make_not_found_response(resolved_path)
+        return self._insert_footer(response)
+
+    def _make_not_found_response(self, raw_path: Path) -> web.StreamResponse:
+        """Create a 404 response with a list of available files under the requested path."""
+        while not raw_path.is_dir():
+            raw_path = raw_path.parent
+        paths = "\n".join(
+            " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
+            for p in raw_path.iterdir()
+        )
+        msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
+            raw_path.relative_to(self._directory), paths
+        )
+        return web.Response(text=msg, status=404, content_type="text/plain")
+
     async def _handle(self, request: web.Request) -> web.StreamResponse:
-        raw_path = self.modify_request(request)
+        loop = asyncio.get_running_loop()
+        raw_path = await loop.run_in_executor(None, self.modify_request, request)
         try:
             response = await super()._handle(request)
         except HTTPNotFound:
-            while not raw_path.is_dir():
-                raw_path = raw_path.parent
-            paths = "\n".join(
-                " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
-                for p in raw_path.iterdir())
-            msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
-                raw_path.relative_to(self._directory), paths)
-            response = web.Response(text=msg, status=404, content_type="text/plain")
+            response = await loop.run_in_executor(
+                None, self._make_not_found_response, raw_path
+            )
         else:
-            response = self._insert_footer(response)
+            # With aiohttp 3.10+, we need to also check if the file actually
+            # exists since the base class does not check this anymore as its
+            # done in the response to enable handling various compressed files.
+            response = await loop.run_in_executor(
+                None,
+                self._insert_footer_if_exists,
+                request.match_info["filename"],
+                response,
+            )
             # Inject CORS headers to allow webfonts to load correctly
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers["Access-Control-Allow-Origin"] = "*"
 
         if not self._browser_cache:
             # Add no-cache header to avoid browser caching in local development.
