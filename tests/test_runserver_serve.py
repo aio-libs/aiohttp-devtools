@@ -124,8 +124,6 @@ def test_fmt_size_large(value, result):
 
 
 class DummyApplication(Dict[AppKey[Any], object]):
-    _debug = False
-
     def __init__(self):
         self.on_response_prepare = []
         self.middlewares = []
