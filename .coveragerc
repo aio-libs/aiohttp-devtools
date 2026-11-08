@@ -1,14 +1,13 @@
-exclude_also = [
-  'if TYPE_CHECKING',
-  'assert False',
-  ': \.\.\.(\s*#.*)?$',
-  '^ +\.\.\.$',
-  'pytest.fail\(',
-]
-partial_also = [
-  'if not TYPE_CHECKING',
-]
+[report]
+exclude_also =
+  if TYPE_CHECKING
+  assert False
+  : \.\.\.(\s*#.*)?$
+  ^ +\.\.\.$
+  pytest.fail\(
+partial_also =
+  if not TYPE_CHECKING
 
 [run]
 branch = true
-source = ['.']
+source = .
