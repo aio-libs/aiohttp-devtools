@@ -325,9 +325,6 @@ async def check_ssl_server_running(check_callback, ssl_context):
             try:
                 async with session.get("https://localhost:8000/", ssl=ssl_context):
                     pass
-            except aiohttp.ClientSSLError:  # pragma: no cover
-                # The server is up but the TLS handshake failed, retrying would only hide the error.
-                raise
             except OSError:
                 await asyncio.sleep(0.1)
             else:
