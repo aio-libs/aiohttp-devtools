@@ -3,9 +3,12 @@ from asyncio import Future
 from functools import partial
 from multiprocessing import set_start_method
 from pathlib import Path
-from typing import Callable, Mapping, Union
+from typing import TYPE_CHECKING, Callable, Mapping, Union
 
 import pytest
+
+if TYPE_CHECKING:
+    import trustme
 
 if sys.platform == "win32":
     forked = pytest.mark.skip(reason="Windows doesn't suport fork")
@@ -54,6 +57,20 @@ def reset_start_method() -> None:
     for that process, so it needs resetting before runserver() can set it to "spawn".
     """
     set_start_method(None, force=True)
+
+
+@pytest.fixture
+def tls_certificate_authority() -> "trustme.CA":
+    """Create a throwaway CA for the test, so the test certificates can never go stale."""
+    if not TYPE_CHECKING:
+        trustme = pytest.importorskip("trustme")
+    return trustme.CA()
+
+
+@pytest.fixture
+def tls_certificate(tls_certificate_authority: "trustme.CA") -> "trustme.LeafCert":
+    """Create a server certificate for localhost, signed by tls_certificate_authority."""
+    return tls_certificate_authority.issue_cert("localhost", "127.0.0.1", "::1")
 
 
 @pytest.fixture

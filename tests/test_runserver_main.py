@@ -318,16 +318,16 @@ async def test_websocket_reload(aux_cli):
         await ws.close()
 
 
-async def check_ssl_server_running(check_callback):
+async def check_ssl_server_running(check_callback, ssl_context):
     port_open = False
-    ssl_context = ssl.create_default_context()
-    ssl_context.load_verify_locations("test_certs/rootCA.pem")
-
     async with aiohttp.ClientSession(timeout=ClientTimeout(total=1)) as session:
         for i in range(50):  # pragma: no branch
             try:
                 async with session.get("https://localhost:8000/", ssl=ssl_context):
                     pass
+            except aiohttp.ClientSSLError:  # pragma: no cover
+                # The server is up but the TLS handshake failed, retrying would only hide the error.
+                raise
             except OSError:
                 await asyncio.sleep(0.1)
             else:
@@ -340,8 +340,7 @@ async def check_ssl_server_running(check_callback):
 
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @linux_forked
-@pytest.mark.datafiles("tests/test_certs", keep_top_dir=True)
-def test_start_runserver_ssl(datafiles, mktree, caplog):
+def test_start_runserver_ssl(tls_certificate_authority, tls_certificate, mktree, caplog):
     mktree({
         "app.py": """\
 from aiohttp import web
@@ -364,6 +363,9 @@ def get_ssl_context():
     return ssl_context
     """,
         "static_dir/foo.js": "var bar=1;",
+        # The app loads the certificate from disk in a subprocess, so it must be written out.
+        "test_certs/server.crt": tls_certificate.cert_chain_pems[0].bytes().decode(),
+        "test_certs/server.key": tls_certificate.private_key_pem.bytes().decode(),
     })
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -392,8 +394,10 @@ def get_ssl_context():
             assert r.status == 500
             assert "raise ValueError()" in (await r.text())
 
+    ssl_context = ssl.create_default_context()
+    tls_certificate_authority.configure_trust(ssl_context)
     try:
-        loop.run_until_complete(check_ssl_server_running(check_callback))
+        loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
     finally:
         for shutdown in aux_app.on_shutdown:
             loop.run_until_complete(shutdown(aux_app))
