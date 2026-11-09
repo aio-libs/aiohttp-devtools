@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import ssl
+from typing import Iterator
 from unittest import mock
 
 import aiohttp
@@ -17,6 +18,18 @@ from aiohttp_devtools.runserver.serve import (
 from aiohttp_devtools.runserver.watch import AppTask
 
 from .conftest import SIMPLE_APP, forked, linux_forked
+
+
+@pytest.fixture
+def loop_runner() -> Iterator[asyncio.Runner]:
+    """Drive an event loop by hand in the (sync) runserver() tests.
+
+    runserver() calls asyncio.run() itself, so these tests can't run under pytest-asyncio's loop.
+    The loop must be closed at teardown: a leaked loop is only freed by the cyclic garbage collector,
+    and its ResourceWarning then fires during whichever test happens to be running at that point.
+    """
+    with asyncio.Runner() as runner:
+        yield runner
 
 
 async def check_server_running(check_callback):
@@ -39,7 +52,7 @@ async def check_server_running(check_callback):
 # TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @forked
-def test_start_runserver(mktree, caplog):
+def test_start_runserver(mktree, caplog, loop_runner):
     mktree({
         'app.py': """\
 from aiohttp import web
@@ -57,8 +70,6 @@ def create_app():
     return app""",
         'static_dir/foo.js': 'var bar=1;',
     })
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     args = runserver(app_path="app.py", static_path="static_dir", bind_address="0.0.0.0")
     aux_app = args["app"]
     aux_port = args["port"]
@@ -67,7 +78,7 @@ def create_app():
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
     for startup in aux_app.on_startup:
-        loop.run_until_complete(startup(aux_app))
+        loop_runner.run(startup(aux_app))
 
     async def check_callback(session):
         async with session.get('http://localhost:8000/') as r:
@@ -82,18 +93,18 @@ def create_app():
             assert 'raise ValueError()' in (await r.text())
 
     try:
-        loop.run_until_complete(check_server_running(check_callback))
+        loop_runner.run(check_server_running(check_callback))
     finally:
         for shutdown in aux_app.on_shutdown:
-            loop.run_until_complete(shutdown(aux_app))
-        loop.run_until_complete(aux_app.cleanup())
+            loop_runner.run(shutdown(aux_app))
+        loop_runner.run(aux_app.cleanup())
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at http://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at http://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at http://localhost:8000 ●"),
     ]
-    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
+    loop_runner.run(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
@@ -337,7 +348,7 @@ async def check_ssl_server_running(check_callback, ssl_context):
 
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 @linux_forked
-def test_start_runserver_ssl(tls_certificate_authority, tls_certificate, mktree, caplog):
+def test_start_runserver_ssl(tls_certificate_authority, tls_certificate, mktree, caplog, loop_runner):
     mktree({
         "app.py": """\
 from aiohttp import web
@@ -364,8 +375,6 @@ def get_ssl_context():
         "test_certs/server.crt": tls_certificate.cert_chain_pems[0].bytes().decode(),
         "test_certs/server.key": tls_certificate.private_key_pem.bytes().decode(),
     })
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     args = runserver(app_path="app.py", static_path="static_dir",
                      bind_address="0.0.0.0", ssl_context_factory_name="get_ssl_context")
     aux_app = args["app"]
@@ -375,7 +384,7 @@ def get_ssl_context():
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
     for startup in aux_app.on_startup:
-        loop.run_until_complete(startup(aux_app))
+        loop_runner.run(startup(aux_app))
 
     async def check_callback(session, ssl_context):
         print(session, ssl_context)
@@ -394,15 +403,15 @@ def get_ssl_context():
     ssl_context = ssl.create_default_context()
     tls_certificate_authority.configure_trust(ssl_context)
     try:
-        loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
+        loop_runner.run(check_ssl_server_running(check_callback, ssl_context))
     finally:
         for shutdown in aux_app.on_shutdown:
-            loop.run_until_complete(shutdown(aux_app))
-        loop.run_until_complete(aux_app.cleanup())
+            loop_runner.run(shutdown(aux_app))
+        loop_runner.run(aux_app.cleanup())
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at https://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at https://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at https://localhost:8000 ●"),
     ]
-    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
+    loop_runner.run(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
