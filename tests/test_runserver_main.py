@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import logging
 import ssl
@@ -65,9 +66,9 @@ def create_app():
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
     with asyncio.Runner() as runner:
-        loop = runner.get_loop()
         for startup in aux_app.on_startup:
-            loop.run_until_complete(startup(aux_app))
+            assert inspect.iscoroutinefunction(startup)
+            runner.run(startup(aux_app))
 
         async def check_callback(session):
             async with session.get('http://localhost:8000/') as r:
@@ -82,12 +83,13 @@ def create_app():
                 assert 'raise ValueError()' in (await r.text())
 
         try:
-            loop.run_until_complete(check_server_running(check_callback))
+            runner.run(check_server_running(check_callback))
         finally:
             for shutdown in aux_app.on_shutdown:
-                loop.run_until_complete(shutdown(aux_app))
-            loop.run_until_complete(aux_app.cleanup())
-        loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
+                assert inspect.iscoroutinefunction(shutdown)
+                runner.run(shutdown(aux_app))
+            runner.run(aux_app.cleanup())
+        runner.run(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at http://localhost:8001 ◆"),
@@ -373,9 +375,9 @@ def get_ssl_context():
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
     with asyncio.Runner() as runner:
-        loop = runner.get_loop()
         for startup in aux_app.on_startup:
-            loop.run_until_complete(startup(aux_app))
+            assert inspect.iscoroutinefunction(startup)
+            runner.run(startup(aux_app))
 
         async def check_callback(session, ssl_context):
             print(session, ssl_context)
@@ -394,12 +396,13 @@ def get_ssl_context():
         ssl_context = ssl.create_default_context()
         tls_certificate_authority.configure_trust(ssl_context)
         try:
-            loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
+            runner.run(check_ssl_server_running(check_callback, ssl_context))
         finally:
             for shutdown in aux_app.on_shutdown:
-                loop.run_until_complete(shutdown(aux_app))
-            loop.run_until_complete(aux_app.cleanup())
-        loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
+                assert inspect.iscoroutinefunction(shutdown)
+                runner.run(shutdown(aux_app))
+            runner.run(aux_app.cleanup())
+        runner.run(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at https://localhost:8001 ◆"),
