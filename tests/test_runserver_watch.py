@@ -193,7 +193,7 @@ async def test_stop_process_clean(mocker):
     app_task._process.pid = 321
     app_task._process.exitcode = 123
     await app_task._stop_dev_server()
-    assert mock_kill.called_once_with(321, 2)
+    mock_kill.assert_called_once_with(321, 2)
 
 
 async def test_stop_process_dirty(mocker):
@@ -207,7 +207,7 @@ async def test_stop_process_dirty(mocker):
     process_mock.exitcode = None
     await app_task._stop_dev_server()
     assert mock_kill.call_args_list == [call(321, 2)]
-    assert process_mock.kill.called_once()
+    process_mock.kill.assert_called_once()
 
 
 async def test_restart_after_connection_loss(mocker):
