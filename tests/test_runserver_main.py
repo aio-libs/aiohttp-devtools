@@ -57,8 +57,6 @@ def create_app():
     return app""",
         'static_dir/foo.js': 'var bar=1;',
     })
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     args = runserver(app_path="app.py", static_path="static_dir", bind_address="0.0.0.0")
     aux_app = args["app"]
     aux_port = args["port"]
@@ -66,34 +64,36 @@ def create_app():
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
-    for startup in aux_app.on_startup:
-        loop.run_until_complete(startup(aux_app))
+    with asyncio.Runner() as runner:
+        loop = runner.get_loop()
+        for startup in aux_app.on_startup:
+            loop.run_until_complete(startup(aux_app))
 
-    async def check_callback(session):
-        async with session.get('http://localhost:8000/') as r:
-            assert r.status == 200
-            assert r.headers['content-type'].startswith('text/html')
-            text = await r.text()
-            assert '<h1>hello world</h1>' in text
-            assert '<script src="http://localhost:8001/livereload.js"></script>' in text
+        async def check_callback(session):
+            async with session.get('http://localhost:8000/') as r:
+                assert r.status == 200
+                assert r.headers['content-type'].startswith('text/html')
+                text = await r.text()
+                assert '<h1>hello world</h1>' in text
+                assert '<script src="http://localhost:8001/livereload.js"></script>' in text
 
-        async with session.get('http://localhost:8000/error') as r:
-            assert r.status == 500
-            assert 'raise ValueError()' in (await r.text())
+            async with session.get('http://localhost:8000/error') as r:
+                assert r.status == 500
+                assert 'raise ValueError()' in (await r.text())
 
-    try:
-        loop.run_until_complete(check_server_running(check_callback))
-    finally:
-        for shutdown in aux_app.on_shutdown:
-            loop.run_until_complete(shutdown(aux_app))
-        loop.run_until_complete(aux_app.cleanup())
+        try:
+            loop.run_until_complete(check_server_running(check_callback))
+        finally:
+            for shutdown in aux_app.on_shutdown:
+                loop.run_until_complete(shutdown(aux_app))
+            loop.run_until_complete(aux_app.cleanup())
+        loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at http://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at http://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at http://localhost:8000 ●"),
     ]
-    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
 
 
 @forked
@@ -364,8 +364,6 @@ def get_ssl_context():
         "test_certs/server.crt": tls_certificate.cert_chain_pems[0].bytes().decode(),
         "test_certs/server.key": tls_certificate.private_key_pem.bytes().decode(),
     })
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     args = runserver(app_path="app.py", static_path="static_dir",
                      bind_address="0.0.0.0", ssl_context_factory_name="get_ssl_context")
     aux_app = args["app"]
@@ -374,35 +372,37 @@ def get_ssl_context():
     assert isinstance(aux_app, aiohttp.web.Application)
     assert aux_port == 8001
     assert runapp_host == "0.0.0.0"
-    for startup in aux_app.on_startup:
-        loop.run_until_complete(startup(aux_app))
+    with asyncio.Runner() as runner:
+        loop = runner.get_loop()
+        for startup in aux_app.on_startup:
+            loop.run_until_complete(startup(aux_app))
 
-    async def check_callback(session, ssl_context):
-        print(session, ssl_context)
-        async with session.get("https://localhost:8000/", ssl=ssl_context) as r:
-            assert r.status == 200
-            assert r.headers["content-type"].startswith("text/html")
-            text = await r.text()
-            print(text)
-            assert "<h1>hello world</h1>" in text
-            assert '<script src="https://localhost:8001/livereload.js"></script>' in text
+        async def check_callback(session, ssl_context):
+            print(session, ssl_context)
+            async with session.get("https://localhost:8000/", ssl=ssl_context) as r:
+                assert r.status == 200
+                assert r.headers["content-type"].startswith("text/html")
+                text = await r.text()
+                print(text)
+                assert "<h1>hello world</h1>" in text
+                assert '<script src="https://localhost:8001/livereload.js"></script>' in text
 
-        async with session.get("https://localhost:8000/error", ssl=ssl_context) as r:
-            assert r.status == 500
-            assert "raise ValueError()" in (await r.text())
+            async with session.get("https://localhost:8000/error", ssl=ssl_context) as r:
+                assert r.status == 500
+                assert "raise ValueError()" in (await r.text())
 
-    ssl_context = ssl.create_default_context()
-    tls_certificate_authority.configure_trust(ssl_context)
-    try:
-        loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
-    finally:
-        for shutdown in aux_app.on_shutdown:
-            loop.run_until_complete(shutdown(aux_app))
-        loop.run_until_complete(aux_app.cleanup())
+        ssl_context = ssl.create_default_context()
+        tls_certificate_authority.configure_trust(ssl_context)
+        try:
+            loop.run_until_complete(check_ssl_server_running(check_callback, ssl_context))
+        finally:
+            for shutdown in aux_app.on_shutdown:
+                loop.run_until_complete(shutdown(aux_app))
+            loop.run_until_complete(aux_app.cleanup())
+        loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
     # Stopping the server afterwards may log additional warnings.
     assert caplog.record_tuples[:3] == [
         ("adev.server.dft", logging.INFO, "Starting aux server at https://localhost:8001 ◆"),
         ("adev.server.dft", logging.INFO, "serving static files from ./static_dir/ at https://localhost:8001/static/"),
         ("adev.server.dft", logging.INFO, "Starting dev server at https://localhost:8000 ●"),
     ]
-    loop.run_until_complete(asyncio.sleep(.25))  # TODO(aiohttp 4): Remove this hack
