@@ -21,15 +21,15 @@ from .conftest import SIMPLE_APP, create_future
 
 async def test_check_port_open(unused_tcp_port_factory):
     port = unused_tcp_port_factory()
-    await check_port_open(port, delay=0.001)
+    await check_port_open(port, host="127.0.0.1", delay=0.001)
 
 
 async def test_check_port_not_open(unused_tcp_port_factory):
     port = unused_tcp_port_factory()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(('0.0.0.0', port))
+        sock.bind(("127.0.0.1", port))
         with pytest.raises(AiohttpDevException):
-            await check_port_open(port, delay=0.001)
+            await check_port_open(port, host="127.0.0.1", delay=0.001)
 
 
 async def test_aux_reload(caplog):
