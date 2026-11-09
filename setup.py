@@ -1,4 +1,4 @@
-from importlib.machinery import SourceFileLoader
+import re
 from pathlib import Path
 from setuptools import setup
 
@@ -6,7 +6,11 @@ THIS_DIR = Path(__file__).resolve().parent
 long_description = THIS_DIR.joinpath('README.rst').read_text()
 
 # avoid loading the package before requirements are installed:
-version = SourceFileLoader("__version__", "aiohttp_devtools/__init__.py").load_module()
+txt = THIS_DIR.joinpath("aiohttp_devtools/__init__.py").read_text("utf-8")
+try:
+    version = re.findall(r'^__version__ = "([^"]+)"\r?$', txt, re.M)[0]
+except IndexError:
+    raise RuntimeError("Unable to determine version.")
 
 name = 'aiohttp-devtools'
 repo_slug = 'aio-libs/{}'.format(name)
@@ -14,7 +18,7 @@ repo_url = 'https://github.com/{}'.format(repo_slug)
 
 setup(
     name=name,
-    version=version.__version__,
+    version=version,
     description='Dev tools for aiohttp',
     long_description=long_description,
     classifiers=[
@@ -25,6 +29,8 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
