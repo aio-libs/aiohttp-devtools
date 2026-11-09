@@ -68,7 +68,6 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
     * modify responses to add the livereload snippet
     * set ``static_root_url`` on the app (for use with aiohttp-jinja2)
     """
-    app._debug = True
     dft_logger.debug('livereload enabled: %s', '✓' if config.livereload else '✖')
 
     def get_host(request: web.Request) -> str:
@@ -170,28 +169,16 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
         module = config.import_module()
         app_factory = config.get_app_factory(module)
         ssl_context = config.get_ssl_context(module)
-        if sys.version_info >= (3, 11):
-            with asyncio.Runner() as runner:
-                app_runner = runner.run(create_main_app(config, app_factory))
-                try:
-                    runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
-                    runner.get_loop().run_forever()
-                except KeyboardInterrupt:
-                    pass
-                finally:
-                    with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-                        runner.run(app_runner.cleanup())
-        else:
-            loop = asyncio.new_event_loop()
-            runner = loop.run_until_complete(create_main_app(config, app_factory))
+        with asyncio.Runner(debug=True) as runner:
+            app_runner = runner.run(create_main_app(config, app_factory))
             try:
-                loop.run_until_complete(start_main_app(runner, config.bind_address, config.main_port, ssl_context))
-                loop.run_forever()
-            except KeyboardInterrupt:  # pragma: no cover
+                runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
+                runner.get_loop().run_forever()
+            except KeyboardInterrupt:
                 pass
             finally:
                 with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
-                    loop.run_until_complete(runner.cleanup())
+                    runner.run(app_runner.cleanup())
 
 
 async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRunner:

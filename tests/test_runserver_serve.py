@@ -124,8 +124,6 @@ def test_fmt_size_large(value, result):
 
 
 class DummyApplication(Dict[AppKey[Any], object]):
-    _debug = False
-
     def __init__(self):
         self.on_response_prepare = []
         self.middlewares = []
@@ -149,7 +147,6 @@ def test_modify_main_app_all_off(mktree):
     assert len(app.middlewares) == 0
     assert app[static_root_key] == "http://foobar.com:8001/static"
     assert subapp[static_root_key] == "http://foobar.com:8001/static"
-    assert app._debug is True
 
 
 def test_modify_main_app_all_on(mktree):
@@ -163,7 +160,6 @@ def test_modify_main_app_all_on(mktree):
     assert len(app.middlewares) == 2
     assert app[static_root_key] == "http://localhost:8001/static"
     assert subapp[static_root_key] == "http://localhost:8001/static"
-    assert app._debug is True
 
 
 async def test_modify_main_app_on_prepare(mktree):
