@@ -1,7 +1,7 @@
 aiohttp==3.14.5
 aiohttp-jinja2==1.6
 click==8.1.8
-coverage==7.10
+coverage==7.17.2
 devtools==0.13.0
 grablib==0.8
 Pygments==2.20.0
