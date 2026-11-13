@@ -1,6 +1,5 @@
 import asyncio
 import os
-from multiprocessing import set_start_method
 from typing import Any, Type, TypedDict, Union
 
 from aiohttp.abc import AbstractAccessLogger
@@ -29,8 +28,6 @@ def runserver(**config_kwargs: Any) -> RunServer:
     :param config_kwargs: see config.Config for more details
     :return: tuple (auxiliary app, auxiliary app port, event loop)
     """
-    # force a full reload in sub processes so they load an updated version of code, this must be called only once
-    set_start_method('spawn')
     config = Config(**config_kwargs)
     module = config.import_module()
     ssl_context = config.get_ssl_context(module)

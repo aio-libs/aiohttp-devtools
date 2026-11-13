@@ -1,25 +1,13 @@
 import sys
 from asyncio import Future
 from functools import partial
-from multiprocessing import set_start_method
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Mapping, Union
+from typing import TYPE_CHECKING, Callable, Iterator, Mapping, Union
 
 import pytest
 
 if TYPE_CHECKING:
     import trustme
-
-if sys.platform == "win32":
-    forked = pytest.mark.skip(reason="Windows doesn't suport fork")
-else:
-    forked = pytest.mark.forked
-
-if sys.platform == "linux":
-    linux_forked = pytest.mark.forked
-else:
-    def linux_forked(func):
-        return func
 
 SIMPLE_APP = {
     'app.py': """\
@@ -49,16 +37,6 @@ def _mktree(root: Path, tree: FileTree) -> None:
             _mktree(path, content)
 
 
-@pytest.fixture(autouse=True)
-def reset_start_method() -> None:
-    """Allow runserver() to set the multiprocessing start method in forked tests.
-
-    pytest-forked runs forked tests in a multiprocessing child process, which fixes the start method
-    for that process, so it needs resetting before runserver() can set it to "spawn".
-    """
-    set_start_method(None, force=True)
-
-
 @pytest.fixture
 def tls_certificate_authority() -> "trustme.CA":
     """Create a throwaway CA for the test, so the test certificates can never go stale."""
@@ -74,10 +52,21 @@ def tls_certificate(tls_certificate_authority: "trustme.CA") -> "trustme.LeafCer
 
 
 @pytest.fixture
-def tmpworkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Create a temporary directory and make it the working directory for the test."""
+def tmpworkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    """Create a temporary directory and make it the working directory for the test.
+
+    Importing an app adds the directory to sys.path and caches the app's modules in sys.modules.
+    Both are undone afterwards, so that each test imports its own app.py.
+    """
     monkeypatch.chdir(tmp_path)
-    return tmp_path
+    sys_path = sys.path.copy()
+    sys_modules = set(sys.modules)
+    yield tmp_path
+    sys.path[:] = sys_path
+    for name in sys.modules.keys() - sys_modules:
+        module_file = getattr(sys.modules[name], "__file__", None)
+        if module_file and Path(module_file).is_relative_to(tmp_path):
+            del sys.modules[name]
 
 
 @pytest.fixture

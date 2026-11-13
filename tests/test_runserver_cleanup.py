@@ -2,12 +2,11 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pytest
 from aiohttp import ClientSession, ClientTimeout
 
-from .conftest import forked
 
-
-@forked  # forked doesn't run on Windows and is skipped - see cleanup_app.py instead
+@pytest.mark.skipif(sys.platform == "win32", reason="Tested manually on Windows, see cleanup_app.py")
 async def test_server_cleanup_by_url() -> None:
     async def is_server_running() -> bool:
         async with ClientSession(timeout=ClientTimeout(total=1)) as session:

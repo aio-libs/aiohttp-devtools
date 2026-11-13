@@ -9,15 +9,13 @@ import aiohttp
 import pytest
 from aiohttp import ClientTimeout
 
-from multiprocessing import set_start_method
-
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (
     WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
-from .conftest import SIMPLE_APP, forked, linux_forked
+from .conftest import SIMPLE_APP
 
 
 async def check_server_running(check_callback):
@@ -39,7 +37,6 @@ async def check_server_running(check_callback):
 
 # TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
-@forked
 def test_start_runserver(mktree, caplog):
     mktree({
         'app.py': """\
@@ -98,7 +95,6 @@ def create_app():
     ]
 
 
-@forked
 def test_start_runserver_app_instance(mktree):
     mktree({
         'app.py': """\
@@ -123,13 +119,12 @@ app.router.add_get('/', hello)
     assert len(aux_app.cleanup_ctx) == 1
 
 
-@forked
 async def test_start_runserver_with_multi_app_modules(tmpworkdir, mktree, capfd):
     mktree({
         "app.py": f"""\
 from aiohttp import web
 import sys
-sys.path.insert(0, "{tmpworkdir}/libs/l1")
+sys.path.insert(0, "{tmpworkdir.as_posix()}/libs/l1")
 
 async def hello(request):
     return web.Response(text="<h1>hello world</h1>", content_type="text/html")
@@ -147,7 +142,6 @@ async def create_app():
         }
     })
 
-    set_start_method("spawn")
     config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
     module = config.import_module()
     config.get_app_factory(module)
@@ -163,7 +157,6 @@ async def create_app():
         await app_task._stop_dev_server()
 
 
-@forked
 async def test_run_app_aiohttp_client(mktree, aiohttp_client):
     mktree(SIMPLE_APP)
     config = Config(app_path='app.py')
@@ -180,7 +173,6 @@ async def test_run_app_aiohttp_client(mktree, aiohttp_client):
     assert text == 'hello world'
 
 
-@forked
 async def test_run_app_browser_cache(mktree, aiohttp_client):
     mktree(SIMPLE_APP)
     config = Config(app_path="app.py", browser_cache=True)
@@ -207,7 +199,6 @@ async def test_aux_app(mktree, aiohttp_client):
     await asyncio.sleep(0)  # TODO(aiohttp 4): Remove this hack
 
 
-@forked
 async def test_serve_main_app(mktree, mocker):
     loop = asyncio.get_running_loop()
     mktree(SIMPLE_APP)
@@ -224,7 +215,6 @@ async def test_serve_main_app(mktree, mocker):
     await runner.cleanup()
 
 
-@forked
 async def test_start_main_app_app_instance(mktree, mocker):
     mktree({
         'app.py': """\
@@ -338,7 +328,6 @@ async def check_ssl_server_running(check_callback, ssl_context):
 
 
 @pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
-@linux_forked
 def test_start_runserver_ssl(tls_certificate_authority, tls_certificate, mktree, caplog):
     mktree({
         "app.py": """\
