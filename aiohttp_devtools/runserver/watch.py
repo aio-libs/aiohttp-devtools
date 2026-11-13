@@ -4,7 +4,7 @@ import signal
 import sys
 import time
 from contextlib import suppress
-from multiprocessing import Process
+from multiprocessing import get_context
 from pathlib import Path
 from typing import AsyncIterator, Iterable, Optional, Tuple, Union
 
@@ -141,7 +141,8 @@ class AppTask(WatchTask):
             # on windows, without a windows machine I've no idea what else to do here
             tty_path = None
 
-        self._process = Process(target=serve_main_app, args=(self._config, tty_path))
+        # Spawn the process, so that it loads the updated version of the code.
+        self._process = get_context("spawn").Process(target=serve_main_app, args=(self._config, tty_path))
         self._process.start()
 
     async def _stop_dev_server(self) -> None:

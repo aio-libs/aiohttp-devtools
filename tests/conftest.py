@@ -1,7 +1,6 @@
 import sys
 from asyncio import Future
 from functools import partial
-from multiprocessing import set_start_method
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterator, Mapping, Union
 
@@ -36,15 +35,6 @@ def _mktree(root: Path, tree: FileTree) -> None:
         else:
             path.mkdir(parents=True)
             _mktree(path, content)
-
-
-@pytest.fixture(autouse=True)
-def reset_start_method() -> None:
-    """Allow runserver() to set the multiprocessing start method in each test.
-
-    The start method can only be set once per process, so it is reset before each test.
-    """
-    set_start_method(None, force=True)
 
 
 @pytest.fixture

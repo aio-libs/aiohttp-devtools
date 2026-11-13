@@ -9,8 +9,6 @@ import aiohttp
 import pytest
 from aiohttp import ClientTimeout
 
-from multiprocessing import set_start_method
-
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (
@@ -144,7 +142,6 @@ async def create_app():
         }
     })
 
-    set_start_method("spawn")
     config = Config(app_path="app.py", root_path=tmpworkdir, main_port=0, app_factory_name="create_app")
     module = config.import_module()
     config.get_app_factory(module)
