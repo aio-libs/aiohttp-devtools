@@ -1,23 +1,7 @@
-import logging
-from typing import Iterator
-
-import pytest
 from click.testing import CliRunner
 
 from aiohttp_devtools.cli import cli
 from aiohttp_devtools.exceptions import AiohttpDevException
-
-
-@pytest.fixture(autouse=True)
-def restore_logging() -> Iterator[None]:
-    """Undo the logging configuration applied by the commands, so it doesn't leak into other tests."""
-    state = [(logger, logger.level, logger.propagate, logger.handlers.copy())
-             for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)]
-    yield
-    for logger, level, propagate, handlers in state:
-        logger.setLevel(level)
-        logger.propagate = propagate
-        logger.handlers[:] = handlers
 
 
 def test_cli_help():
