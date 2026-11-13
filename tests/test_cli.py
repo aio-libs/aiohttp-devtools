@@ -1,9 +1,23 @@
+import logging
+from typing import Iterator
+
+import pytest
 from click.testing import CliRunner
 
 from aiohttp_devtools.cli import cli
 from aiohttp_devtools.exceptions import AiohttpDevException
 
-from .conftest import forked
+
+@pytest.fixture(autouse=True)
+def restore_logging() -> Iterator[None]:
+    """Undo the logging configuration applied by the commands, so it doesn't leak into other tests."""
+    state = [(logger, logger.level, logger.propagate, logger.handlers.copy())
+             for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)]
+    yield
+    for logger, level, propagate, handlers in state:
+        logger.setLevel(level)
+        logger.propagate = propagate
+        logger.handlers[:] = handlers
 
 
 def test_cli_help():
@@ -53,7 +67,6 @@ def test_runserver_error(mocker):
     assert mock_runserver.call_count == 1
 
 
-@forked
 def test_runserver_error_verbose(mocker):
     mock_run_app = mocker.patch('aiohttp_devtools.cli.run_app')
     mock_run_app.side_effect = AiohttpDevException('foobar')
@@ -67,7 +80,6 @@ def test_runserver_error_verbose(mocker):
     assert mock_runserver.call_count == 1
 
 
-@forked
 def test_runserver_no_args():
     runner = CliRunner()
     result = runner.invoke(cli, ['runserver'])

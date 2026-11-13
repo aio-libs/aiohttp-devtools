@@ -4,7 +4,7 @@ from aiohttp import web
 from aiohttp_devtools.exceptions import AiohttpDevConfigError
 from aiohttp_devtools.runserver.config import Config
 
-from .conftest import SIMPLE_APP, forked
+from .conftest import SIMPLE_APP
 
 
 async def test_load_simple_app(mktree):
@@ -30,7 +30,6 @@ def test_host_override_addr(mktree):
     assert config.bind_address == "192.168.1.1"
 
 
-@forked
 async def test_create_app_wrong_name(mktree):
     mktree(SIMPLE_APP)
     config = Config(app_path='app.py', app_factory_name='missing')
@@ -40,7 +39,6 @@ async def test_create_app_wrong_name(mktree):
     assert excinfo.value.args[0] == "Module 'app.py' does not define a 'missing' attribute/class"
 
 
-@forked
 async def test_no_loop_coroutine(mktree):
     mktree({
         'app.py': """\
@@ -61,7 +59,6 @@ async def app_factory():
     assert isinstance(app, web.Application)
 
 
-@forked
 async def test_not_app(mktree):
     mktree({
         'app.py': """\
@@ -76,7 +73,6 @@ def app_factory():
         await config.load_app(config.get_app_factory(module))
 
 
-@forked
 async def test_wrong_function_signature(mktree):
     mktree({
         'app.py': """\
@@ -91,7 +87,6 @@ def app_factory(foo):
         await config.load_app(config.get_app_factory(module))
 
 
-@forked
 async def test_no_ssl_context_factory(mktree):
     mktree({
         "app.py": """\
@@ -106,7 +101,6 @@ def app_factory(foo):
         config.get_ssl_context(module)
 
 
-@forked
 async def test_invalid_ssl_context(mktree):
     mktree({
         "app.py": """\
