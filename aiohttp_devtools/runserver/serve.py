@@ -384,8 +384,7 @@ class CustomStaticResource(StaticResource):
             body = f.read() + LIVE_RELOAD_LOCAL_SNIPPET
 
         resp = web.Response(body=body, content_type="text/html")
-        # Mypy bug: https://github.com/python/mypy/issues/11892
-        resp.last_modified = filepath.stat().st_mtime  # type: ignore[assignment]
+        resp.last_modified = filepath.stat().st_mtime
         return resp
 
     def _insert_footer_if_exists(
