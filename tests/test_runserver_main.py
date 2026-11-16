@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import ssl
+from typing import Callable
 from unittest import mock
 
 import aiohttp
@@ -15,7 +16,7 @@ from aiohttp_devtools.runserver.serve import (
     WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
-from .conftest import SIMPLE_APP
+from .conftest import SIMPLE_APP, FileTree
 
 
 async def check_server_running(check_callback):
@@ -119,14 +120,14 @@ app.router.add_get('/', hello)
     assert len(aux_app.cleanup_ctx) == 1
 
 
-def test_start_runserver_static_in_watched_path(mktree):
+def test_start_runserver_static_in_watched_path(mktree: Callable[[FileTree], None]) -> None:
     mktree({**SIMPLE_APP, "static_dir/foo.js": "var bar=1;"})
     args = runserver(app_path="app.py", static_path="static_dir", main_port=0, aux_port=8001)
     # AppTask reloads the static files too, another watcher would prompt each reload twice.
     assert len(args["app"].cleanup_ctx) == 1
 
 
-def test_start_runserver_static_outside_watched_path(mktree):
+def test_start_runserver_static_outside_watched_path(mktree: Callable[[FileTree], None]) -> None:
     mktree({"project": SIMPLE_APP, "static_dir/foo.js": "var bar=1;"})
     args = runserver(app_path="app.py", root_path="project", static_path="../static_dir", main_port=0, aux_port=8001)
     assert len(args["app"].cleanup_ctx) == 2
