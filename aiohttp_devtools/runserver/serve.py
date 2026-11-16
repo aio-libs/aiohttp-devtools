@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import hashlib
 import json
 import mimetypes
 import sys
@@ -10,9 +11,9 @@ from pathlib import Path
 from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
 
 from aiohttp import WSMsgType, web
-from aiohttp.hdrs import LAST_MODIFIED, CONTENT_LENGTH
+from aiohttp.hdrs import CONTENT_LENGTH
 from aiohttp.typedefs import Handler
-from aiohttp.web_exceptions import HTTPNotFound, HTTPNotModified
+from aiohttp.web_exceptions import HTTPNotFound
 from aiohttp.web_runner import GracefulExit
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import URL
@@ -36,6 +37,7 @@ LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
 
 LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
+LIVERELOAD_ETAG = web.AppKey("LIVERELOAD_ETAG", str)
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
 STATIC_PATH = web.AppKey("STATIC_PATH", str)
 STATIC_URL = web.AppKey("STATIC_URL", str)
@@ -259,7 +261,9 @@ def create_auxiliary_app(
 
     if livereload:
         lr_path = Path(__file__).resolve().parent / 'livereload.js'
-        app[LIVERELOAD_SCRIPT] = lr_path.read_bytes()
+        lr_script = lr_path.read_bytes()
+        app[LIVERELOAD_SCRIPT] = lr_script
+        app[LIVERELOAD_ETAG] = hashlib.sha256(lr_script).hexdigest()
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         aux_logger.debug('enabling livereload on auxiliary app')
@@ -279,12 +283,13 @@ def create_auxiliary_app(
 
 
 async def livereload_js(request: web.Request) -> web.Response:
-    if request.if_modified_since:
-        raise HTTPNotModified()
-
-    lr_script = request.app[LIVERELOAD_SCRIPT]
-    return web.Response(body=lr_script, content_type='application/javascript',
-                        headers={LAST_MODIFIED: 'Fri, 01 Jan 2016 00:00:00 GMT'})
+    etag = request.app[LIVERELOAD_ETAG]
+    if any(e.value in (etag, "*") for e in request.if_none_match or ()):
+        resp = web.Response(status=304)
+    else:
+        resp = web.Response(body=request.app[LIVERELOAD_SCRIPT], content_type="application/javascript")
+    resp.etag = etag
+    return resp
 
 WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
 
