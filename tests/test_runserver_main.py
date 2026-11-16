@@ -8,6 +8,8 @@ from unittest import mock
 import aiohttp
 import pytest
 from aiohttp import ClientTimeout
+from aiohttp.test_utils import TestClient
+from pytest_mock import MockerFixture
 
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
@@ -310,7 +312,7 @@ async def test_websocket_reload(aux_cli):
         await ws.close()
 
 
-async def test_livereload_js_caching(aux_cli):
+async def test_livereload_js_caching(aux_cli: TestClient[aiohttp.web.Request, aiohttp.web.Application]) -> None:
     async with aux_cli.get("/livereload.js") as r:
         assert r.status == 200
         etag = r.headers["ETag"]
@@ -331,7 +333,7 @@ async def test_livereload_js_caching(aux_cli):
         assert await r.read() == script
 
 
-def test_livereload_js_etag_changes_with_script(mocker):
+def test_livereload_js_etag_changes_with_script(mocker: MockerFixture) -> None:
     read_bytes = mocker.patch("pathlib.Path.read_bytes", autospec=True, return_value=b"old script")
     old_etag = create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG]
     read_bytes.return_value = b"new script"
