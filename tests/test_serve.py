@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from aiohttp_devtools.runserver import serve_static
 from aiohttp_devtools.runserver.serve import WS, src_reload
@@ -85,7 +86,7 @@ async def test_serve_index(aiohttp_client, tmpworkdir, mktree):
     assert text == '<h1>hello index</h1>'
 
 
-async def test_reload_relative_path(tmpworkdir, mocker):
+async def test_reload_relative_path(tmpworkdir: Path, mocker: MockerFixture) -> None:
     watcher = mocker.patch("aiohttp_devtools.runserver.main.LiveReloadTask", autospec=True)
     app = serve_static(static_path=".")["app"]
     # Changes are reported with absolute paths, so that is what must be watched and compared against.
