@@ -263,7 +263,7 @@ def create_auxiliary_app(
         lr_path = Path(__file__).resolve().parent / 'livereload.js'
         lr_script = lr_path.read_bytes()
         app[LIVERELOAD_SCRIPT] = lr_script
-        app[LIVERELOAD_ETAG] = hashlib.md5(lr_script, usedforsecurity=False).hexdigest()
+        app[LIVERELOAD_ETAG] = hashlib.sha256(lr_script).hexdigest()
         app.router.add_route('GET', '/livereload.js', livereload_js)
         app.router.add_route('GET', '/livereload', websocket_handler)
         aux_logger.debug('enabling livereload on auxiliary app')
