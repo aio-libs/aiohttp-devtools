@@ -283,8 +283,6 @@ def create_auxiliary_app(
 
 
 async def livereload_js(request: web.Request) -> web.Response:
-    # The ETag is derived from the script itself, so that browsers
-    # pick up a new version of livereload.js as soon as we ship one.
     etag = request.app[LIVERELOAD_ETAG]
     if any(e.value in (etag, "*") for e in request.if_none_match or ()):
         resp = web.Response(status=304)
