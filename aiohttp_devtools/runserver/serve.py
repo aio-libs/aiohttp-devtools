@@ -34,7 +34,9 @@ except ImportError:
     static_root_key = None  # type: ignore[assignment]
 
 LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n'
-LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js"></script>\n'
+# The empty "port" makes livereload.js connect to the port that served the page. Without it,
+# livereload.js uses its default port (35729) whenever the URL has no port, i.e. on port 80 or 443.
+LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js?port="></script>\n'
 
 LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
 LIVERELOAD_ETAG = web.AppKey("LIVERELOAD_ETAG", str)
