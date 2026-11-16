@@ -333,10 +333,9 @@ async def test_livereload_js_caching(aux_cli: TestClient[aiohttp.web.Request, ai
 
 
 def test_livereload_js_etag_changes_with_script() -> None:
-    with mock.patch("pathlib.Path.read_bytes", autospec=True, spec_set=True, return_value=b"old script") as read_bytes:
+    with mock.patch("pathlib.Path.read_bytes", autospec=True, spec_set=True, return_value=b"old script"):
         old_etag = create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG]
-        read_bytes.return_value = b"new script"
-        assert create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG] != old_etag
+    assert create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG] != old_etag
 
 
 async def check_ssl_server_running(check_callback, ssl_context):
