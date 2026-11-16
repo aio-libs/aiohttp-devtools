@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest import mock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from aiohttp_devtools.runserver import serve_static
 from aiohttp_devtools.runserver.serve import WS, src_reload
@@ -86,13 +85,13 @@ async def test_serve_index(aiohttp_client, tmpworkdir, mktree):
     assert text == '<h1>hello index</h1>'
 
 
-async def test_reload_relative_path(tmpworkdir: Path, mocker: MockerFixture) -> None:
-    watcher = mocker.patch("aiohttp_devtools.runserver.main.LiveReloadTask", autospec=True)
-    app = serve_static(static_path=".")["app"]
+async def test_reload_relative_path(tmpworkdir: Path) -> None:
+    with mock.patch("aiohttp_devtools.runserver.main.LiveReloadTask", autospec=True, spec_set=True) as watcher:
+        app = serve_static(static_path=".")["app"]
     # Changes are reported with absolute paths, so that is what must be watched and compared against.
     watcher.assert_called_once_with(str(tmpworkdir))
-    ws = MagicMock()
-    ws.send_str = MagicMock(return_value=create_future())
+    ws = mock.MagicMock()
+    ws.send_str = mock.MagicMock(return_value=create_future())
     app[WS].add((ws, "/"))
     assert await src_reload(app, str(tmpworkdir / "foo.js")) == 1
     assert json.loads(ws.send_str.call_args[0][0])["path"] == str(Path("/foo.js"))
