@@ -43,7 +43,10 @@ def runserver(**config_kwargs: Any) -> RunServer:
     main_manager = AppTask(config)
     aux_app.cleanup_ctx.append(main_manager.cleanup_ctx)
 
-    if config.static_path:
+    assert config.watch_path
+    # AppTask also reloads the static files which are inside the path that it watches,
+    # so watching them a second time would prompt every reload twice.
+    if config.static_path and not config.static_path.is_relative_to(config.watch_path):
         static_manager = LiveReloadTask(config.static_path)
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.cleanup_ctx.append(static_manager.cleanup_ctx)
