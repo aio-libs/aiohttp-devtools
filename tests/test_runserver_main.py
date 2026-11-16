@@ -313,7 +313,6 @@ async def test_websocket_reload(aux_cli):
 async def test_livereload_js_caching(aux_cli):
     async with aux_cli.get("/livereload.js") as r:
         assert r.status == 200
-        assert r.headers["Cache-Control"] == "no-cache"
         etag = r.headers["ETag"]
         script = await r.read()
 
@@ -321,7 +320,6 @@ async def test_livereload_js_caching(aux_cli):
     for if_none_match in (etag, "*"):
         async with aux_cli.get("/livereload.js", headers={"If-None-Match": if_none_match}) as r:
             assert r.status == 304
-            assert r.headers["Cache-Control"] == "no-cache"
             assert r.headers["ETag"] == etag
             assert await r.read() == b""
 

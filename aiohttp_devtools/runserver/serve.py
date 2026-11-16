@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
 
 from aiohttp import WSMsgType, web
-from aiohttp.hdrs import CACHE_CONTROL, CONTENT_LENGTH
+from aiohttp.hdrs import CONTENT_LENGTH
 from aiohttp.typedefs import Handler
 from aiohttp.web_exceptions import HTTPNotFound
 from aiohttp.web_runner import GracefulExit
@@ -283,15 +283,14 @@ def create_auxiliary_app(
 
 
 async def livereload_js(request: web.Request) -> web.Response:
-    # Always revalidate, with a validator derived from the script itself, so that
-    # browsers pick up a new version of livereload.js as soon as we ship one.
+    # The ETag is derived from the script itself, so that browsers
+    # pick up a new version of livereload.js as soon as we ship one.
     etag = request.app[LIVERELOAD_ETAG]
     if any(e.value in (etag, "*") for e in request.if_none_match or ()):
         resp = web.Response(status=304)
     else:
         resp = web.Response(body=request.app[LIVERELOAD_SCRIPT], content_type="application/javascript")
     resp.etag = etag
-    resp.headers[CACHE_CONTROL] = "no-cache"
     return resp
 
 WS_TYPE_LOOKUP = {k.value: v for v, k in WSMsgType.__members__.items()}
