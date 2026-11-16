@@ -64,7 +64,6 @@ def serve_static(*, static_path: str, livereload: bool = True, bind_address: str
                  browser_cache: bool = False) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    # Changes are reported with absolute paths, which can only be matched against an absolute path.
     resolved_path = str(Path(static_path).resolve())
     app = create_auxiliary_app(static_path=resolved_path, livereload=livereload,
                                browser_cache=browser_cache)
