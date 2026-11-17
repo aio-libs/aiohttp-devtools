@@ -37,8 +37,6 @@ async def check_server_running(check_callback):
     await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
-# TODO: Can't find a way to fix these warnings, maybe fixed in aiohttp 4.
-@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 def test_start_runserver(mktree, caplog):
     mktree({
         'app.py': """\
@@ -369,7 +367,6 @@ async def check_ssl_server_running(check_callback, ssl_context):
     await asyncio.sleep(.25)  # TODO(aiohttp 4): Remove this hack
 
 
-@pytest.mark.filterwarnings(r"ignore:unclosed:ResourceWarning")
 def test_start_runserver_ssl(tls_certificate_authority, tls_certificate, mktree, caplog):
     mktree({
         "app.py": """\
