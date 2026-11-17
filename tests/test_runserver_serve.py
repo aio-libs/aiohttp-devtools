@@ -1,9 +1,10 @@
+import asyncio
 import json
 import logging
 import pathlib
 import socket
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from aiohttp.web import Application, AppKey, Request, Response
@@ -30,6 +31,26 @@ async def test_check_port_not_open(unused_tcp_port_factory):
         sock.bind(("127.0.0.1", port))
         with pytest.raises(AiohttpDevException):
             await check_port_open(port, host="127.0.0.1", delay=0.001)
+
+
+async def test_check_port_open_does_not_accept_connections(unused_tcp_port: int) -> None:
+    loop = asyncio.get_running_loop()
+    create_server = loop.create_server
+    connected: list[bool] = []
+
+    async def create_server_then_connect(*args: Any, **kwargs: Any) -> asyncio.Server:
+        server = await create_server(*args, **kwargs)
+        # A client connects while the port is being checked.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # The client is refused on Linux and Windows, but just gets no answer on macOS.
+            sock.settimeout(0.5)
+            connected.append(sock.connect_ex(("127.0.0.1", unused_tcp_port)) == 0)
+        return server
+
+    with patch.object(loop, "create_server", create_server_then_connect):
+        await check_port_open(unused_tcp_port, host="127.0.0.1", delay=0.001)
+    # If the client had been accepted, its connection would be reset when the check finishes.
+    assert connected == [False]
 
 
 async def test_aux_reload(caplog):
