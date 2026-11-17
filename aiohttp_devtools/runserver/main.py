@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 from typing import Any, Type, TypedDict, Union
 
 from aiohttp.abc import AbstractAccessLogger
@@ -66,12 +67,13 @@ def serve_static(*, static_path: str, livereload: bool = True, bind_address: str
                  browser_cache: bool = False) -> RunServer:
     logger.debug('Config: path="%s", livereload=%s, port=%s', static_path, livereload, port)
 
-    app = create_auxiliary_app(static_path=static_path, livereload=livereload,
+    resolved_path = str(Path(static_path).resolve())
+    app = create_auxiliary_app(static_path=resolved_path, livereload=livereload,
                                browser_cache=browser_cache)
 
     if livereload:
-        livereload_manager = LiveReloadTask(static_path)
-        logger.debug('starting livereload to watch %s', static_path)
+        livereload_manager = LiveReloadTask(resolved_path)
+        logger.debug('starting livereload to watch %s', resolved_path)
         app.cleanup_ctx.append(livereload_manager.cleanup_ctx)
 
     livereload_status = 'ON' if livereload else 'OFF'

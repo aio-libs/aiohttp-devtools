@@ -9,11 +9,12 @@ from unittest import mock
 import aiohttp
 import pytest
 from aiohttp import ClientTimeout
+from aiohttp.test_utils import TestClient
 
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (
-    WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
+    LIVERELOAD_ETAG, WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
 from .conftest import SIMPLE_APP, FileTree
@@ -322,6 +323,33 @@ async def test_websocket_reload(aux_cli):
         assert reloads == 1
     finally:
         await ws.close()
+
+
+async def test_livereload_js_caching(aux_cli: TestClient[aiohttp.web.Request, aiohttp.web.Application]) -> None:
+    async with aux_cli.get("/livereload.js") as r:
+        assert r.status == 200
+        etag = r.headers["ETag"]
+        script = await r.read()
+
+    # A browser which has the current script is told to keep using it.
+    for if_none_match in (etag, "*"):
+        async with aux_cli.get("/livereload.js", headers={"If-None-Match": if_none_match}) as r:
+            assert r.status == 304
+            assert r.headers["ETag"] == etag
+            assert await r.read() == b""
+
+    # A browser which has another version of the script is sent the current one.
+    headers = {"If-None-Match": '"another-version"', "If-Modified-Since": "Fri, 01 Jan 2016 00:00:00 GMT"}
+    async with aux_cli.get("/livereload.js", headers=headers) as r:
+        assert r.status == 200
+        assert r.headers["ETag"] == etag
+        assert await r.read() == script
+
+
+def test_livereload_js_etag_changes_with_script() -> None:
+    with mock.patch("pathlib.Path.read_bytes", autospec=True, spec_set=True, return_value=b"old script"):
+        old_etag = create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG]
+    assert create_auxiliary_app(static_path=None)[LIVERELOAD_ETAG] != old_etag
 
 
 async def check_ssl_server_running(check_callback, ssl_context):
