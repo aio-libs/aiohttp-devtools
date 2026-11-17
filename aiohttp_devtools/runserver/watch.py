@@ -3,10 +3,10 @@ import os
 import signal
 import sys
 import time
+from collections.abc import AsyncIterator, Iterable
 from contextlib import suppress
 from multiprocessing import get_context
 from pathlib import Path
-from typing import AsyncIterator, Iterable, Optional, Tuple, Union
 
 from aiohttp import ClientSession, web
 from aiohttp.client_exceptions import ClientError, ClientConnectionError
@@ -19,7 +19,7 @@ from .serve import LAST_RELOAD, STATIC_PATH, WS, serve_main_app, src_reload
 from ssl import SSLContext
 
 
-def is_static(static_path: str, changes: Iterable[Tuple[object, str]]) -> bool:
+def is_static(static_path: str, changes: Iterable[tuple[object, str]]) -> bool:
     if not static_path:
         return False
     return all(str(c[1]).startswith(static_path) for c in changes)
@@ -27,9 +27,9 @@ def is_static(static_path: str, changes: Iterable[Tuple[object, str]]) -> bool:
 
 class WatchTask:
     _app: web.Application
-    _task: "asyncio.Task[None]"
+    _task: asyncio.Task[None]
 
-    def __init__(self, path: Union[Path, str]):
+    def __init__(self, path: Path | str):
         self._path = path
 
     async def start(self, app: web.Application) -> None:
@@ -60,9 +60,9 @@ class AppTask(WatchTask):
     def __init__(self, config: Config):
         self._config = config
         self._reloads = 0
-        self._session: Optional[ClientSession] = None
+        self._session: ClientSession | None = None
         self._runner = None
-        self._client_ssl_context: Union[bool, SSLContext] = True
+        self._client_ssl_context: bool | SSLContext = True
         assert self._config.watch_path
 
         super().__init__(self._config.watch_path)
@@ -113,7 +113,7 @@ class AppTask(WatchTask):
         assert self._app is not None and self._session is not None
 
         if self._app[WS]:
-            url = "{0.protocol}://{0.host}:{0.main_port}/?_checking_alive=1".format(self._config)
+            url = f"{self._config.protocol}://{self._config.host}:{self._config.main_port}/?_checking_alive=1"
             logger.debug('checking app at "%s" is running before prompting reload...', url)
             for i in range(checks):
                 await asyncio.sleep(0.1)
@@ -149,14 +149,15 @@ class AppTask(WatchTask):
         if self._process.is_alive():
             logger.debug('stopping server process...')
             if self._config.shutdown_by_url:  # Workaround for signals not working on Windows
-                url = "{0.protocol}://{0.host}:{0.main_port}{0.path_prefix}/shutdown".format(self._config)
-                logger.debug("Attempting to stop process via shutdown endpoint {}".format(url))
+                url = (f"{self._config.protocol}://{self._config.host}:{self._config.main_port}"
+                       f"{self._config.path_prefix}/shutdown")
+                logger.debug(f"Attempting to stop process via shutdown endpoint {url}")
                 try:
                     with suppress(ClientConnectionError):
                         async with ClientSession() as session:
                             async with session.get(url, ssl=self._client_ssl_context):
                                 pass
-                except (ConnectionError, ClientError, asyncio.TimeoutError) as ex:
+                except (ConnectionError, ClientError, TimeoutError) as ex:
                     if self._process.is_alive():
                         msg = "shutdown endpoint caused an error (will try signals next)"
                         logger.warning(msg.format(type(ex), ex), exc_info=True)

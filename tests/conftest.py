@@ -1,8 +1,9 @@
 import sys
 from asyncio import Future
+from collections.abc import Callable, Iterator, Mapping
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Iterator, Mapping, Union
+from typing import TYPE_CHECKING, Union
 
 import pytest
 

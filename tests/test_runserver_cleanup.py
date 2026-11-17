@@ -19,8 +19,6 @@ async def test_server_cleanup_by_url() -> None:
                         return True
                 except OSError:  # pragma: no cover
                     await asyncio.sleep(0.5)
-                except asyncio.TimeoutError:  # pragma: no cover
-                    pass
         return False  # pragma: no cover
 
     proc = await asyncio.create_subprocess_exec(
