@@ -6,7 +6,7 @@ import re
 import traceback
 from io import StringIO
 from types import TracebackType
-from typing import Dict, Literal, Optional, Tuple, Type, Union
+from typing import Literal, TextIO
 
 import pygments
 from devtools import pformat
@@ -15,7 +15,7 @@ from devtools.utils import isatty
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3TracebackLexer
 
-_Ei = Union[Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, None, None]]
+_Ei = tuple[type[BaseException], BaseException, TracebackType | None] | tuple[None, None, None]
 
 rs_dft_logger = logging.getLogger('adev.server.dft')
 rs_aux_logger = logging.getLogger('adev.server.aux')
@@ -34,7 +34,7 @@ split_log = re.compile(r'^(\[.*?\])')
 
 
 class DefaultFormatter(logging.Formatter):
-    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
+    def __init__(self, fmt: str | None = None, datefmt: str | None = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
@@ -54,7 +54,7 @@ class DefaultFormatter(logging.Formatter):
 class AccessFormatter(logging.Formatter):
     """Used to log aiohttp_access and aiohttp_server."""
 
-    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: Literal["%", "{", "$"] = "%"):
+    def __init__(self, fmt: str | None = None, datefmt: str | None = None, style: Literal["%", "{", "$"] = "%"):
         super().__init__(fmt, datefmt, style)
         self.stream_is_tty = False
 
@@ -75,7 +75,7 @@ class AccessFormatter(logging.Formatter):
             msg = '{time} {prefix} {msg}'.format(**obj)
         details = getattr(record, 'details', None)
         if details:
-            msg = 'details: {}\n{}'.format(pformat(details, highlight=self.stream_is_tty), msg)
+            msg = f'details: {pformat(details, highlight=self.stream_is_tty)}\n{msg}'
         return msg
 
     def formatException(self, ei: _Ei) -> str:
@@ -89,8 +89,8 @@ class AccessFormatter(logging.Formatter):
         return stack
 
 
-class HighlightStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    def setFormatter(self, fmt: Optional[logging.Formatter]) -> None:
+class HighlightStreamHandler(logging.StreamHandler[TextIO]):
+    def setFormatter(self, fmt: logging.Formatter | None) -> None:
         stream_is_tty = isatty(self.stream) and platform.system().lower() != "windows"
         if isinstance(fmt, (DefaultFormatter, AccessFormatter)):
             fmt.stream_is_tty = stream_is_tty
@@ -98,7 +98,7 @@ class HighlightStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
         self.formatter = fmt
 
 
-def log_config(verbose: bool) -> Dict[str, object]:
+def log_config(verbose: bool) -> dict[str, object]:
     """
     Setup default config. for dictConfig.
     :param verbose: level: DEBUG if True, INFO if False

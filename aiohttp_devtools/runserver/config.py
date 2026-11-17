@@ -1,9 +1,10 @@
 import asyncio
 import re
 import sys
+from collections.abc import Awaitable, Callable
 from importlib import import_module
 from pathlib import Path
-from typing import Awaitable, Callable, Literal, Optional, Union
+from typing import Literal
 from types import ModuleType
 
 from aiohttp import web
@@ -13,7 +14,7 @@ import __main__
 from ..exceptions import AiohttpDevConfigError as AdevConfigError
 from ..logs import rs_dft_logger as logger
 
-AppFactory = Union[web.Application, Callable[[], web.Application], Callable[[], Awaitable[web.Application]]]
+AppFactory = web.Application | Callable[[], web.Application] | Callable[[], Awaitable[web.Application]]
 
 STD_FILE_NAMES = [
     re.compile(r'main\.py'),
@@ -34,26 +35,26 @@ INFER_HOST = '<inference>'
 class Config:
     def __init__(self, *,
                  app_path: str = '.',
-                 root_path: Optional[str] = None,
+                 root_path: str | None = None,
                  verbose: bool = False,
-                 static_path: Optional[str] = None,
-                 python_path: Optional[str] = None,
+                 static_path: str | None = None,
+                 python_path: str | None = None,
                  static_url: str = '/static/',
                  livereload: bool = True,
                  shutdown_by_url: bool = sys.platform.startswith("win32"),
                  path_prefix: str = "/_devtools",
-                 app_factory_name: Optional[str] = None,
+                 app_factory_name: str | None = None,
                  host: str = INFER_HOST,
                  bind_address: str = "localhost",
                  main_port: int = 8000,
-                 aux_port: Optional[int] = None,
+                 aux_port: int | None = None,
                  browser_cache: bool = False,
-                 ssl_context_factory_name: Optional[str] = None,
-                 ssl_rootcert_file_path: Optional[str] = None):
+                 ssl_context_factory_name: str | None = None,
+                 ssl_rootcert_file_path: str | None = None):
         if root_path:
             self.root_path = Path(root_path).resolve()
             logger.debug('Root path specified: %s', self.root_path)
-            self.watch_path: Optional[Path] = self.root_path
+            self.watch_path: Path | None = self.root_path
         else:
             logger.debug('Root path not specified, using current working directory')
             self.root_path = Path('.').resolve()
@@ -61,7 +62,7 @@ class Config:
 
         self.app_path = self._find_app_path(app_path)
         if not self.app_path.name.endswith('.py'):
-            raise AdevConfigError('Unexpected extension for app_path: %s, should be .py' % self.app_path.name)
+            raise AdevConfigError(f'Unexpected extension for app_path: {self.app_path.name}, should be .py')
         self.verbose = verbose
         self.settings_found = False
 
@@ -99,21 +100,21 @@ class Config:
         return "http" if self.ssl_context_factory_name is None else "https"
 
     @property
-    def static_path_str(self) -> Optional[str]:
+    def static_path_str(self) -> str | None:
         return str(self.static_path) if self.static_path else None
 
     @property
-    def client_ssl_context(self) -> Union[SSLContext, bool]:
-        client_ssl_context: Union[SSLContext, bool] = True
+    def client_ssl_context(self) -> SSLContext | bool:
+        client_ssl_context: SSLContext | bool = True
         if self.protocol == "https":
             client_ssl_context = create_default_ssl_context()
             if self.ssl_rootcert_file_path:
                 try:
                     client_ssl_context.load_verify_locations(self.ssl_rootcert_file_path)
                 except FileNotFoundError:
-                    raise AdevConfigError("No such file or directory: {}".format(self.ssl_rootcert_file_path))
+                    raise AdevConfigError(f"No such file or directory: {self.ssl_rootcert_file_path}")
                 except SSLError:
-                    raise AdevConfigError("invalid root cert file: {}".format(self.ssl_rootcert_file_path))
+                    raise AdevConfigError(f"invalid root cert file: {self.ssl_rootcert_file_path}")
         return client_ssl_context
 
     def _find_app_path(self, app_path: str) -> Path:
@@ -125,7 +126,7 @@ class Config:
             logger.debug('app_path is a file, returning it directly')
             return path
 
-        assert path.is_dir(), 'app_path {} is not a directory'.format(path)
+        assert path.is_dir(), f'app_path {path} is not a directory'
         files = [x for x in path.iterdir() if x.is_file()]
         for std_file_name in STD_FILE_NAMES:
             try:
@@ -136,7 +137,7 @@ class Config:
                 logger.debug('app_path is a directory with a recognised file %s', file_path)
                 return file_path
         raise AdevConfigError('unable to find a recognised default file ("app.py" or "main.py") '
-                              'in the directory "%s"' % app_path)
+                              f'in the directory "{app_path}"')
 
     def _resolve_path(self, _path: str, check: str, arg_name: str) -> Path:
         if _path.startswith('/'):
@@ -153,11 +154,11 @@ class Config:
 
         if check == 'is_file':
             if not path.is_file():
-                raise AdevConfigError('{} is not a file'.format(path))
+                raise AdevConfigError(f'{path} is not a file')
         else:
             assert check == 'is_dir'
             if not path.is_dir():
-                raise AdevConfigError('{} is not a directory'.format(path))
+                raise AdevConfigError(f'{path} is not a directory')
         return path
 
     def import_module(self) -> ModuleType:
@@ -191,7 +192,7 @@ class Config:
                 self.app_factory_name = next(an for an in APP_FACTORY_NAMES if hasattr(module, an))
             except StopIteration as e:
                 raise AdevConfigError('No name supplied and no default app factory '
-                                      'found in {s.py_file.name}'.format(s=self)) from e
+                                      f'found in {self.py_file.name}') from e
             else:
                 logger.debug('found default attribute "%s" in module "%s"',
                              self.app_factory_name, module)
@@ -199,36 +200,35 @@ class Config:
         try:
             attr = getattr(module, self.app_factory_name)
         except AttributeError:
-            raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
-                self.py_file.name, self.app_factory_name))
+            raise AdevConfigError(
+                f"Module '{self.py_file.name}' does not define a '{self.app_factory_name}' attribute/class")
 
         if not isinstance(attr, web.Application) and not callable(attr):
-            raise AdevConfigError("'{}.{}' is not an Application or callable".format(
-                self.py_file.name, self.app_factory_name))
+            raise AdevConfigError(f"'{self.py_file.name}.{self.app_factory_name}' is not an Application or callable")
 
         if hasattr(attr, "__code__"):
             required_args = attr.__code__.co_argcount - len(attr.__defaults__ or ())
             if required_args > 0:
-                raise AdevConfigError("'{}.{}' should not have required arguments.".format(
-                    self.py_file.name, self.app_factory_name))
+                raise AdevConfigError(
+                    f"'{self.py_file.name}.{self.app_factory_name}' should not have required arguments.")
 
         return attr  # type: ignore[no-any-return]
 
-    def get_ssl_context(self, module: ModuleType) -> Union[SSLContext, None]:
+    def get_ssl_context(self, module: ModuleType) -> SSLContext | None:
         if self.ssl_context_factory_name is None:
             return None
         else:
             try:
                 attr = getattr(module, self.ssl_context_factory_name)
             except AttributeError:
-                raise AdevConfigError("Module '{}' does not define a '{}' attribute/class".format(
-                    self.py_file.name, self.ssl_context_factory_name))
+                raise AdevConfigError(f"Module '{self.py_file.name}' does not define "
+                                      f"a '{self.ssl_context_factory_name}' attribute/class")
         ssl_context = attr()
         if isinstance(ssl_context, SSLContext):
             return ssl_context
         else:
-            raise AdevConfigError("ssl-context-factory '{}' in module '{}' didn't return valid SSLContext".format(
-                self.ssl_context_factory_name, self.py_file.name))
+            raise AdevConfigError(f"ssl-context-factory '{self.ssl_context_factory_name}' in module "
+                                  f"'{self.py_file.name}' didn't return valid SSLContext")
 
     async def load_app(self, app_factory: AppFactory) -> web.Application:
         if isinstance(app_factory, web.Application):
@@ -240,12 +240,12 @@ class Config:
             app = await app
 
         if not isinstance(app, web.Application):
-            raise AdevConfigError("app factory '{}' returned '{}' not an aiohttp.web.Application".format(
-                self.app_factory_name, app.__class__.__name__))
+            raise AdevConfigError(f"app factory '{self.app_factory_name}' returned "
+                                  f"'{app.__class__.__name__}' not an aiohttp.web.Application")
 
         return app
 
     def __str__(self) -> str:
         fields = ("py_file", "static_path", "static_url", "livereload", "shutdown_by_url",
                   "path_prefix", "app_factory_name", "host", "bind_address", "main_port", "aux_port")
-        return 'Config:\n' + '\n'.join('  {0}: {1!r}'.format(f, getattr(self, f)) for f in fields)
+        return 'Config:\n' + '\n'.join(f'  {f}: {getattr(self, f)!r}' for f in fields)
