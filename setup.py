@@ -13,8 +13,8 @@ except IndexError:
     raise RuntimeError("Unable to determine version.")
 
 name = 'aiohttp-devtools'
-repo_slug = 'aio-libs/{}'.format(name)
-repo_url = 'https://github.com/{}'.format(repo_slug)
+repo_slug = f'aio-libs/{name}'
+repo_url = f'https://github.com/{repo_slug}'
 
 setup(
     name=name,
@@ -47,10 +47,10 @@ setup(
     author_email='s@muelcolvin.com',
     url=repo_url,
     project_urls={
-        'CI: AppVeyor': 'https://ci.appveyor.com/project/{}'.format(repo_slug),
-        'CI: Travis': 'https://travis-ci.com/{}'.format(repo_slug),
-        'Coverage: codecov': 'https://codecov.io/github/{}'.format(repo_slug),
-        'GitHub: issues': '{}/issues'.format(repo_url),
+        'CI: AppVeyor': f'https://ci.appveyor.com/project/{repo_slug}',
+        'CI: Travis': f'https://travis-ci.com/{repo_slug}',
+        'Coverage: codecov': f'https://codecov.io/github/{repo_slug}',
+        'GitHub: issues': f'{repo_url}/issues',
         'GitHub: repo': repo_url,
     },
     license='MIT',

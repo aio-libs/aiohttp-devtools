@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
-from typing import Any, Type, TypedDict, Union
+from typing import Any, TypedDict
 
 from aiohttp.abc import AbstractAccessLogger
 from aiohttp.web import Application
@@ -19,8 +19,8 @@ class RunServer(TypedDict):
     host: str
     port: int
     shutdown_timeout: float
-    access_log_class: Type[AbstractAccessLogger]
-    ssl_context: Union[SSLContext, None]
+    access_log_class: type[AbstractAccessLogger]
+    ssl_context: SSLContext | None
 
 
 def runserver(**config_kwargs: Any) -> RunServer:
@@ -52,7 +52,7 @@ def runserver(**config_kwargs: Any) -> RunServer:
         logger.debug('starting livereload to watch %s', config.static_path_str)
         aux_app.cleanup_ctx.append(static_manager.cleanup_ctx)
 
-    url = '{0.protocol}://{0.host}:{0.aux_port}'.format(config)
+    url = f'{config.protocol}://{config.host}:{config.aux_port}'
     logger.info('Starting aux server at %s ◆', url)
 
     if config.static_path:

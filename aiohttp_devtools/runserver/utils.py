@@ -1,4 +1,4 @@
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 _T = TypeVar("_T")
 
@@ -8,7 +8,7 @@ class MutableValue(Generic[_T]):
 
     __slots__ = ("value",)
 
-    def __init__(self, value: Optional[_T] = None):
+    def __init__(self, value: _T | None = None):
         self.value = value
 
     def change(self, new_value: _T) -> None:
