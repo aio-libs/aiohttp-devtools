@@ -6,9 +6,10 @@ import mimetypes
 import sys
 import time
 import warnings
+from collections.abc import Iterator
 from errno import EADDRINUSE
 from pathlib import Path
-from typing import Any, Iterator, List, NoReturn, Optional, Set, Tuple, Union
+from typing import Any, NoReturn
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import CONTENT_LENGTH
@@ -38,12 +39,12 @@ LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n
 # livereload.js uses its default port (35729) whenever the URL has no port, i.e. on port 80 or 443.
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js?port="></script>\n'
 
-LAST_RELOAD = web.AppKey("LAST_RELOAD", List[float])
+LAST_RELOAD = web.AppKey("LAST_RELOAD", list[float])
 LIVERELOAD_ETAG = web.AppKey("LIVERELOAD_ETAG", str)
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
 STATIC_PATH = web.AppKey("STATIC_PATH", str)
 STATIC_URL = web.AppKey("STATIC_URL", str)
-WS = web.AppKey("WS", Set[Tuple[web.WebSocketResponse, str]])
+WS = web.AppKey("WS", set[tuple[web.WebSocketResponse, str]])
 
 
 def _set_static_url(app: web.Application, url: str) -> None:
@@ -108,7 +109,7 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
         # we set the app key even in middleware to make the switch to production easier and for backwards compat.
         @web.middleware
         async def static_middleware(request: web.Request, handler: Handler) -> web.StreamResponse:
-            static_url = '{}://{}:{}/{}'.format(config.protocol, get_host(request), config.aux_port, static_path)
+            static_url = f'{config.protocol}://{get_host(request)}:{config.aux_port}/{static_path}'
             dft_logger.debug('setting app static_root_url to "%s"', static_url)
             _change_static_url(request.app, static_url)
             return await handler(request)
@@ -125,11 +126,10 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         path = config.path_prefix + "/shutdown"
         app.router.add_route("GET", path, do_shutdown, name="_devtools.shutdown")
-        dft_logger.debug("Created shutdown endpoint at {}://{}:{}{}".format(
-            config.protocol, config.host, config.main_port, path))
+        dft_logger.debug(f"Created shutdown endpoint at {config.protocol}://{config.host}:{config.main_port}{path}")
 
     if config.static_path is not None:
-        static_url = '{}://{}:{}/{}'.format(config.protocol, config.host, config.aux_port, static_path)
+        static_url = f'{config.protocol}://{config.host}:{config.aux_port}/{static_path}'
         dft_logger.debug('settings app static_root_url to "%s"', static_url)
         _set_static_url(app, static_url)
 
@@ -150,11 +150,11 @@ async def check_port_open(port: int, host: str = "0.0.0.0", delay: float = 1) ->
             server.close()
             await server.wait_closed()
             return
-    raise AiohttpDevException('The port {} is already is use'.format(port))
+    raise AiohttpDevException(f'The port {port} is already is use')
 
 
 @contextlib.contextmanager
-def set_tty(tty_path: Optional[str]) -> Iterator[None]:
+def set_tty(tty_path: str | None) -> Iterator[None]:
     try:
         if not tty_path:
             # to match OSError from open
@@ -167,7 +167,7 @@ def set_tty(tty_path: Optional[str]) -> Iterator[None]:
         yield
 
 
-def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
+def serve_main_app(config: Config, tty_path: str | None) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
         module = config.import_module()
@@ -181,7 +181,7 @@ def serve_main_app(config: Config, tty_path: Optional[str]) -> None:
             except KeyboardInterrupt:
                 pass
             finally:
-                with contextlib.suppress(asyncio.TimeoutError, KeyboardInterrupt):
+                with contextlib.suppress(TimeoutError, KeyboardInterrupt):
                     runner.run(app_runner.cleanup())
 
 
@@ -193,13 +193,13 @@ async def create_main_app(config: Config, app_factory: AppFactory) -> web.AppRun
     return web.AppRunner(app, access_log_class=AccessLogger, shutdown_timeout=0.1)
 
 
-async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: Union[SSLContext, None]) -> None:
+async def start_main_app(runner: web.AppRunner, host: str, port: int, ssl_context: SSLContext | None) -> None:
     await runner.setup()
     site = web.TCPSite(runner, host=host, port=port, ssl_context=ssl_context)
     await site.start()
 
 
-async def src_reload(app: web.Application, path: Optional[str] = None) -> int:
+async def src_reload(app: web.Application, path: str | None = None) -> int:
     """
     prompt each connected browser to reload by sending websocket message.
 
@@ -251,10 +251,10 @@ async def cleanup_aux_app(app: web.Application) -> None:
 
 
 def create_auxiliary_app(
-        *, static_path: Optional[str], static_url: str = "/", livereload: bool = True,
+        *, static_path: str | None, static_url: str = "/", livereload: bool = True,
         browser_cache: bool = False) -> web.Application:
     app = web.Application()
-    ws: Set[Tuple[web.WebSocketResponse, str]] = set()
+    ws: set[tuple[web.WebSocketResponse, str]] = set()
     app[LAST_RELOAD] = [0, 0.]
     app[STATIC_PATH] = static_path or ""
     app[STATIC_URL] = static_url
@@ -411,9 +411,7 @@ class CustomStaticResource(StaticResource):
             " {}{}".format(p.relative_to(self._directory), "/" if p.is_dir() else "")
             for p in raw_path.iterdir()
         )
-        msg = "404: Not Found\n\nAvailable files under '{}/':\n{}\n".format(
-            raw_path.relative_to(self._directory), paths
-        )
+        msg = f"404: Not Found\n\nAvailable files under '{raw_path.relative_to(self._directory)}/':\n{paths}\n"
         return web.Response(text=msg, status=404, content_type="text/plain")
 
     async def _handle(self, request: web.Request) -> web.StreamResponse:

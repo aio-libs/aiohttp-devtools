@@ -2,7 +2,7 @@ import json
 import logging
 import pathlib
 import socket
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -39,7 +39,7 @@ async def test_aux_reload(caplog):
     aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
+    aux_app[WS] = {(ws, "/foo/bar")}  # type: ignore[misc]
     assert 1 == await src_reload(aux_app, '/path/to/static_files/the_file.js')
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
@@ -51,7 +51,7 @@ async def test_aux_reload(caplog):
         'liveImg': True,
     }
     assert caplog.record_tuples == [
-        ("adev.server.aux", logging.INFO, "prompted reload of {} on 1 client".format(expected_path))
+        ("adev.server.aux", logging.INFO, f"prompted reload of {expected_path} on 1 client")
     ]
 
 
@@ -62,7 +62,7 @@ async def test_aux_reload_no_path():
     aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
+    aux_app[WS] = {(ws, "/foo/bar")}  # type: ignore[misc]
     assert 1 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     send_obj = json.loads(ws.send_str.call_args[0][0])
@@ -81,7 +81,7 @@ async def test_aux_reload_html_different():
     aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
+    aux_app[WS] = {(ws, "/foo/bar")}  # type: ignore[misc]
     assert 0 == await src_reload(aux_app, '/path/to/static_files/foo/bar.html')
     assert ws.send_str.call_count == 0
 
@@ -94,7 +94,7 @@ async def test_aux_reload_runtime_error(caplog):
     aux_app[LAST_RELOAD] = [0, 0.]
     aux_app[STATIC_PATH] = "/path/to/static_files/"
     aux_app[STATIC_URL] = "/static/"
-    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
+    aux_app[WS] = {(ws, "/foo/bar")}  # type: ignore[misc]
     assert 0 == await src_reload(aux_app)
     assert ws.send_str.call_count == 1
     assert caplog.record_tuples == [
@@ -107,7 +107,7 @@ async def test_aux_cleanup():
     aux_app.on_cleanup.append(cleanup_aux_app)
     ws = MagicMock()
     ws.close = MagicMock(return_value=create_future())
-    aux_app[WS] = set(((ws, "/foo/bar"),))  # type: ignore[misc]
+    aux_app[WS] = {(ws, "/foo/bar")}  # type: ignore[misc]
     aux_app.freeze()
     await aux_app.cleanup()
     assert ws.close.call_count == 1
@@ -123,7 +123,7 @@ def test_fmt_size_large(value, result):
     assert fmt_size(value) == result
 
 
-class DummyApplication(Dict[AppKey[Any], object]):
+class DummyApplication(dict[AppKey[Any], object]):
     def __init__(self):
         self.on_response_prepare = []
         self.middlewares = []

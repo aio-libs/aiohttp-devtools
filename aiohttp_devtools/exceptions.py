@@ -1,5 +1,3 @@
-
-
 class AiohttpDevException(Exception):
     pass
 

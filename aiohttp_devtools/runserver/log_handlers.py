@@ -1,7 +1,7 @@
 import json
 import warnings
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Union, cast
+from typing import cast
 
 from aiohttp import web
 from aiohttp.abc import AbstractAccessLogger
@@ -13,10 +13,10 @@ check = '?_checking_alive=1'
 class _AccessLogger(AbstractAccessLogger):
     prefix: str
 
-    def get_msg(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> Optional[str]:
+    def get_msg(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> str | None:
         raise NotImplementedError()
 
-    def extra(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> Optional[Dict[str, object]]:
+    def extra(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> dict[str, object] | None:
         pass
 
     def log(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> None:
@@ -41,15 +41,10 @@ class AccessLogger(_AccessLogger):
     prefix = '●'
 
     def get_msg(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> str:
-        return '{method} {path} {code} {size} {ms:0.0f}ms'.format(
-            method=request.method,
-            path=request.path_qs,
-            code=response.status,
-            size=fmt_size(response.body_length),
-            ms=time * 1000,
-        )
+        size = fmt_size(response.body_length)
+        return f'{request.method} {request.path_qs} {response.status} {size} {time * 1000:0.0f}ms'
 
-    def extra(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> Optional[Dict[str, object]]:
+    def extra(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> dict[str, object] | None:
         if response.status <= 310:
             return None
 
@@ -69,29 +64,24 @@ class AccessLogger(_AccessLogger):
 class AuxAccessLogger(_AccessLogger):
     prefix = '◆'
 
-    def get_msg(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> Optional[str]:
+    def get_msg(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> str | None:
         # don't log livereload
         if request.path in {"/livereload", "/livereload.js"}:
             return None
 
-        return "{method} {path} {code} {size}".format(
-            method=request.method,
-            path=request.path_qs,
-            code=response.status,
-            size=fmt_size(response.body_length),
-        )
+        return f"{request.method} {request.path_qs} {response.status} {fmt_size(response.body_length)}"
 
 
 def fmt_size(num: int) -> str:
     if not num:
         return ''
     if num < 1024:
-        return '{:0.0f}B'.format(num)
+        return f'{num:0.0f}B'
     else:
-        return '{:0.1f}KB'.format(num / 1024)
+        return f'{num / 1024:0.1f}KB'
 
 
-def parse_body(v: Union[str, bytes, None], name: str) -> object:
+def parse_body(v: str | bytes | None, name: str) -> object:
     if v is None:
         return v
 
