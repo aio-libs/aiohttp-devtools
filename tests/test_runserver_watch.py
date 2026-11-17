@@ -1,7 +1,7 @@
 import asyncio
 import time
 from functools import partial
-from typing import Any, Set, Tuple
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call
 
 from aiohttp import ClientSession
@@ -113,7 +113,7 @@ async def test_python_no_server(mocker):
     f: asyncio.Future[int] = asyncio.Future()
     f.set_result(1)
     mock_ws.send_str = MagicMock(return_value=f)
-    app[WS] = set(((mock_ws, "/"),))  # type: ignore[misc]
+    app[WS] = {(mock_ws, "/")}  # type: ignore[misc]
     await app_task.start(app)
     assert app_task._task is not None
     await app_task._task
@@ -126,7 +126,7 @@ async def test_python_no_server(mocker):
 
 async def test_reload_server_running(aiohttp_client, mocker):
     app = Application()
-    ws: Set[Tuple[WebSocketResponse, str]] = set(((MagicMock(), "/foo"),))
+    ws: set[tuple[WebSocketResponse, str]] = {(MagicMock(), "/foo")}
     app[WS] = ws
     mock_src_reload = mocker.patch('aiohttp_devtools.runserver.watch.src_reload', return_value=create_future())
     cli = await aiohttp_client(app)
@@ -220,7 +220,7 @@ async def test_restart_after_connection_loss(mocker):
 
     app = mocker.create_autospec(Application, spec_set=True, instance=True)
     # Simulate connection lost from recent restart.
-    ws: Set[Any] = set()
+    ws: set[Any] = set()
     d = {WS: ws, LAST_RELOAD: [1, time.time()]}
     app.__getitem__.side_effect = lambda k: d.get(k, MagicMock())
 
