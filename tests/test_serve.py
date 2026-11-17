@@ -3,11 +3,10 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from aiohttp.web import WebSocketResponse
 
 from aiohttp_devtools.runserver import serve_static
 from aiohttp_devtools.runserver.serve import WS, src_reload
-
-from .conftest import create_future
 
 
 @pytest.fixture
@@ -85,13 +84,12 @@ async def test_serve_index(aiohttp_client, tmpworkdir, mktree):
     assert text == '<h1>hello index</h1>'
 
 
-async def test_reload_relative_path(tmpworkdir: Path) -> None:
+async def test_serve_relative_path(tmpworkdir: Path) -> None:
     with mock.patch("aiohttp_devtools.runserver.main.LiveReloadTask", autospec=True, spec_set=True) as watcher:
         app = serve_static(static_path=".")["app"]
     # Changes are reported with absolute paths, so that is what must be watched and compared against.
     watcher.assert_called_once_with(str(tmpworkdir))
-    ws = mock.MagicMock()
-    ws.send_str = mock.MagicMock(return_value=create_future())
+    ws = mock.create_autospec(WebSocketResponse, spec_set=True, instance=True)
     app[WS].add((ws, "/"))
     assert await src_reload(app, str(tmpworkdir / "foo.js")) == 1
     assert json.loads(ws.send_str.call_args[0][0])["path"] == str(Path("/foo.js"))
