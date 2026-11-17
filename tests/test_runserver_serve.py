@@ -4,7 +4,6 @@ import logging
 import pathlib
 import socket
 from collections.abc import Callable
-from errno import ECONNREFUSED
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -35,23 +34,25 @@ async def test_check_port_not_open(unused_tcp_port_factory):
             await check_port_open(port, host="127.0.0.1", delay=0.001)
 
 
-async def test_check_port_open_refuses_connections(unused_tcp_port_factory: Callable[[], int]) -> None:
+async def test_check_port_open_does_not_accept_connections(unused_tcp_port_factory: Callable[[], int]) -> None:
     port = unused_tcp_port_factory()
     loop = asyncio.get_running_loop()
     create_server = loop.create_server
-    connect_errors: list[int] = []
+    connected: list[bool] = []
 
     async def create_server_then_connect(*args: Any, **kwargs: Any) -> asyncio.Server:
         server = await create_server(*args, **kwargs)
         # A client connects while the port is being checked.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            connect_errors.append(sock.connect_ex(("127.0.0.1", port)))
+            # The client is refused on Linux and Windows, but just gets no answer on macOS.
+            sock.settimeout(0.5)
+            connected.append(sock.connect_ex(("127.0.0.1", port)) == 0)
         return server
 
     with patch.object(loop, "create_server", create_server_then_connect):
         await check_port_open(port, host="127.0.0.1", delay=0.001)
     # If the client had been accepted, its connection would be reset when the check finishes.
-    assert connect_errors == [ECONNREFUSED]
+    assert connected == [False]
 
 
 async def test_aux_reload(caplog):

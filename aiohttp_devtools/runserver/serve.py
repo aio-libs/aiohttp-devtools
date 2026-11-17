@@ -141,7 +141,7 @@ async def check_port_open(port: int, host: str = "0.0.0.0", delay: float = 1) ->
     for i in range(5, 0, -1):
         try:
             # The port is only bound, not listened on. Otherwise a client which connects
-            # at this moment is accepted and then reset, rather than refused.
+            # at this moment is accepted, and then reset when the server is closed.
             server = await loop.create_server(asyncio.Protocol, host=host, port=port, start_serving=False)
         except OSError as e:
             if e.errno != EADDRINUSE:
