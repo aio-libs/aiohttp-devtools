@@ -14,7 +14,8 @@ from aiohttp.test_utils import TestClient
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import (
-    LIVERELOAD_ETAG, WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload, start_main_app)
+    INTERRUPTED, LIVERELOAD_ETAG, WS, create_auxiliary_app, create_main_app, modify_main_app, src_reload,
+    start_main_app)
 from aiohttp_devtools.runserver.watch import AppTask
 
 from .conftest import SIMPLE_APP, FileTree
@@ -197,6 +198,19 @@ async def test_run_app_browser_cache(mktree, aiohttp_client):
     r = await cli.get("/")
     assert r.status == 200
     assert "Cache-Control" not in r.headers
+
+
+async def test_run_app_shutdown_by_url(mktree, aiohttp_client):
+    mktree(SIMPLE_APP)
+    config = Config(app_path="app.py", shutdown_by_url=True)
+    module = config.import_module()
+    app_factory = config.get_app_factory(module)
+    app = await config.load_app(app_factory)
+    modify_main_app(app, config)
+    cli = await aiohttp_client(app)
+    r = await cli.get("/_devtools/shutdown")
+    assert r.status == 200
+    assert app[INTERRUPTED].is_set()
 
 
 async def test_aux_app(mktree, aiohttp_client):
