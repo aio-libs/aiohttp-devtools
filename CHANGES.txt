@@ -1,6 +1,6 @@
 .. towncrier release notes start
 
-1.2 (2026-11-21)
+1.2 (2026-11-22)
 ================
 
 * Changed the servers to listen on ``localhost`` by default, instead of on all network
@@ -16,6 +16,12 @@
   blocking the event loop.
 * Updated ``livereload.js`` from v2.2.1 to v4.0.3. It is now served with an ``ETag``, so
   that browsers don't keep using a copy cached from a previous version.
+* Fixed the app's cleanup (``on_shutdown``, ``on_cleanup`` and cleanup contexts) being
+  cancelled when ``runserver`` is stopped with Ctrl+C, and being skipped when the app is
+  stopped or restarted while its code is running, e.g. during a request. The app is now
+  asked to stop serving instead of being interrupted with ``KeyboardInterrupt``, so code
+  which blocks the event loop delays the stop. As before, the app is killed if it has not
+  stopped after 5 seconds.
 * Fixed a 500 error when a static file which doesn't exist is requested with aiohttp 3.10+.
 * Fixed the file watcher crashing when a file other than a ``.py`` file changed while
   ``--static`` was not used, after which nothing was reloaded or restarted.
