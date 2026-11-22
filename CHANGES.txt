@@ -1,7 +1,7 @@
 .. towncrier release notes start
 
-1.2 (2026-11-22)
-================
+1.2.0 (2026-11-22)
+==================
 
 * Changed the servers to listen on ``localhost`` by default, instead of on all network
   interfaces. Added a ``-b/--bind`` option (``AIO_BIND_ADDRESS`` env variable) to
