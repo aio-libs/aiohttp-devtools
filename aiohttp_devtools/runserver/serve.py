@@ -3,12 +3,14 @@ import contextlib
 import hashlib
 import json
 import mimetypes
+import signal
 import sys
 import time
 import warnings
 from collections.abc import Iterator
 from errno import EADDRINUSE
 from pathlib import Path
+from types import FrameType
 from typing import Any, NoReturn
 
 from aiohttp import WSMsgType, web
@@ -169,6 +171,19 @@ def set_tty(tty_path: str | None) -> Iterator[None]:
         yield
 
 
+def _interrupt_once(signum: int, frame: FrameType | None) -> NoReturn:
+    """Raise KeyboardInterrupt like the default SIGINT handler, but only for the first SIGINT.
+
+    Ctrl+C in a terminal sends SIGINT to this process and to adev, which then sends another
+    one to stop this process (adev can't know if the app has been sent the signal or not).
+    That one would otherwise cancel the cleanup of the app, or interrupt
+    the closing of the event loop. It's ignored here, in the handler, as it may
+    arrive before the code which handles the KeyboardInterrupt runs.
+    """
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    raise KeyboardInterrupt
+
+
 def serve_main_app(config: Config, tty_path: str | None) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
@@ -179,6 +194,9 @@ def serve_main_app(config: Config, tty_path: str | None) -> None:
             app_runner = runner.run(create_main_app(config, app_factory))
             try:
                 runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
+                # Python's default handler is replaced, but not one which the app has set itself.
+                if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
+                    signal.signal(signal.SIGINT, _interrupt_once)
                 runner.get_loop().run_forever()
             except KeyboardInterrupt:
                 pass
