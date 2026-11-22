@@ -10,6 +10,7 @@ import aiohttp
 import pytest
 from aiohttp import ClientTimeout
 from aiohttp.test_utils import TestClient
+from pytest_aiohttp import AiohttpClient
 
 from aiohttp_devtools.runserver import runserver
 from aiohttp_devtools.runserver.config import Config
@@ -200,7 +201,7 @@ async def test_run_app_browser_cache(mktree, aiohttp_client):
     assert "Cache-Control" not in r.headers
 
 
-async def test_run_app_shutdown_by_url(mktree, aiohttp_client):
+async def test_run_app_shutdown_by_url(mktree: Callable[[FileTree], None], aiohttp_client: AiohttpClient) -> None:
     mktree(SIMPLE_APP)
     config = Config(app_path="app.py", shutdown_by_url=True)
     module = config.import_module()
