@@ -9,6 +9,7 @@ import time
 import warnings
 from collections.abc import Iterator
 from errno import EADDRINUSE
+from functools import partial
 from pathlib import Path
 from types import FrameType
 from typing import Any, NoReturn
@@ -171,17 +172,34 @@ def set_tty(tty_path: str | None) -> Iterator[None]:
         yield
 
 
-def _interrupt_once(signum: int, frame: FrameType | None) -> NoReturn:
-    """Raise KeyboardInterrupt like the default SIGINT handler, but only for the first SIGINT.
+def _interrupt_once(
+    loop: asyncio.AbstractEventLoop, interrupted: asyncio.Event, signum: int, frame: FrameType | None
+) -> None:
+    """Ask the event loop to stop serving, but only for the first SIGINT.
+
+    The default SIGINT handler raises KeyboardInterrupt in whichever code is executing. If that's
+    a task of the app (e.g. a request handler), whatever awaits that task raises the exception
+    again later, which ended the cleanup of the app as soon as it had started. So the event loop
+    is asked instead, which it handles once the code which is executing has returned to it.
 
     Ctrl+C in a terminal sends SIGINT to this process and to adev, which then sends another
     one to stop this process (adev can't know if the app has been sent the signal or not).
     That one would otherwise cancel the cleanup of the app, or interrupt
     the closing of the event loop. It's ignored here, in the handler, as it may
-    arrive before the code which handles the KeyboardInterrupt runs.
+    arrive before the event loop has stopped serving.
     """
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    raise KeyboardInterrupt
+    # The app may have been stopped in another way already (--shutdown-by-url), and the event loop closed.
+    if not loop.is_closed():
+        loop.call_soon_threadsafe(interrupted.set)
+
+
+def _run_until_interrupted(loop: asyncio.AbstractEventLoop) -> None:
+    interrupted = asyncio.Event()
+    # Python's default handler is replaced, but not one which the app has set itself.
+    if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
+        signal.signal(signal.SIGINT, partial(_interrupt_once, loop, interrupted))
+    loop.run_until_complete(interrupted.wait())
 
 
 def serve_main_app(config: Config, tty_path: str | None) -> None:
@@ -194,10 +212,7 @@ def serve_main_app(config: Config, tty_path: str | None) -> None:
             app_runner = runner.run(create_main_app(config, app_factory))
             try:
                 runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
-                # Python's default handler is replaced, but not one which the app has set itself.
-                if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
-                    signal.signal(signal.SIGINT, _interrupt_once)
-                runner.get_loop().run_forever()
+                _run_until_interrupted(runner.get_loop())
             except KeyboardInterrupt:
                 pass
             finally:
