@@ -3,19 +3,21 @@ import contextlib
 import hashlib
 import json
 import mimetypes
+import signal
 import sys
 import time
 import warnings
 from collections.abc import Iterator
 from errno import EADDRINUSE
+from functools import partial
 from pathlib import Path
-from typing import Any, NoReturn
+from types import FrameType
+from typing import Any
 
 from aiohttp import WSMsgType, web
 from aiohttp.hdrs import CONTENT_LENGTH
 from aiohttp.typedefs import Handler
 from aiohttp.web_exceptions import HTTPNotFound
-from aiohttp.web_runner import GracefulExit
 from aiohttp.web_urldispatcher import StaticResource
 from yarl import URL
 
@@ -39,6 +41,7 @@ LIVE_RELOAD_HOST_SNIPPET = '\n<script src="{}://{}:{}/livereload.js"></script>\n
 # livereload.js uses its default port (35729) whenever the URL has no port, i.e. on port 80 or 443.
 LIVE_RELOAD_LOCAL_SNIPPET = b'\n<script src="/livereload.js?port="></script>\n'
 
+INTERRUPTED = web.AppKey("INTERRUPTED", asyncio.Event)
 LAST_RELOAD = web.AppKey("LAST_RELOAD", list[float])
 LIVERELOAD_ETAG = web.AppKey("LIVERELOAD_ETAG", str)
 LIVERELOAD_SCRIPT = web.AppKey("LIVERELOAD_SCRIPT", bytes)
@@ -116,12 +119,15 @@ def modify_main_app(app: web.Application, config: Config) -> None:  # noqa: C901
 
         app.middlewares.insert(0, static_middleware)
 
+    # Set by SIGINT or by the shutdown endpoint, to stop serving.
+    app[INTERRUPTED] = interrupted = asyncio.Event()
+
     # Fallback option to shutdown the application if signals don't work (e.g. Windows).
     if config.shutdown_by_url:
         async def do_shutdown(request: web.Request) -> web.Response:
-            def shutdown() -> NoReturn:
-                raise GracefulExit()
-            asyncio.get_running_loop().call_soon(shutdown)
+            # With Ctrl+C in a terminal, SIGINT may have begun the cleanup of the app by the time
+            # that this request from adev is handled. An exception would end that cleanup early.
+            interrupted.set()
             return web.Response()
 
         path = config.path_prefix + "/shutdown"
@@ -169,6 +175,30 @@ def set_tty(tty_path: str | None) -> Iterator[None]:
         yield
 
 
+def _interrupt_once(
+    loop: asyncio.AbstractEventLoop, interrupted: asyncio.Event, signum: int, frame: FrameType | None
+) -> None:
+    """Ask the event loop to stop serving, but only for the first SIGINT.
+
+    Ctrl+C in a terminal sends SIGINT to this process and to adev, which then sends another
+    one to stop this process (adev can't know if the app has been sent the signal or not).
+    That one would otherwise cancel the cleanup of the app, or interrupt
+    the closing of the event loop. It's ignored here, in the handler, as it may
+    arrive before the event loop has stopped serving.
+    """
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # The app may have been stopped in another way already (--shutdown-by-url), and the event loop closed.
+    if not loop.is_closed():
+        loop.call_soon_threadsafe(interrupted.set)
+
+
+def _run_until_interrupted(loop: asyncio.AbstractEventLoop, interrupted: asyncio.Event) -> None:
+    # Python's default handler is replaced, but not one which the app has set itself.
+    if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
+        signal.signal(signal.SIGINT, partial(_interrupt_once, loop, interrupted))
+    loop.run_until_complete(interrupted.wait())
+
+
 def serve_main_app(config: Config, tty_path: str | None) -> None:
     with set_tty(tty_path):
         setup_logging(config.verbose)
@@ -179,7 +209,7 @@ def serve_main_app(config: Config, tty_path: str | None) -> None:
             app_runner = runner.run(create_main_app(config, app_factory))
             try:
                 runner.run(start_main_app(app_runner, config.bind_address, config.main_port, ssl_context))
-                runner.get_loop().run_forever()
+                _run_until_interrupted(runner.get_loop(), app_runner.app[INTERRUPTED])
             except KeyboardInterrupt:
                 pass
             finally:
