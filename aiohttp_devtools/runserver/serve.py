@@ -177,11 +177,6 @@ def _interrupt_once(
 ) -> None:
     """Ask the event loop to stop serving, but only for the first SIGINT.
 
-    The default SIGINT handler raises KeyboardInterrupt in whichever code is executing. If that's
-    a task of the app (e.g. a request handler), whatever awaits that task raises the exception
-    again later, which ended the cleanup of the app as soon as it had started. So the event loop
-    is asked instead, which it handles once the code which is executing has returned to it.
-
     Ctrl+C in a terminal sends SIGINT to this process and to adev, which then sends another
     one to stop this process (adev can't know if the app has been sent the signal or not).
     That one would otherwise cancel the cleanup of the app, or interrupt
