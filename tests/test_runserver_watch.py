@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, call
 
 from aiohttp import ClientSession
 from aiohttp.web import Application, WebSocketResponse
+from pytest_mock import MockerFixture
 
 from aiohttp_devtools.runserver.serve import LAST_RELOAD, STATIC_PATH, WS
 from aiohttp_devtools.runserver.watch import AppTask, LiveReloadTask
@@ -142,6 +143,21 @@ async def test_reload_server_running(aiohttp_client, mocker):
     await app_task._src_reload_when_live(2)
     mock_src_reload.assert_called_once_with(app)
     await app_task._session.close()
+
+
+async def test_reload_no_clients(mocker: MockerFixture) -> None:
+    app = Application()
+    app[WS] = set()
+    mock_src_reload = mocker.patch("aiohttp_devtools.runserver.watch.src_reload", autospec=True, spec_set=True)
+    session = mocker.create_autospec(ClientSession, spec_set=True, instance=True)
+
+    app_task = AppTask(MagicMock())
+    app_task._app = app
+    app_task._session = session
+    await app_task._src_reload_when_live(2)
+    # No browser is connected, so there's nothing to reload once the app is running.
+    session.get.assert_not_called()
+    mock_src_reload.assert_not_called()
 
 
 async def test_livereload_task_single(mocker):
