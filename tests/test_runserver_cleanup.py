@@ -1,6 +1,7 @@
 import asyncio
 import os
 import signal
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -8,7 +9,7 @@ from types import FrameType
 from typing import NoReturn
 
 import pytest
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout
 
 from aiohttp_devtools.runserver.config import Config
 from aiohttp_devtools.runserver.serve import _interrupt_once, _run_until_interrupted
@@ -17,7 +18,83 @@ from aiohttp_devtools.runserver.watch import AppTask
 from .conftest import FileTree
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Tested manually on Windows, see cleanup_app.py")
+RUNSERVER = "from aiohttp_devtools.cli import runserver; runserver()"  # same as `adev runserver`
+if sys.platform == "win32":
+    # Ctrl+C can only be sent to a process group, so adev is started as a new one. Ctrl+C is disabled
+    # in a new process group though, so adev enables it again, which the app process then inherits.
+    RUNSERVER = f"import ctypes; ctypes.windll.kernel32.SetConsoleCtrlHandler(None, False); {RUNSERVER}"
+    CREATION_FLAGS = subprocess.CREATE_NEW_PROCESS_GROUP
+else:
+    CREATION_FLAGS = 0
+
+
+def send_ctrl_c(proc: asyncio.subprocess.Process) -> None:
+    """Interrupt adev and the app, as Ctrl+C in a terminal does."""
+    if sys.platform == "win32":
+        proc.send_signal(signal.CTRL_C_EVENT)
+    else:
+        os.killpg(proc.pid, signal.SIGINT)
+
+
+def kill_process_group(proc: asyncio.subprocess.Process) -> None:  # pragma: no cover
+    if sys.platform == "win32":
+        subprocess.run(("taskkill", "/F", "/T", "/PID", str(proc.pid)), capture_output=True)
+    else:
+        os.killpg(proc.pid, signal.SIGKILL)
+
+
+async def wait_for_response(url: str, text: str) -> None:
+    async with ClientSession(timeout=ClientTimeout(total=1)) as session:
+        for _ in range(100):  # pragma: no branch
+            try:
+                async with session.get(url) as r:
+                    if text in await r.text():
+                        return
+            except (ClientError, OSError):
+                pass
+            await asyncio.sleep(0.1)
+    pytest.fail(f"No response with {text!r} from {url}")
+
+
+async def test_server_cleanup(tmp_path: Path, unused_tcp_port_factory: Callable[[], int]) -> None:
+    app = (Path(__file__).parent / "cleanup_app.py").read_text()
+    # The output is kept out of the directory which adev watches for changes.
+    root, stdout_path, stderr_path = tmp_path / "root", tmp_path / "stdout", tmp_path / "stderr"
+    root.mkdir()
+    app_path = root / "app.py"
+    app_path.write_text(app)
+    port = unused_tcp_port_factory()
+    url = f"http://localhost:{port}/"
+
+    with stdout_path.open("wb") as stdout_file, stderr_path.open("wb") as stderr_file:
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, "-c", RUNSERVER, str(app_path), "--root", str(root), "-v",
+            "--port", str(port), "--aux-port", str(unused_tcp_port_factory()),
+            stdout=stdout_file, stderr=stderr_file,
+            # A new process group on any platform, for Ctrl+C to be sent to.
+            creationflags=CREATION_FLAGS, start_new_session=True,
+        )
+    try:
+        await wait_for_response(url, "hello, world")
+        # The app is restarted when its code is edited.
+        app_path.write_text(app.replace("hello, world", "hello again"))
+        await wait_for_response(url, "hello again")
+        send_ctrl_c(proc)
+        async with asyncio.timeout(30):
+            await proc.wait()
+    finally:
+        if proc.returncode is None:  # pragma: no cover
+            kill_process_group(proc)
+            await proc.wait()
+        stdout, stderr = stdout_path.read_text(errors="replace"), stderr_path.read_text(errors="replace")
+        print(stdout, stderr, sep="\n")  # pytest shows this if the test fails.
+
+    assert proc.returncode == 0
+    lines = tuple(x[6:] for x in stdout.splitlines() if x.startswith("====> "))
+    assert lines == ("CTX BEFORE", "STARTUP", "SHUTDOWN", "CTX AFTER") * 2
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="terminate() doesn't let adev stop the app on Windows")
 async def test_server_cleanup_by_url() -> None:
     async def is_server_running() -> bool:
         async with ClientSession(timeout=ClientTimeout(total=1)) as session:
@@ -33,7 +110,7 @@ async def test_server_cleanup_by_url() -> None:
         return False  # pragma: no cover
 
     proc = await asyncio.create_subprocess_exec(
-        sys.executable, "-c", "from aiohttp_devtools.cli import runserver; runserver()",  # same as `adev runserver`
+        sys.executable, "-c", RUNSERVER,
         Path(__file__).parent / "cleanup_app.py", "--shutdown-by-url", "-v",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,

@@ -1,21 +1,6 @@
 """
-Test script for checking if cleanup/shutdown handlers are called.
+App for checking that the startup and cleanup/shutdown handlers are called.
 Used in test_runserver_cleanup.py.
-
-This test has proved to be quite difficult to automate in Windows
-(see discussion at https://github.com/aio-libs/aiohttp-devtools/pull/549)
-so it must be done manually as per the protocol below.
-
-Test Protocol:
-
-1. Run a Windows console such as Git Bash; ensure a working Python version is available
-2. ``cd`` to the main aiohttp-devtools directory (root of the git repo)
-3. Run ``python -c "from aiohttp_devtools.cli import runserver; runserver()" -v tests/cleanup_app.py``
-4. The console output should show the "CTX BEFORE" and "STARTUP" output from the code below
-5. Edit this file, e.g. a simple whitespace change, and save
-6. The console output should show the "SHUTDOWN" and "CTX AFTER" output, followed by the startup output
-7. End the process in the console with Ctrl-C
-8. The console should again show the shutdown output
 """
 from aiohttp import web
 
