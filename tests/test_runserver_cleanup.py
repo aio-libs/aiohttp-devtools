@@ -48,12 +48,6 @@ async def test_server_cleanup_by_url() -> None:
     assert lines == ("CTX BEFORE", "STARTUP", "SHUTDOWN", "CTX AFTER")
 
 
-async def wait_for_file(path: Path) -> None:
-    async with asyncio.timeout(10):
-        while not path.exists():
-            await asyncio.sleep(0.01)
-
-
 @pytest.mark.skipif(sys.platform == "win32", reason="SIGINT can't be sent to a process on Windows")
 @pytest.mark.parametrize("stage", ("cleanup", "close"))
 async def test_second_sigint_does_not_interrupt_shutdown(
@@ -70,9 +64,7 @@ from aiohttp import web
 tasks = set()
 
 
-async def serving(request):
-    # Not before the response has been sent, so that the app is idle again.
-    asyncio.get_running_loop().call_soon(Path("serving").touch)
+async def hello(request):
     return web.Response()
 
 
@@ -104,7 +96,7 @@ async def context(app):
 
 
 app = web.Application()
-app.router.add_get("/", serving)
+app.router.add_get("/", hello)
 app.cleanup_ctx.append(context)
 """
     })
@@ -120,10 +112,14 @@ app.cleanup_ctx.append(context)
                         break
                 except OSError:
                     await asyncio.sleep(0.1)
-            await wait_for_file(tmpworkdir / "serving")
+            # Wait for the app to be idle again: a KeyboardInterrupt which is raised while its event loop
+            # is still busy with the request can leave the app unable to shut down (seen with PyPy).
+            await asyncio.sleep(0.25)
             # Ctrl+C in a terminal is sent to the app process as well as to adev.
             os.kill(process.pid, signal.SIGINT)
-            await wait_for_file(tmpworkdir / "paused")
+            async with asyncio.timeout(10):
+                while not (tmpworkdir / "paused").exists():
+                    await asyncio.sleep(0.01)
             # adev then stops the app process with SIGINT, while it's already shutting down.
             os.kill(process.pid, signal.SIGINT)
             (tmpworkdir / "resume").touch()
