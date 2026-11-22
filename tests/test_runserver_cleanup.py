@@ -206,6 +206,74 @@ app.cleanup_ctx.append(context)
         process.join()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGINT can't be sent to a process on Windows")
+async def test_shutdown_request_does_not_interrupt_cleanup(
+    tmpworkdir: Path, mktree: Callable[[FileTree], None], unused_tcp_port: int
+) -> None:
+    mktree({
+        "app.py": """\
+import asyncio
+from pathlib import Path
+
+from aiohttp import web
+
+cleaning_up = asyncio.Event()
+
+
+@web.middleware
+async def hold_shutdown_request(request, handler):
+    # The request to the shutdown endpoint is held up, until SIGINT has begun the cleanup of the app.
+    if request.path.endswith("/shutdown"):
+        Path("held").touch()
+        await cleaning_up.wait()
+    return await handler(request)
+
+
+async def shutdown(app):
+    cleaning_up.set()
+
+
+async def context(app):
+    yield
+    Path("cleaned").touch()
+
+
+app = web.Application(middlewares=[hold_shutdown_request])
+app.on_shutdown.append(shutdown)
+app.cleanup_ctx.append(context)
+"""
+    })
+    config = Config(app_path="app.py", root_path=str(tmpworkdir), main_port=unused_tcp_port, shutdown_by_url=True)
+    app_task = AppTask(config)
+    app_task._start_dev_server()
+    process = app_task._process
+    try:
+        assert process.pid is not None
+        async with ClientSession() as session:
+            for i in range(50):  # pragma: no branch
+                try:
+                    async with session.get(f"http://localhost:{unused_tcp_port}/"):
+                        break
+                except OSError:
+                    await asyncio.sleep(0.1)
+            # Ctrl+C in a terminal is sent to the app process as well as to adev,
+            # which then stops the app process with a request to the shutdown endpoint.
+            request = asyncio.create_task(session.get(f"http://localhost:{unused_tcp_port}/_devtools/shutdown"))
+            async with asyncio.timeout(10):
+                while not (tmpworkdir / "held").exists():
+                    await asyncio.sleep(0.01)
+            os.kill(process.pid, signal.SIGINT)
+            process.join(5)
+            # If the shutdown endpoint raises an exception to stop the app,
+            # that ends the cleanup of the app which SIGINT has begun.
+            assert (tmpworkdir / "cleaned").exists()
+            assert process.exitcode == 0
+            assert (await request).status == 200
+    finally:
+        process.kill()
+        process.join()
+
+
 def test_run_until_interrupted() -> None:
     handler = signal.signal(signal.SIGINT, signal.default_int_handler)
     try:
@@ -213,7 +281,7 @@ def test_run_until_interrupted() -> None:
             loop = runner.get_loop()
             loop.call_soon(signal.raise_signal, signal.SIGINT)
             loop.call_later(10, loop.stop)  # Fail, rather than wait forever.
-            _run_until_interrupted(loop)
+            _run_until_interrupted(loop, asyncio.Event())
         assert signal.getsignal(signal.SIGINT) == signal.SIG_IGN
     finally:
         signal.signal(signal.SIGINT, handler)
@@ -231,7 +299,7 @@ def test_run_until_interrupted_app_handler() -> None:
             loop.call_soon(signal.raise_signal, signal.SIGINT)
             loop.call_later(10, loop.stop)  # Fail, rather than wait forever.
             with pytest.raises(KeyboardInterrupt):
-                _run_until_interrupted(loop)
+                _run_until_interrupted(loop, asyncio.Event())
         assert signal.getsignal(signal.SIGINT) is app_handler
     finally:
         signal.signal(signal.SIGINT, handler)
