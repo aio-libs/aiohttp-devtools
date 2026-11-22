@@ -27,6 +27,36 @@ if sys.platform == "win32":
 else:
     CREATION_FLAGS = 0
 
+# An app which prints a line from each startup and cleanup handler that is called.
+APP = """\
+from aiohttp import web
+
+
+async def hello(_request):
+    return web.Response(text="hello, world")
+
+
+async def startup(_app):
+    print("====> STARTUP")
+
+
+async def context(_app):
+    print("====> CTX BEFORE")
+    yield
+    print("====> CTX AFTER")
+
+
+async def shutdown(_app):
+    print("====> SHUTDOWN")
+
+
+app = web.Application()
+app.router.add_get("/", hello)
+app.on_startup.append(startup)
+app.cleanup_ctx.append(context)
+app.on_shutdown.append(shutdown)
+"""
+
 
 def send_ctrl_c(proc: asyncio.subprocess.Process) -> None:
     """Interrupt adev and the app, as Ctrl+C in a terminal does."""
@@ -57,12 +87,11 @@ async def wait_for_response(url: str, text: str) -> None:
 
 
 async def test_server_cleanup(tmp_path: Path, unused_tcp_port_factory: Callable[[], int]) -> None:
-    app = (Path(__file__).parent / "cleanup_app.py").read_text()
     # The output is kept out of the directory which adev watches for changes.
     root, stdout_path, stderr_path = tmp_path / "root", tmp_path / "stdout", tmp_path / "stderr"
     root.mkdir()
     app_path = root / "app.py"
-    app_path.write_text(app)
+    app_path.write_text(APP)
     port = unused_tcp_port_factory()
     url = f"http://localhost:{port}/"
 
@@ -77,12 +106,13 @@ async def test_server_cleanup(tmp_path: Path, unused_tcp_port_factory: Callable[
     try:
         await wait_for_response(url, "hello, world")
         # The app is restarted when its code is edited.
-        app_path.write_text(app.replace("hello, world", "hello again"))
+        app_path.write_text(APP.replace("hello, world", "hello again"))
         await wait_for_response(url, "hello again")
         send_ctrl_c(proc)
         async with asyncio.timeout(30):
             await proc.wait()
     finally:
+        # adev is only still running when the test is already failing.
         if proc.returncode is None:  # pragma: no cover
             kill_process_group(proc)
             await proc.wait()
@@ -95,7 +125,7 @@ async def test_server_cleanup(tmp_path: Path, unused_tcp_port_factory: Callable[
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="terminate() doesn't let adev stop the app on Windows")
-async def test_server_cleanup_by_url() -> None:
+async def test_server_cleanup_by_url(tmp_path: Path) -> None:
     async def is_server_running() -> bool:
         async with ClientSession(timeout=ClientTimeout(total=1)) as session:
             for i in range(30):
@@ -109,9 +139,11 @@ async def test_server_cleanup_by_url() -> None:
                     await asyncio.sleep(0.5)
         return False  # pragma: no cover
 
+    app_path = tmp_path / "app.py"
+    app_path.write_text(APP)
     proc = await asyncio.create_subprocess_exec(
         sys.executable, "-c", RUNSERVER,
-        Path(__file__).parent / "cleanup_app.py", "--shutdown-by-url", "-v",
+        app_path, "--root", tmp_path, "--shutdown-by-url", "-v",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
