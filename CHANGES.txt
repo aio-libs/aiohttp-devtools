@@ -1,5 +1,34 @@
 .. towncrier release notes start
 
+1.2.0 (2026-11-22)
+==================
+
+* Changed the servers to listen on ``localhost`` by default, instead of on all network
+  interfaces. Added a ``-b/--bind`` option (``AIO_BIND_ADDRESS`` env variable) to
+  ``runserver`` and ``serve`` to listen on another address, e.g. ``--bind 0.0.0.0``
+  for the previous behaviour.
+* Added HTTPS support to ``runserver``. ``--ssl-context-factory`` names a function in the
+  app's module which returns the ``ssl.SSLContext`` to serve with, and ``--ssl-rootcert``
+  gives the root certificate to trust when a self-signed certificate is used.
+* Enabled asyncio's debug mode when running the app, which reports problems such as code
+  blocking the event loop.
+* Updated ``livereload.js`` from v2.2.1 to v4.0.3. It is now served with an ``ETag``, so
+  that browsers don't keep using a copy cached from a previous version.
+* Fixed the app's cleanup (``on_shutdown``, ``on_cleanup`` and cleanup contexts) being
+  cancelled when ``runserver`` is stopped with Ctrl+C, and being skipped when the app is
+  stopped or restarted while its code is running, e.g. during a request.
+* Fixed a 500 error when a static file which doesn't exist is requested with aiohttp 3.10+.
+* Fixed the file watcher crashing when a file other than a ``.py`` file changed while
+  ``--static`` was not used, after which nothing was reloaded or restarted.
+* Fixed live reload not working when ``adev serve`` is given a relative path, or serves on
+  port 80 or 443.
+* Fixed a change to a static file prompting two reloads when the static directory is inside
+  the project.
+* Fixed the app being imported from the wrong place when a module with the same name comes
+  earlier in ``sys.path``.
+* Fixed connections being reset while the dev server is starting.
+* Fixed the name of the env variable in the help for ``--static`` (``AIO_STATIC_PATH``).
+
 1.1.2 (2023-12-07)
 ==================
 
