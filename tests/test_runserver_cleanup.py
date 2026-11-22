@@ -4,6 +4,7 @@ import signal
 import subprocess
 import sys
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 from types import FrameType
 from typing import NoReturn
@@ -109,10 +110,12 @@ async def test_server_cleanup(tmp_path: Path, unused_tcp_port_factory: Callable[
         app_path.write_text(APP.replace("hello, world", "hello again"))
         await wait_for_response(url, "hello again")
         send_ctrl_c(proc)
-        async with asyncio.timeout(30):
-            await proc.wait()
+        with suppress(TimeoutError):
+            async with asyncio.timeout(30):
+                await proc.wait()
+        if proc.returncode is None:
+            pytest.fail("adev was not stopped by Ctrl+C")
     finally:
-        # adev is only still running when the test is already failing.
         if proc.returncode is None:  # pragma: no cover
             kill_process_group(proc)
             await proc.wait()
