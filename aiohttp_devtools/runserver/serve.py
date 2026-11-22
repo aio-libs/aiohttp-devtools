@@ -175,8 +175,9 @@ def _interrupt_once(signum: int, frame: FrameType | None) -> NoReturn:
     """Raise KeyboardInterrupt like the default SIGINT handler, but only for the first SIGINT.
 
     Ctrl+C in a terminal sends SIGINT to this process and to adev, which then sends another
-    one to stop this process. That one would otherwise cancel the cleanup of the app, or
-    interrupt the closing of the event loop. It's ignored here, in the handler, as it may
+    one to stop this process (adev can't know if the app has been sent the signal or not).
+    That one would otherwise cancel the cleanup of the app, or interrupt
+    the closing of the event loop. It's ignored here, in the handler, as it may
     arrive before the code which handles the KeyboardInterrupt runs.
     """
     signal.signal(signal.SIGINT, signal.SIG_IGN)
